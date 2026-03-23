@@ -1,0 +1,132 @@
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Logger } from '@nestjs/common';
+import { Job } from 'bullmq';
+import { QUEUE_NAMES } from '../constants';
+import { OrchestratorService } from '../../ai/orchestrator.service';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
+import { MediaService } from '../../whatsapp/media.service';
+import { WindowTrackerService } from '../../whatsapp/window-tracker.service';
+import { SubscribersService } from '../../subscribers/subscribers.service';
+import { WebhookMessage } from '../../whatsapp/dto/webhook.types';
+
+@Processor(QUEUE_NAMES.WHATSAPP_INBOUND, {
+  concurrency: 5,
+})
+export class InboundProcessor extends WorkerHost {
+  private readonly logger = new Logger(InboundProcessor.name);
+
+  constructor(
+    private readonly orchestrator: OrchestratorService,
+    private readonly whatsapp: WhatsappService,
+    private readonly media: MediaService,
+    private readonly windowTracker: WindowTrackerService,
+    private readonly subscribers: SubscribersService,
+  ) {
+    super();
+  }
+
+  async process(job: Job<WebhookMessage>): Promise<void> {
+    const message = job.data;
+    this.logger.log(
+      `Processing ${message.type} from ${message.from}`,
+    );
+
+    try {
+      await this.windowTracker.updateWindow(
+        await this.resolveSubscriberId(message.from),
+      );
+
+      let textContent = message.text || '';
+
+      if (message.type === 'audio' && message.mediaId) {
+        textContent =
+          await this.media.transcribeAudio(message.mediaId);
+      }
+
+      if (!textContent && message.type === 'image') {
+        textContent = '[Image received]';
+      }
+
+      if (!textContent && message.type === 'location') {
+        const loc = message.location;
+        textContent =
+          `[Location: ${loc?.latitude}, ` +
+          `${loc?.longitude}` +
+          (loc?.name ? ` - ${loc.name}` : '') +
+          ']';
+      }
+
+      const subscriberId = await this.resolveSubscriberId(
+        message.from,
+      );
+
+      const response = await this.orchestrator.processMessage({
+        subscriberId,
+        phone: message.from,
+        text: textContent,
+        messageType: message.type,
+        mediaId: message.mediaId,
+        contactName: message.contactName,
+      });
+
+      if (response.responseText) {
+        await this.whatsapp.sendText({
+          to: message.from,
+          text: response.responseText,
+          subscriberId,
+          priority: 'P2',
+        });
+      }
+
+      const pending =
+        await this.windowTracker.drainPendingNotifications(
+          subscriberId,
+        );
+      const sentIds: string[] = [];
+
+      for (const notification of pending) {
+        const payload =
+          notification.payload as Record<string, string>;
+        if (payload.text) {
+          await this.whatsapp.sendText({
+            to: message.from,
+            text: payload.text,
+            subscriberId,
+            priority: notification.priority as
+              | 'P1'
+              | 'P2'
+              | 'P3',
+          });
+        }
+        sentIds.push(notification.id);
+      }
+
+      await this.windowTracker.markNotificationsSent(sentIds);
+
+      this.logger.log(
+        `Processed message from ${message.from}, ` +
+          `intent: ${response.intent}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error processing message from ${message.from}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
+  }
+
+  private async resolveSubscriberId(
+    phone: string,
+  ): Promise<string> {
+    const subscriber =
+      await this.subscribers.findByPhone(phone);
+    if (subscriber) return subscriber.id;
+
+    const newSubscriber = await this.subscribers.create({
+      phone,
+      status: 'onboarding',
+    });
+    return newSubscriber.id;
+  }
+}
