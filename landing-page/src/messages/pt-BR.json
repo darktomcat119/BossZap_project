@@ -1,0 +1,57 @@
+{
+  "hero": {
+    "title": "Seu negocio, sob controle total",
+    "subtitle": "O assistente virtual com IA que gerencia sua agenda, financas e orcamentos pelo WhatsApp",
+    "cta": "Comece Gratis"
+  },
+  "features": {
+    "title": "Tudo o que voce precisa",
+    "schedule": {
+      "title": "Agenda Inteligente",
+      "description": "Organize seus compromissos e trabalhos apenas enviando uma mensagem"
+    },
+    "finance": {
+      "title": "Controle Financeiro",
+      "description": "Registre receitas e despesas instantaneamente, veja seus ganhos em tempo real"
+    },
+    "budgets": {
+      "title": "Orcamentos Profissionais",
+      "description": "Crie e envie orcamentos em PDF com sua marca em segundos"
+    }
+  },
+  "howItWorks": {
+    "title": "Como funciona?",
+    "step1": {
+      "title": "Fale pelo WhatsApp",
+      "description": "Envie mensagens de texto ou audio como faz normalmente"
+    },
+    "step2": {
+      "title": "A IA cuida de tudo",
+      "description": "Nosso assistente inteligente organiza tudo automaticamente"
+    },
+    "step3": {
+      "title": "Veja seu Dashboard",
+      "description": "Acesse relatorios, graficos e documentos de qualquer dispositivo"
+    }
+  },
+  "pricing": {
+    "title": "Planos",
+    "plan": {
+      "name": "Profissional",
+      "price": "R$149,90",
+      "period": "/mes",
+      "features": [
+        "500 mensagens/mes",
+        "50 orcamentos/mes",
+        "300 consultas IA/mes",
+        "Dashboard completo",
+        "Suporte prioritario"
+      ],
+      "cta": "Iniciar teste gratis"
+    },
+    "trial": "7 dias gratis, sem compromisso"
+  },
+  "footer": {
+    "rights": "Todos os direitos reservados"
+  }
+}

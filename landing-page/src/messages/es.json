@@ -1,0 +1,57 @@
+{
+  "hero": {
+    "title": "Tu negocio, bajo control total",
+    "subtitle": "El asistente virtual con IA que administra tu agenda, finanzas y presupuestos por WhatsApp",
+    "cta": "Empieza Gratis"
+  },
+  "features": {
+    "title": "Todo lo que necesitas",
+    "schedule": {
+      "title": "Agenda Inteligente",
+      "description": "Organiza tus citas y trabajos con solo enviar un mensaje"
+    },
+    "finance": {
+      "title": "Control Financiero",
+      "description": "Registra ingresos y gastos al instante, ve tus ganancias en tiempo real"
+    },
+    "budgets": {
+      "title": "Presupuestos Profesionales",
+      "description": "Crea y envía presupuestos en PDF con tu marca en segundos"
+    }
+  },
+  "howItWorks": {
+    "title": "¿Cómo funciona?",
+    "step1": {
+      "title": "Habla por WhatsApp",
+      "description": "Envía mensajes de texto o audio como lo haces normalmente"
+    },
+    "step2": {
+      "title": "La IA se encarga",
+      "description": "Nuestro asistente inteligente organiza todo automáticamente"
+    },
+    "step3": {
+      "title": "Ve tu Dashboard",
+      "description": "Accede a reportes, gráficos y documentos desde cualquier dispositivo"
+    }
+  },
+  "pricing": {
+    "title": "Planes",
+    "plan": {
+      "name": "Profesional",
+      "price": "$29.90",
+      "period": "/mes",
+      "features": [
+        "500 mensajes/mes",
+        "50 presupuestos/mes",
+        "300 consultas IA/mes",
+        "Dashboard completo",
+        "Soporte prioritario"
+      ],
+      "cta": "Empezar prueba gratis"
+    },
+    "trial": "7 días gratis, sin compromiso"
+  },
+  "footer": {
+    "rights": "Todos los derechos reservados"
+  }
+}

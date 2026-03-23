@@ -1,0 +1,57 @@
+{
+  "hero": {
+    "title": "Your business, fully under control",
+    "subtitle": "The AI-powered virtual assistant that manages your schedule, finances, and quotes via WhatsApp",
+    "cta": "Start Free"
+  },
+  "features": {
+    "title": "Everything you need",
+    "schedule": {
+      "title": "Smart Scheduling",
+      "description": "Organize your appointments and jobs by simply sending a message"
+    },
+    "finance": {
+      "title": "Financial Control",
+      "description": "Track income and expenses instantly, see your earnings in real time"
+    },
+    "budgets": {
+      "title": "Professional Quotes",
+      "description": "Create and send branded PDF quotes in seconds"
+    }
+  },
+  "howItWorks": {
+    "title": "How does it work?",
+    "step1": {
+      "title": "Chat on WhatsApp",
+      "description": "Send text or voice messages just like you normally do"
+    },
+    "step2": {
+      "title": "AI takes care of it",
+      "description": "Our smart assistant organizes everything automatically"
+    },
+    "step3": {
+      "title": "View your Dashboard",
+      "description": "Access reports, charts, and documents from any device"
+    }
+  },
+  "pricing": {
+    "title": "Plans",
+    "plan": {
+      "name": "Professional",
+      "price": "$29.90",
+      "period": "/month",
+      "features": [
+        "500 messages/month",
+        "50 quotes/month",
+        "300 AI queries/month",
+        "Full dashboard",
+        "Priority support"
+      ],
+      "cta": "Start free trial"
+    },
+    "trial": "7 days free, no commitment"
+  },
+  "footer": {
+    "rights": "All rights reserved"
+  }
+}
