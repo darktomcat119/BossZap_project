@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bosszap-postgres
+    environment:
+      POSTGRES_DB: bosszap
+      POSTGRES_USER: bosszap
+      POSTGRES_PASSWORD: bosszap_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bosszap']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bosszap-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: bosszap-backend
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://bosszap:bosszap_dev@postgres:5432/bosszap
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      JWT_EXPIRATION: 15m
+      JWT_REFRESH_EXPIRATION: 7d
+      DEFAULT_LANGUAGE: es
+      NODE_ENV: development
+    volumes:
+      - ./backend/src:/app/src
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend-subscriber:
+    build:
+      context: ./frontend-subscriber
+      dockerfile: Dockerfile
+      target: development
+    container_name: bosszap-frontend-subscriber
+    ports:
+      - '3001:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_WS_URL: http://localhost:3000
+    volumes:
+      - ./frontend-subscriber/src:/app/src
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+      target: development
+    container_name: bosszap-frontend-admin
+    ports:
+      - '3002:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_WS_URL: http://localhost:3000
+    volumes:
+      - ./frontend-admin/src:/app/src
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  landing-page:
+    build:
+      context: ./landing-page
+      dockerfile: Dockerfile
+      target: development
+    container_name: bosszap-landing
+    ports:
+      - '3003:3000'
+    volumes:
+      - ./landing-page/src:/app/src
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:
