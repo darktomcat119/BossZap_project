@@ -1,0 +1,43 @@
+{
+  "common": {
+    "appName": "BossZap",
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "back": "Voltar",
+    "next": "Pr\u00f3ximo",
+    "confirm": "Confirmar"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "financial": "Finan\u00e7as",
+    "calendar": "Agenda",
+    "documents": "Documentos",
+    "profile": "Perfil"
+  },
+  "dashboard": {
+    "title": "Painel Principal",
+    "revenue": "Receitas",
+    "expenses": "Despesas",
+    "profit": "Lucro",
+    "upcomingEvents": "Pr\u00f3ximos Eventos",
+    "recentTransactions": "Transa\u00e7\u00f5es Recentes",
+    "createBudget": "Criar Or\u00e7amento",
+    "registerExpense": "Registrar Despesa",
+    "registerIncome": "Registrar Receita"
+  },
+  "auth": {
+    "login": "Entrar",
+    "register": "Cadastrar",
+    "email": "E-mail",
+    "password": "Senha",
+    "phone": "Telefone",
+    "name": "Nome",
+    "logout": "Sair"
+  }
+}

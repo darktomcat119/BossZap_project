@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #00D4AA;
+    --primary-dark: #00B894;
+    --secondary: #6C5CE7;
+    --background: #F8F9FA;
+    --surface: #FFFFFF;
+    --text-primary: #2D3436;
+    --text-secondary: #636E72;
+    --text-muted: #B2BEC3;
+    --success: #00B894;
+    --warning: #FDCB6E;
+    --danger: #E17055;
+    --info: #0984E3;
+    --border: #DFE6E9;
+
+    --sidebar-width: 260px;
+    --header-height: 56px;
+  }
+
+  .dark {
+    --primary: #00D4AA;
+    --primary-dark: #00B894;
+    --secondary: #6C5CE7;
+    --background: #1A1A2E;
+    --surface: #16213E;
+    --text-primary: #EAEAEA;
+    --text-secondary: #B2BEC3;
+    --text-muted: #636E72;
+    --success: #00B894;
+    --warning: #FDCB6E;
+    --danger: #E17055;
+    --info: #0984E3;
+    --border: #2D3436;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-text-primary font-sans;
+    min-height: 100dvh;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface rounded-card shadow-card p-lg;
+  }
+
+  .card-interactive {
+    @apply card transition-shadow duration-200 ease-in-out hover:shadow-card-hover;
+  }
+}

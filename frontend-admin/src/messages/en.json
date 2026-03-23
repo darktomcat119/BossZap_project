@@ -1,0 +1,35 @@
+{
+  "common": {
+    "appName": "BossZap Admin",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export"
+  },
+  "nav": {
+    "overview": "Overview",
+    "subscribers": "Subscribers",
+    "payments": "Payments",
+    "plans": "Plans",
+    "metrics": "Metrics",
+    "logs": "Logs",
+    "health": "System Health",
+    "templates": "HSM Templates"
+  },
+  "overview": {
+    "title": "Admin Dashboard",
+    "totalSubscribers": "Total Subscribers",
+    "activeSubscribers": "Active Subscribers",
+    "monthlyRevenue": "Monthly Revenue",
+    "systemUptime": "System Uptime"
+  },
+  "auth": {
+    "login": "Log In",
+    "email": "Email",
+    "password": "Password",
+    "logout": "Log Out"
+  }
+}

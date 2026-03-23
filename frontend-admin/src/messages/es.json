@@ -1,0 +1,35 @@
+{
+  "common": {
+    "appName": "BossZap Admin",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar"
+  },
+  "nav": {
+    "overview": "Resumen",
+    "subscribers": "Suscriptores",
+    "payments": "Pagos",
+    "plans": "Planes",
+    "metrics": "Métricas",
+    "logs": "Registros",
+    "health": "Estado del Sistema",
+    "templates": "Plantillas HSM"
+  },
+  "overview": {
+    "title": "Panel de Administración",
+    "totalSubscribers": "Total Suscriptores",
+    "activeSubscribers": "Suscriptores Activos",
+    "monthlyRevenue": "Ingresos Mensuales",
+    "systemUptime": "Tiempo Activo"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "email": "Correo Electrónico",
+    "password": "Contraseña",
+    "logout": "Cerrar Sesión"
+  }
+}

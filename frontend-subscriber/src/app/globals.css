@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 0 212 170;
+    --color-primary-dark: 0 184 148;
+    --color-secondary: 108 92 231;
+    --color-background: 248 249 250;
+    --color-surface: 255 255 255;
+    --color-text-primary: 45 52 54;
+    --color-text-secondary: 99 110 114;
+    --color-text-muted: 178 190 195;
+    --color-success: 0 184 148;
+    --color-warning: 253 203 110;
+    --color-danger: 225 112 85;
+    --color-info: 9 132 227;
+    --color-border: 223 230 233;
+  }
+
+  /* Dark mode overrides — ready for future implementation */
+  .dark {
+    --color-primary: 0 212 170;
+    --color-primary-dark: 0 184 148;
+    --color-secondary: 108 92 231;
+    --color-background: 45 52 54;
+    --color-surface: 60 67 69;
+    --color-text-primary: 248 249 250;
+    --color-text-secondary: 178 190 195;
+    --color-text-muted: 99 110 114;
+    --color-success: 0 184 148;
+    --color-warning: 253 203 110;
+    --color-danger: 225 112 85;
+    --color-info: 9 132 227;
+    --color-border: 99 110 114;
+  }
+
+  body {
+    @apply bg-background text-text-primary font-sans antialiased;
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "common": {
+    "appName": "BossZap",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "financial": "Financial",
+    "calendar": "Calendar",
+    "documents": "Documents",
+    "profile": "Profile"
+  },
+  "dashboard": {
+    "title": "Main Dashboard",
+    "revenue": "Revenue",
+    "expenses": "Expenses",
+    "profit": "Profit",
+    "upcomingEvents": "Upcoming Events",
+    "recentTransactions": "Recent Transactions",
+    "createBudget": "Create Budget",
+    "registerExpense": "Register Expense",
+    "registerIncome": "Register Income"
+  },
+  "auth": {
+    "login": "Log In",
+    "register": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "phone": "Phone",
+    "name": "Name",
+    "logout": "Log Out"
+  }
+}
