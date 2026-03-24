@@ -26,6 +26,9 @@ export class Budget {
   @Column({ type: 'varchar', length: 20, default: 'budget' })
   document_type: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  document_number: string | null;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   client_name: string | null;
 

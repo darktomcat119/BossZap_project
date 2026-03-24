@@ -127,6 +127,7 @@ export class InitialSchema1711100000000
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         subscriber_id UUID NOT NULL REFERENCES subscribers(id),
         document_type VARCHAR(20) DEFAULT 'budget' NOT NULL,
+        document_number VARCHAR(20),
         client_name VARCHAR(255),
         client_phone VARCHAR(20),
         client_email VARCHAR(255),

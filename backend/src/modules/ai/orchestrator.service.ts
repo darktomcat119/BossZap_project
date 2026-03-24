@@ -5,6 +5,7 @@ import { GptService } from './gpt.service';
 import { ConversationService } from './conversation.service';
 import { IntentClassifierService, Intent } from './intent-classifier.service';
 import { OnboardingService } from './onboarding.service';
+import { ActionExecutorService } from './action-executor.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
 import {
   UsageTracking,
@@ -58,6 +59,7 @@ export class OrchestratorService {
     private readonly conversation: ConversationService,
     private readonly intentClassifier: IntentClassifierService,
     private readonly onboarding: OnboardingService,
+    private readonly actionExecutor: ActionExecutorService,
     private readonly subscribers: SubscribersService,
     @InjectRepository(UsageTracking)
     private readonly usageRepo: Repository<UsageTracking>,
@@ -138,6 +140,22 @@ export class OrchestratorService {
       const response =
         await this.gpt.chatWithRetry(messages);
       const parsed = this.parseResponse(response.content);
+
+      if (parsed.action_required && parsed.action_type !== 'none') {
+        const actionResult = await this.actionExecutor.execute(
+          subscriberId,
+          parsed.intent,
+          parsed.extracted_data || {},
+          language,
+        );
+
+        if (!actionResult.success) {
+          this.logger.warn(
+            `Action ${parsed.intent} failed: ` +
+              `${actionResult.error}`,
+          );
+        }
+      }
 
       await this.conversation.saveMessage(
         subscriberId,

@@ -8,6 +8,10 @@ import { HealthModule } from './modules/health/health.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { AiModule } from './modules/ai/ai.module';
 import { QueueModule } from './modules/queue/queue.module';
+import { AgendaModule } from './modules/agenda/agenda.module';
+import { BudgetModule } from './modules/budget/budget.module';
+import { FinancialModule } from './modules/financial/financial.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { LoggerService } from './config/logger.service';
 
 @Module({
@@ -45,6 +49,10 @@ import { LoggerService } from './config/logger.service';
     WhatsappModule,
     AiModule,
     QueueModule,
+    AgendaModule,
+    BudgetModule,
+    FinancialModule,
+    AnalyticsModule,
   ],
   providers: [LoggerService],
   exports: [LoggerService],
