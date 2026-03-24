@@ -44,7 +44,7 @@
     "payments": "Payments",
     "plans": "Plans",
     "metrics": "Metrics",
-    "logs": "Logs",
+    "logs": "Audit Logs",
     "health": "System Health",
     "templates": "HSM Templates"
   },
@@ -64,7 +64,7 @@
     "revenueTrend": "Revenue Trend",
     "recentAlerts": "Recent Alerts",
     "paymentFailed": "Payment failed for {name}",
-    "limitWarning": "{name} approaching message limit ({percent}%)",
+    "limitWarning": "{name} near message limit ({percent}%)",
     "noAlerts": "No recent alerts",
     "last12Months": "Last 12 months"
   },
@@ -131,7 +131,7 @@
     "totalAiCalls": "AI Calls",
     "totalPdfs": "PDFs Generated",
     "usageTrend": "Usage Trend (Last 30 Days)",
-    "messagesPerDay": "Messages per Day",
+    "messagesPerDay": "Messages Per Day",
     "topSubscribers": "Top 10 Subscribers by Usage",
     "subscriber": "Subscriber",
     "messageCount": "Messages",
@@ -141,7 +141,7 @@
     "openaiCost": "OpenAI API",
     "storageCost": "Storage",
     "whatsappCost": "WhatsApp API",
-    "totalCost": "Total Estimated Cost"
+    "totalCost": "Estimated Total Cost"
   },
   "logs": {
     "title": "Audit Logs",

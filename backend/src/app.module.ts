@@ -14,6 +14,7 @@ import { FinancialModule } from './modules/financial/financial.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { LoggerService } from './config/logger.service';
 
 @Module({
@@ -57,6 +58,7 @@ import { LoggerService } from './config/logger.service';
     AnalyticsModule,
     WebsocketModule,
     AdminModule,
+    PaymentsModule,
   ],
   providers: [LoggerService],
   exports: [LoggerService],

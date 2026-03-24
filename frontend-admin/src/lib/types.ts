@@ -13,6 +13,17 @@ export interface Subscriber {
   lastActive: string;
 }
 
+// ── Subscription ──
+export interface Subscription {
+  id: string;
+  subscriberId: string;
+  planId: string;
+  status: 'active' | 'cancelled' | 'past_due';
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelledAt?: string;
+}
+
 // ── Plan ──
 export interface Plan {
   id: string;
@@ -51,6 +62,23 @@ export interface Payment {
 }
 
 // ── Metrics ──
+export interface MetricsOverview {
+  totalSubscribers: number;
+  activeSubscribers: number;
+  monthlyRevenue: number;
+  messagesToday: number;
+  totalMessages: number;
+  totalAiCalls: number;
+  totalPdfs: number;
+}
+
+export interface UsageStats {
+  date: string;
+  messages: number;
+  aiCalls: number;
+  pdfs: number;
+}
+
 export interface UsageMetric {
   date: string;
   messages: number;

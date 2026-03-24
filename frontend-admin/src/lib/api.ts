@@ -1,4 +1,9 @@
-const API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'http://localhost:4000/api/admin';
+const API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'http://localhost:4000/api/v1/admin';
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('admin_token');
+}
 
 type RequestOptions = {
   method?: string;
@@ -9,10 +14,16 @@ type RequestOptions = {
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {} } = opts;
 
+  const token = getToken();
+  const authHeaders: Record<string, string> = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
