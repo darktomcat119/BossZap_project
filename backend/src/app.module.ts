@@ -12,6 +12,7 @@ import { AgendaModule } from './modules/agenda/agenda.module';
 import { BudgetModule } from './modules/budget/budget.module';
 import { FinancialModule } from './modules/financial/financial.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { WebsocketModule } from './modules/websocket/websocket.module';
 import { LoggerService } from './config/logger.service';
 
 @Module({
@@ -53,6 +54,7 @@ import { LoggerService } from './config/logger.service';
     BudgetModule,
     FinancialModule,
     AnalyticsModule,
+    WebsocketModule,
   ],
   providers: [LoggerService],
   exports: [LoggerService],
