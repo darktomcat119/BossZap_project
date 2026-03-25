@@ -49,10 +49,14 @@
     "templates": "Modelos HSM"
   },
   "auth": {
+    "brandTitle": "BossZap Admin",
     "login": "Entrar",
     "email": "E-mail",
     "password": "Senha",
-    "logout": "Sair"
+    "logout": "Sair",
+    "loginError": "E-mail ou senha invalidos",
+    "emailPlaceholder": "admin@bosszap.com",
+    "passwordPlaceholder": "Digite sua senha"
   },
   "overview": {
     "title": "Painel de Administracao",

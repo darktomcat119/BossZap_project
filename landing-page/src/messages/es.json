@@ -52,6 +52,78 @@
     "trial": "7 días gratis, sin compromiso"
   },
   "footer": {
-    "rights": "Todos los derechos reservados"
+    "rights": "Todos los derechos reservados",
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "contact": "Contacto"
+  },
+  "testimonials": {
+    "title": "Lo que dicen nuestros usuarios",
+    "items": [
+      {
+        "name": "Carlos Méndez",
+        "role": "Electricista independiente",
+        "quote": "BossZap me ahorra 2 horas al día. Ya no pierdo citas ni olvido cobrar trabajos."
+      },
+      {
+        "name": "María Fernández",
+        "role": "Dueña de salón de belleza",
+        "quote": "Mis clientas reservan por WhatsApp y yo veo todo organizado en el dashboard. Increíble."
+      },
+      {
+        "name": "Roberto Silva",
+        "role": "Plomero profesional",
+        "quote": "Los presupuestos en PDF me dan una imagen profesional. Mis clientes confían más en mí."
+      }
+    ]
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "items": [
+      {
+        "question": "¿Necesito instalar alguna app?",
+        "answer": "No. BossZap funciona directamente desde WhatsApp. Solo necesitas enviar un mensaje para empezar."
+      },
+      {
+        "question": "¿Puedo cancelar en cualquier momento?",
+        "answer": "Sí. No hay contratos ni permanencia. Puedes cancelar tu suscripción cuando quieras desde tu dashboard."
+      },
+      {
+        "question": "¿Mis datos están seguros?",
+        "answer": "Absolutamente. Usamos encriptación de extremo a extremo y cumplimos con las normativas de protección de datos."
+      },
+      {
+        "question": "¿Qué pasa después de los 7 días gratis?",
+        "answer": "Se activará tu plan Profesional. Si decides no continuar, simplemente cancela antes de que termine la prueba y no se te cobrará nada."
+      }
+    ]
+  },
+  "register": {
+    "title": "Crea tu cuenta",
+    "step1": "Información personal",
+    "step2": "Contraseña",
+    "step3": "Elige tu plan",
+    "step4": "Pago",
+    "name": "Nombre completo",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordHint": "Mínimo 8 caracteres",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "continue": "Continuar",
+    "back": "Volver",
+    "createAccount": "Crear cuenta",
+    "alreadyHaveAccount": "¿Ya tienes cuenta?",
+    "login": "Iniciar sesión",
+    "redirectingToPayment": "Redirigiendo al pago...",
+    "trialInfo": "7 días gratis, cancela cuando quieras"
+  },
+  "nav": {
+    "home": "Inicio",
+    "features": "Funciones",
+    "pricing": "Precios",
+    "login": "Iniciar Sesión",
+    "register": "Registrarse"
   }
 }

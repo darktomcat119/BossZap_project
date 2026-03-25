@@ -33,12 +33,20 @@
     "register": "Registrarse",
     "email": "Correo Electrónico",
     "password": "Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
     "phone": "Teléfono",
-    "name": "Nombre",
+    "phoneHint": "+código de país, ej. +55",
+    "name": "Nombre Completo",
     "logout": "Cerrar Sesión",
     "forgotPassword": "¿Olvidaste tu contraseña?",
     "createAccount": "Crear cuenta",
-    "alreadyHaveAccount": "¿Ya tienes una cuenta?"
+    "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+    "noAccount": "¿No tienes una cuenta?",
+    "loginError": "Correo o contraseña incorrectos. Inténtalo de nuevo.",
+    "registerError": "Error al registrarse. Inténtalo de nuevo.",
+    "passwordMismatch": "Las contraseñas no coinciden.",
+    "fieldRequired": "Este campo es obligatorio.",
+    "invalidEmail": "Por favor ingresa un correo electrónico válido."
   },
   "dashboard": {
     "title": "Panel Principal",

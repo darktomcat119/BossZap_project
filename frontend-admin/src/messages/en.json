@@ -49,10 +49,14 @@
     "templates": "HSM Templates"
   },
   "auth": {
+    "brandTitle": "BossZap Admin",
     "login": "Log In",
     "email": "Email",
     "password": "Password",
-    "logout": "Log Out"
+    "logout": "Log Out",
+    "loginError": "Invalid email or password",
+    "emailPlaceholder": "admin@bosszap.com",
+    "passwordPlaceholder": "Enter your password"
   },
   "overview": {
     "title": "Admin Dashboard",

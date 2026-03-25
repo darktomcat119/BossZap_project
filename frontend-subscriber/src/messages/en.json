@@ -33,12 +33,20 @@
     "register": "Sign Up",
     "email": "Email",
     "password": "Password",
+    "confirmPassword": "Confirm Password",
     "phone": "Phone",
-    "name": "Name",
+    "phoneHint": "+country code, e.g. +55",
+    "name": "Full Name",
     "logout": "Log Out",
     "forgotPassword": "Forgot your password?",
     "createAccount": "Create account",
-    "alreadyHaveAccount": "Already have an account?"
+    "alreadyHaveAccount": "Already have an account?",
+    "noAccount": "Don't have an account?",
+    "loginError": "Invalid email or password. Please try again.",
+    "registerError": "Registration failed. Please try again.",
+    "passwordMismatch": "Passwords do not match.",
+    "fieldRequired": "This field is required.",
+    "invalidEmail": "Please enter a valid email address."
   },
   "dashboard": {
     "title": "Main Dashboard",

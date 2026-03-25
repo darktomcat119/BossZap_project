@@ -33,12 +33,20 @@
     "register": "Cadastrar",
     "email": "E-mail",
     "password": "Senha",
+    "confirmPassword": "Confirmar Senha",
     "phone": "Telefone",
-    "name": "Nome",
+    "phoneHint": "+código do país, ex. +55",
+    "name": "Nome Completo",
     "logout": "Sair",
     "forgotPassword": "Esqueceu sua senha?",
     "createAccount": "Criar conta",
-    "alreadyHaveAccount": "Já tem uma conta?"
+    "alreadyHaveAccount": "Já tem uma conta?",
+    "noAccount": "Não tem uma conta?",
+    "loginError": "E-mail ou senha incorretos. Tente novamente.",
+    "registerError": "Erro ao cadastrar. Tente novamente.",
+    "passwordMismatch": "As senhas não coincidem.",
+    "fieldRequired": "Este campo é obrigatório.",
+    "invalidEmail": "Por favor insira um e-mail válido."
   },
   "dashboard": {
     "title": "Painel Principal",

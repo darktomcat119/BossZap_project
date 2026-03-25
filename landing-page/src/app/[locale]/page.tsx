@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, Link } from "@/i18n/routing";
 import { motion } from "framer-motion";
@@ -13,6 +14,9 @@ import {
   Check,
   Globe,
   Zap,
+  ChevronDown,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,15 +56,96 @@ function LanguageSwitcher() {
 }
 
 function Navbar() {
+  const tNav = useTranslations("nav");
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-border">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="w-6 h-6 text-primary" />
-          <span className="text-xl font-bold text-text-primary">BossZap</span>
+          <span className="text-xl font-bold text-text-primary">
+            BossZap
+          </span>
         </div>
-        <LanguageSwitcher />
+
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-6">
+          <a
+            href="#features"
+            className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+          >
+            {tNav("features")}
+          </a>
+          <a
+            href="#pricing"
+            className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+          >
+            {tNav("pricing")}
+          </a>
+          <LanguageSwitcher />
+          <Link
+            href="/login"
+            className="text-sm font-medium text-text-primary hover:text-primary transition-colors"
+          >
+            {tNav("login")}
+          </Link>
+          <Link
+            href="/register"
+            className="px-5 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            {tNav("register")}
+          </Link>
+        </nav>
+
+        {/* Mobile hamburger */}
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="md:hidden p-2 text-text-secondary"
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? (
+            <X className="w-5 h-5" />
+          ) : (
+            <Menu className="w-5 h-5" />
+          )}
+        </button>
       </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-border bg-surface px-4 py-4 space-y-3">
+          <a
+            href="#features"
+            onClick={() => setMobileOpen(false)}
+            className="block text-sm text-text-secondary"
+          >
+            {tNav("features")}
+          </a>
+          <a
+            href="#pricing"
+            onClick={() => setMobileOpen(false)}
+            className="block text-sm text-text-secondary"
+          >
+            {tNav("pricing")}
+          </a>
+          <div className="pt-2 border-t border-border flex flex-col gap-2">
+            <Link
+              href="/login"
+              className="block text-center py-2 text-sm font-medium text-text-primary border border-border rounded-lg"
+            >
+              {tNav("login")}
+            </Link>
+            <Link
+              href="/register"
+              className="block text-center py-2 bg-primary text-white text-sm font-semibold rounded-lg"
+            >
+              {tNav("register")}
+            </Link>
+          </div>
+          <LanguageSwitcher />
+        </div>
+      )}
     </header>
   );
 }
@@ -112,7 +197,7 @@ function FeaturesSection() {
   ] as const;
 
   return (
-    <section className="py-16 md:py-24 bg-background">
+    <section id="features" className="py-16 md:py-24 bg-background">
       <div className="max-w-6xl mx-auto px-4">
         <motion.h2
           initial="hidden"
@@ -300,6 +385,120 @@ function MobileStickyCTA() {
   );
 }
 
+function TestimonialsSection() {
+  const t = useTranslations("testimonials");
+  const items = t.raw("items") as Array<{
+    name: string;
+    role: string;
+    quote: string;
+  }>;
+
+  return (
+    <section className="py-16 md:py-24 bg-surface">
+      <div className="max-w-6xl mx-auto px-4">
+        <motion.h2
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeUp}
+          className="text-3xl md:text-4xl font-bold text-center text-text-primary"
+        >
+          {t("title")}
+        </motion.h2>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={stagger}
+          className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          {items.map((item, i) => (
+            <motion.div
+              key={i}
+              variants={fadeUp}
+              className="bg-background rounded-2xl p-6 border border-border"
+            >
+              <p className="text-text-secondary leading-relaxed italic">
+                &ldquo;{item.quote}&rdquo;
+              </p>
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="font-semibold text-text-primary">
+                  {item.name}
+                </p>
+                <p className="text-sm text-text-muted">
+                  {item.role}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function FaqSection() {
+  const t = useTranslations("faq");
+  const items = t.raw("items") as Array<{
+    question: string;
+    answer: string;
+  }>;
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <section className="py-16 md:py-24 bg-background">
+      <div className="max-w-3xl mx-auto px-4">
+        <motion.h2
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeUp}
+          className="text-3xl md:text-4xl font-bold text-center text-text-primary"
+        >
+          {t("title")}
+        </motion.h2>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={stagger}
+          className="mt-12 space-y-3"
+        >
+          {items.map((item, i) => (
+            <motion.div
+              key={i}
+              variants={fadeUp}
+              className="bg-surface rounded-xl border border-border overflow-hidden"
+            >
+              <button
+                onClick={() =>
+                  setOpenIndex(openIndex === i ? null : i)
+                }
+                className="flex w-full items-center justify-between p-5 text-left"
+              >
+                <span className="font-medium text-text-primary pr-4">
+                  {item.question}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "w-5 h-5 text-text-muted flex-shrink-0 transition-transform duration-200",
+                    openIndex === i && "rotate-180"
+                  )}
+                />
+              </button>
+              {openIndex === i && (
+                <div className="px-5 pb-5 text-text-secondary leading-relaxed">
+                  {item.answer}
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 export default function LandingPage() {
   return (
     <>
@@ -308,7 +507,9 @@ export default function LandingPage() {
         <HeroSection />
         <FeaturesSection />
         <HowItWorksSection />
+        <TestimonialsSection />
         <PricingSection />
+        <FaqSection />
       </main>
       <Footer />
       <MobileStickyCTA />

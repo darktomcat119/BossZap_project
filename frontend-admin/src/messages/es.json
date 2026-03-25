@@ -49,10 +49,14 @@
     "templates": "Plantillas HSM"
   },
   "auth": {
+    "brandTitle": "BossZap Admin",
     "login": "Iniciar Sesion",
     "email": "Correo Electronico",
     "password": "Contrasena",
-    "logout": "Cerrar Sesion"
+    "logout": "Cerrar Sesion",
+    "loginError": "Correo o contrasena invalidos",
+    "emailPlaceholder": "admin@bosszap.com",
+    "passwordPlaceholder": "Ingrese su contrasena"
   },
   "overview": {
     "title": "Panel de Administracion",

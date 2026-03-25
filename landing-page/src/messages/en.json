@@ -52,6 +52,78 @@
     "trial": "7 days free, no commitment"
   },
   "footer": {
-    "rights": "All rights reserved"
+    "rights": "All rights reserved",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "contact": "Contact"
+  },
+  "testimonials": {
+    "title": "What our users say",
+    "items": [
+      {
+        "name": "Carlos Mendez",
+        "role": "Independent electrician",
+        "quote": "BossZap saves me 2 hours a day. I no longer miss appointments or forget to charge for jobs."
+      },
+      {
+        "name": "Maria Fernandez",
+        "role": "Beauty salon owner",
+        "quote": "My clients book via WhatsApp and I see everything organized on the dashboard. Incredible."
+      },
+      {
+        "name": "Roberto Silva",
+        "role": "Professional plumber",
+        "quote": "The PDF quotes give me a professional image. My clients trust me more."
+      }
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "question": "Do I need to install any app?",
+        "answer": "No. BossZap works directly from WhatsApp. You just need to send a message to get started."
+      },
+      {
+        "question": "Can I cancel anytime?",
+        "answer": "Yes. There are no contracts or commitments. You can cancel your subscription anytime from your dashboard."
+      },
+      {
+        "question": "Is my data secure?",
+        "answer": "Absolutely. We use end-to-end encryption and comply with data protection regulations."
+      },
+      {
+        "question": "What happens after the 7 free days?",
+        "answer": "Your Professional plan will activate. If you decide not to continue, simply cancel before the trial ends and you won't be charged."
+      }
+    ]
+  },
+  "register": {
+    "title": "Create your account",
+    "step1": "Personal info",
+    "step2": "Password",
+    "step3": "Choose your plan",
+    "step4": "Payment",
+    "name": "Full name",
+    "email": "Email address",
+    "phone": "Phone number",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "passwordHint": "Minimum 8 characters",
+    "passwordMismatch": "Passwords do not match",
+    "continue": "Continue",
+    "back": "Back",
+    "createAccount": "Create account",
+    "alreadyHaveAccount": "Already have an account?",
+    "login": "Log in",
+    "redirectingToPayment": "Redirecting to payment...",
+    "trialInfo": "7 days free, cancel anytime"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "login": "Log In",
+    "register": "Sign Up"
   }
 }
