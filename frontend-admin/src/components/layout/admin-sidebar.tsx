@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { usePathname } from '@/i18n/routing';
 import { Link } from '@/i18n/routing';
 import {
@@ -47,9 +48,13 @@ export function AdminSidebar() {
     <>
       {/* Brand */}
       <div className="flex items-center gap-sm px-md h-[var(--header-height)] border-b border-border shrink-0">
-        <div className="w-8 h-8 rounded-button bg-primary flex items-center justify-center">
-          <span className="text-white font-bold text-body">BZ</span>
-        </div>
+        <Image
+          src="/bosszap_logo.png"
+          alt="BossZap"
+          width={32}
+          height={34}
+          className="h-8 w-auto"
+        />
         <span className="font-semibold text-h4 text-text-primary">
           {tCommon('appName')}
         </span>

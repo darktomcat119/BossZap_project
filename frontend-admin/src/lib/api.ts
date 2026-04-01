@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'http://localhost:4000/api/v1/admin';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin`
+  : 'http://localhost:3000/api/v1/admin';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -44,17 +46,17 @@ export const subscribersApi = {
     return request(`/subscribers${qs}`);
   },
   get: (id: string) => request(`/subscribers/${id}`),
-  activate: (id: string) => request(`/subscribers/${id}/activate`, { method: 'POST' }),
-  suspend: (id: string) => request(`/subscribers/${id}/suspend`, { method: 'POST' }),
-  deactivate: (id: string) => request(`/subscribers/${id}/deactivate`, { method: 'POST' }),
+  activate: (id: string) => request(`/subscribers/${id}/activate`, { method: 'PATCH' }),
+  suspend: (id: string) => request(`/subscribers/${id}/suspend`, { method: 'PATCH' }),
+  deactivate: (id: string) => request(`/subscribers/${id}/deactivate`, { method: 'PATCH' }),
 };
 
 // ── Plans ──
 export const plansApi = {
   list: () => request('/plans'),
   create: (data: unknown) => request('/plans', { method: 'POST', body: data }),
-  update: (id: string, data: unknown) => request(`/plans/${id}`, { method: 'PUT', body: data }),
-  deactivate: (id: string) => request(`/plans/${id}/deactivate`, { method: 'POST' }),
+  update: (id: string, data: unknown) => request(`/plans/${id}`, { method: 'PATCH', body: data }),
+  deactivate: (id: string) => request(`/plans/${id}`, { method: 'DELETE' }),
 };
 
 // ── Payments ──
@@ -69,7 +71,9 @@ export const paymentsApi = {
 // ── Metrics ──
 export const metricsApi = {
   overview: () => request('/metrics/overview'),
-  usage: (days?: number) => request(`/metrics/usage${days ? `?days=${days}` : ''}`),
+  growth: (months?: number) => request(`/metrics/growth${months ? `?months=${months}` : ''}`),
+  revenue: (months?: number) => request(`/metrics/revenue${months ? `?months=${months}` : ''}`),
+  usage: () => request('/metrics/usage'),
   topSubscribers: () => request('/metrics/top-subscribers'),
   costs: () => request('/metrics/costs'),
 };
@@ -78,7 +82,7 @@ export const metricsApi = {
 export const logsApi = {
   list: (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params)}` : '';
-    return request(`/logs${qs}`);
+    return request(`/logs/audit${qs}`);
   },
 };
 
@@ -93,8 +97,8 @@ export const healthApi = {
 export const templatesApi = {
   list: (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params)}` : '';
-    return request(`/templates${qs}`);
+    return request(`/hsm-templates${qs}`);
   },
-  create: (data: unknown) => request('/templates', { method: 'POST', body: data }),
-  update: (id: string, data: unknown) => request(`/templates/${id}`, { method: 'PUT', body: data }),
+  create: (data: unknown) => request('/hsm-templates', { method: 'POST', body: data }),
+  update: (id: string, data: unknown) => request(`/hsm-templates/${id}`, { method: 'PATCH', body: data }),
 };

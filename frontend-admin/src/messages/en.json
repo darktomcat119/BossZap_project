@@ -70,7 +70,8 @@
     "paymentFailed": "Payment failed for {name}",
     "limitWarning": "{name} near message limit ({percent}%)",
     "noAlerts": "No recent alerts",
-    "last12Months": "Last 12 months"
+    "last12Months": "Last 12 months",
+    "retry": "Retry"
   },
   "subscribers": {
     "title": "Subscribers",

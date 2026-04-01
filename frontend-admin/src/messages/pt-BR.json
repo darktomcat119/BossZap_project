@@ -70,7 +70,8 @@
     "paymentFailed": "Pagamento falhou para {name}",
     "limitWarning": "{name} proximo do limite de mensagens ({percent}%)",
     "noAlerts": "Sem alertas recentes",
-    "last12Months": "Ultimos 12 meses"
+    "last12Months": "Ultimos 12 meses",
+    "retry": "Tentar novamente"
   },
   "subscribers": {
     "title": "Assinantes",

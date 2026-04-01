@@ -1,36 +1,65 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { AdminShell } from '@/components/layout/admin-shell';
-import { Plus, Pencil, X, Users } from 'lucide-react';
+import { Plus, Pencil, X, Users, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { plansApi } from '@/lib/api';
 import type { Plan, PlanFormData } from '@/lib/types';
 
-const mockPlans: Plan[] = [
-  { id: '1', name: 'Basic', price: 29, maxBudgets: 3, maxMessages: 500, maxAiCalls: 100, trialDays: 7, active: true, subscriberCount: 45 },
-  { id: '2', name: 'Pro', price: 89, maxBudgets: 10, maxMessages: 2000, maxAiCalls: 500, trialDays: 14, active: true, subscriberCount: 112 },
-  { id: '3', name: 'Enterprise', price: 199, maxBudgets: 50, maxMessages: 10000, maxAiCalls: 2000, trialDays: 30, active: true, subscriberCount: 57 },
-  { id: '4', name: 'Starter', price: 15, maxBudgets: 1, maxMessages: 100, maxAiCalls: 25, trialDays: 3, active: false, subscriberCount: 0 },
-];
+const extract = (res: any) => res?.data ?? res;
 
 const emptyForm: PlanFormData = {
   name: '',
   price: 0,
-  maxBudgets: 0,
-  maxMessages: 0,
-  maxAiCalls: 0,
-  trialDays: 0,
+  max_budgets: 0,
+  max_messages: 0,
+  max_ai_calls: 0,
+  trial_days: 0,
 };
+
+function PlanSkeleton() {
+  return (
+    <div className="bg-surface rounded-card border border-border p-md space-y-md animate-pulse">
+      <div className="h-5 w-20 bg-gray-200 rounded" />
+      <div className="h-8 w-24 bg-gray-200 rounded" />
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-4 bg-gray-100 rounded" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function PlansPage() {
   const t = useTranslations('plans');
   const tc = useTranslations('common');
 
-  const [plans, setPlans] = useState(mockPlans);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PlanFormData>(emptyForm);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const raw = await plansApi.list();
+      const rows = extract(raw);
+      setPlans(Array.isArray(rows) ? rows : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load plans');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -43,45 +72,62 @@ export default function PlansPage() {
     setForm({
       name: plan.name,
       price: plan.price,
-      maxBudgets: plan.maxBudgets,
-      maxMessages: plan.maxMessages,
-      maxAiCalls: plan.maxAiCalls,
-      trialDays: plan.trialDays,
+      max_budgets: plan.max_budgets,
+      max_messages: plan.max_messages,
+      max_ai_calls: plan.max_ai_calls,
+      trial_days: plan.trial_days,
     });
     setModalOpen(true);
   };
 
-  const handleSave = () => {
-    if (editingId) {
-      setPlans((prev) =>
-        prev.map((p) => (p.id === editingId ? { ...p, ...form } : p))
-      );
-    } else {
-      setPlans((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          ...form,
-          active: true,
-          subscriberCount: 0,
-        },
-      ]);
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (editingId) {
+        await plansApi.update(editingId, form);
+      } else {
+        await plansApi.create(form);
+      }
+      setModalOpen(false);
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSaving(false);
     }
-    setModalOpen(false);
   };
 
-  const toggleActive = (id: string) => {
-    setPlans((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p))
-    );
+  const handleDeactivate = async (id: string) => {
+    try {
+      await plansApi.deactivate(id);
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Action failed');
+    }
   };
 
   const updateField = (field: keyof PlanFormData, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  if (error && !loading && plans.length === 0) {
+    return (
+      <div className="p-md lg:p-lg flex flex-col items-center justify-center gap-md min-h-[50vh]">
+        <p className="text-body text-red-600">{error}</p>
+        <button
+          onClick={fetchData}
+          className="flex items-center gap-xs px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+          {tc('retry') ?? 'Retry'}
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <AdminShell>
+    <>
       <div className="p-md lg:p-lg space-y-md">
         <div className="flex items-center justify-between">
           <h1 className="text-h2 font-bold text-text-primary">{t('title')}</h1>
@@ -94,79 +140,88 @@ export default function PlansPage() {
           </button>
         </div>
 
+        {error && plans.length > 0 && (
+          <div className="p-sm rounded-button bg-red-50 text-red-600 text-body">{error}</div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-md">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={cn(
-                'bg-surface rounded-card border border-border p-md space-y-md',
-                !plan.active && 'opacity-60'
-              )}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-h4 font-semibold text-text-primary">{plan.name}</h3>
-                  <p className="text-h3 font-bold text-primary">
-                    ${plan.price}<span className="text-body font-normal text-text-secondary">{t('perMonth')}</span>
-                  </p>
-                </div>
-                <span
+          {loading
+            ? Array.from({ length: 3 }).map((_, i) => <PlanSkeleton key={i} />)
+            : plans.map((plan) => (
+                <div
+                  key={plan.id}
                   className={cn(
-                    'px-2 py-0.5 rounded-full text-caption font-medium',
-                    plan.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    'bg-surface rounded-card border border-border p-md space-y-md',
+                    !plan.is_active && 'opacity-60'
                   )}
                 >
-                  {plan.active ? tc('active') : tc('inactive')}
-                </span>
-              </div>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-h4 font-semibold text-text-primary">{plan.name}</h3>
+                      <p className="text-h3 font-bold text-primary">
+                        ${plan.price}<span className="text-body font-normal text-text-secondary">{t('perMonth')}</span>
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        'px-2 py-0.5 rounded-full text-caption font-medium',
+                        plan.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                      )}
+                    >
+                      {plan.is_active ? tc('active') : tc('inactive')}
+                    </span>
+                  </div>
 
-              <div className="space-y-xs text-body text-text-secondary">
-                <div className="flex justify-between">
-                  <span>{t('maxBudgets')}</span>
-                  <span className="font-medium text-text-primary">{plan.maxBudgets}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{t('maxMessages')}</span>
-                  <span className="font-medium text-text-primary">{plan.maxMessages.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{t('maxAiCalls')}</span>
-                  <span className="font-medium text-text-primary">{plan.maxAiCalls.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{t('trialDays')}</span>
-                  <span className="font-medium text-text-primary">{plan.trialDays}</span>
-                </div>
-              </div>
+                  <div className="space-y-xs text-body text-text-secondary">
+                    <div className="flex justify-between">
+                      <span>{t('maxBudgets')}</span>
+                      <span className="font-medium text-text-primary">{plan.max_budgets}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('maxMessages')}</span>
+                      <span className="font-medium text-text-primary">{plan.max_messages.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('maxAiCalls')}</span>
+                      <span className="font-medium text-text-primary">{plan.max_ai_calls.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('trialDays')}</span>
+                      <span className="font-medium text-text-primary">{plan.trial_days}</span>
+                    </div>
+                  </div>
 
-              <div className="flex items-center gap-xs text-caption text-text-secondary">
-                <Users className="w-4 h-4" />
-                <span>{plan.subscriberCount} {t('subscriberCount').toLowerCase()}</span>
-              </div>
-
-              <div className="flex gap-sm pt-xs border-t border-border">
-                <button
-                  onClick={() => openEdit(plan)}
-                  className="flex items-center gap-xs px-3 py-1.5 rounded-button border border-border bg-surface text-body text-text-secondary hover:bg-background transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  {tc('edit')}
-                </button>
-                <button
-                  onClick={() => toggleActive(plan.id)}
-                  className={cn(
-                    'flex-1 py-1.5 rounded-button text-body font-medium transition-colors',
-                    plan.active
-                      ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                      : 'bg-green-50 text-green-600 hover:bg-green-100'
+                  {plan.subscriber_count !== undefined && (
+                    <div className="flex items-center gap-xs text-caption text-text-secondary">
+                      <Users className="w-4 h-4" />
+                      <span>{plan.subscriber_count} {t('subscriberCount').toLowerCase()}</span>
+                    </div>
                   )}
-                >
-                  {plan.active ? t('deactivatePlan') : t('activatePlan')}
-                </button>
-              </div>
-            </div>
-          ))}
+
+                  <div className="flex gap-sm pt-xs border-t border-border">
+                    <button
+                      onClick={() => openEdit(plan)}
+                      className="flex items-center gap-xs px-3 py-1.5 rounded-button border border-border bg-surface text-body text-text-secondary hover:bg-background transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      {tc('edit')}
+                    </button>
+                    {plan.is_active && (
+                      <button
+                        onClick={() => handleDeactivate(plan.id)}
+                        className="flex-1 py-1.5 rounded-button text-body font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                      >
+                        {t('deactivatePlan')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
         </div>
+
+        {!loading && plans.length === 0 && (
+          <div className="p-lg text-center text-text-secondary">{tc('noResults')}</div>
+        )}
       </div>
 
       {/* Modal */}
@@ -210,8 +265,8 @@ export default function PlansPage() {
                     <label className="block text-caption font-medium text-text-secondary mb-xs">{t('maxBudgets')}</label>
                     <input
                       type="number"
-                      value={form.maxBudgets}
-                      onChange={(e) => updateField('maxBudgets', Number(e.target.value))}
+                      value={form.max_budgets}
+                      onChange={(e) => updateField('max_budgets', Number(e.target.value))}
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
@@ -219,8 +274,8 @@ export default function PlansPage() {
                     <label className="block text-caption font-medium text-text-secondary mb-xs">{t('maxMessages')}</label>
                     <input
                       type="number"
-                      value={form.maxMessages}
-                      onChange={(e) => updateField('maxMessages', Number(e.target.value))}
+                      value={form.max_messages}
+                      onChange={(e) => updateField('max_messages', Number(e.target.value))}
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
@@ -230,8 +285,8 @@ export default function PlansPage() {
                     <label className="block text-caption font-medium text-text-secondary mb-xs">{t('maxAiCalls')}</label>
                     <input
                       type="number"
-                      value={form.maxAiCalls}
-                      onChange={(e) => updateField('maxAiCalls', Number(e.target.value))}
+                      value={form.max_ai_calls}
+                      onChange={(e) => updateField('max_ai_calls', Number(e.target.value))}
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
@@ -239,8 +294,8 @@ export default function PlansPage() {
                     <label className="block text-caption font-medium text-text-secondary mb-xs">{t('trialDays')}</label>
                     <input
                       type="number"
-                      value={form.trialDays}
-                      onChange={(e) => updateField('trialDays', Number(e.target.value))}
+                      value={form.trial_days}
+                      onChange={(e) => updateField('trial_days', Number(e.target.value))}
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
@@ -255,15 +310,16 @@ export default function PlansPage() {
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors"
+                  disabled={saving}
+                  className="px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  {tc('save')}
+                  {saving ? tc('saving') ?? 'Saving...' : tc('save')}
                 </button>
               </div>
             </div>
           </div>
         </>
       )}
-    </AdminShell>
+    </>
   );
 }

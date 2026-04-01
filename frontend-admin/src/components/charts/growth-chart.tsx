@@ -36,7 +36,7 @@ export function GrowthChart({ data }: GrowthChartProps) {
         />
         <Line
           type="monotone"
-          dataKey="subscribers"
+          dataKey="count"
           stroke="#6366f1"
           strokeWidth={2}
           dot={{ r: 4, fill: '#6366f1' }}

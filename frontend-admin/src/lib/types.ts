@@ -1,16 +1,25 @@
+// ── Paginated Response ──
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // ── Subscriber ──
-export type SubscriberStatus = 'active' | 'inactive' | 'suspended';
+export type SubscriberStatus = 'active' | 'inactive' | 'suspended' | 'onboarding' | 'cancelled';
 
 export interface Subscriber {
   id: string;
-  name: string;
+  business_name: string | null;
+  owner_name: string;
   phone: string;
+  email: string;
   status: SubscriberStatus;
-  plan: string;
-  messages: number;
-  revenue: number;
-  joinedAt: string;
-  lastActive: string;
+  plan?: { id: string; name: string; price: number } | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ── Subscription ──
@@ -29,54 +38,68 @@ export interface Plan {
   id: string;
   name: string;
   price: number;
-  maxBudgets: number;
-  maxMessages: number;
-  maxAiCalls: number;
-  trialDays: number;
-  active: boolean;
-  subscriberCount: number;
+  max_budgets: number;
+  max_messages: number;
+  max_ai_calls: number;
+  trial_days: number;
+  is_active: boolean;
+  subscriber_count?: number;
 }
 
 export interface PlanFormData {
   name: string;
   price: number;
-  maxBudgets: number;
-  maxMessages: number;
-  maxAiCalls: number;
-  trialDays: number;
+  max_budgets: number;
+  max_messages: number;
+  max_ai_calls: number;
+  trial_days: number;
 }
 
 // ── Payment ──
-export type PaymentStatus = 'paid' | 'failed' | 'refunded';
+export type PaymentStatus = 'succeeded' | 'failed' | 'refunded' | 'pending';
 export type PaymentMethod = 'credit_card' | 'bank_transfer' | 'pix';
 export type RecoveryStatus = 'recovered' | 'pending' | 'abandoned';
 
 export interface Payment {
   id: string;
-  subscriberName: string;
+  subscriber_name?: string;
   amount: number;
   status: PaymentStatus;
-  method: PaymentMethod;
-  date: string;
-  recoveryStatus?: RecoveryStatus;
+  method?: PaymentMethod;
+  paid_at: string;
+  created_at: string;
+  recovery_status?: RecoveryStatus;
+}
+
+export interface PaymentSummary {
+  revenueToday: number;
+  revenueWeek: number;
+  revenueMonth: number;
 }
 
 // ── Metrics ──
 export interface MetricsOverview {
   totalSubscribers: number;
   activeSubscribers: number;
-  monthlyRevenue: number;
-  messagesToday: number;
-  totalMessages: number;
-  totalAiCalls: number;
-  totalPdfs: number;
+  suspendedSubscribers: number;
+  onboardingSubscribers: number;
+  cancelledSubscribers: number;
+  revenueThisMonth: number;
 }
 
-export interface UsageStats {
-  date: string;
-  messages: number;
-  aiCalls: number;
-  pdfs: number;
+export interface UsageStatsResult {
+  totalMessages: number;
+  totalAiCalls: number;
+  totalBudgets: number;
+  topSubscribers: TopSubscriberUsage[];
+}
+
+export interface TopSubscriberUsage {
+  subscriber_id: string;
+  business_name: string | null;
+  total_messages: number;
+  total_ai_calls: number;
+  total_budgets: number;
 }
 
 export interface UsageMetric {
@@ -100,15 +123,18 @@ export interface CostBreakdown {
 }
 
 // ── Logs ──
-export type AuditAction = 'created' | 'updated' | 'deleted' | 'login' | 'export';
+export type AuditAction = 'created' | 'updated' | 'deleted' | 'login' | 'export'
+  | 'subscriber_activated' | 'subscriber_suspended' | 'subscriber_deactivated';
 
 export interface AuditLog {
   id: string;
-  timestamp: string;
-  subscriber: string;
-  action: AuditAction;
-  entity: string;
-  details: Record<string, unknown>;
+  created_at: string;
+  subscriber_id: string;
+  subscriber?: { business_name: string | null; owner_name: string } | null;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  details?: Record<string, unknown>;
 }
 
 // ── Health ──
@@ -143,7 +169,7 @@ export interface HsmTemplate {
   name: string;
   language: string;
   category: TemplateCategory;
-  metaStatus: TemplateStatus;
+  meta_status: TemplateStatus;
   body: string;
 }
 
@@ -157,7 +183,7 @@ export interface TemplateFormData {
 // ── Charts ──
 export interface GrowthDataPoint {
   month: string;
-  subscribers: number;
+  count: number;
 }
 
 export interface RevenueDataPoint {
