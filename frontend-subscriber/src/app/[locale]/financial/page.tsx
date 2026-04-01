@@ -1,123 +1,214 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { AppShell } from "@/components/layout/app-shell";
+import { Search, Download, ChevronLeft, ChevronRight } from "lucide-react";
+
+import { financialService } from "@/services/financial.service";
+import type { PaginationMeta } from "@/lib/api";
+import type {
+  FinancialRecord,
+  FinancialSummary,
+  CategoryBreakdown,
+  DailyTotal,
+  MonthlyTrend,
+  FinancialRecordType,
+} from "@/lib/types";
 import { RevenueExpensesChart } from "@/components/charts/revenue-expenses-chart";
 import { CategoryDonutChart } from "@/components/charts/category-donut-chart";
 import { ProfitBarChart } from "@/components/charts/profit-bar-chart";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from "recharts";
-import {
-  Search,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ── Mock data ──────────────────────────────────────────────
-const mockRevenueTrend = [
-  { month: "Jan", revenue: 4200 },
-  { month: "Feb", revenue: 3800 },
-  { month: "Mar", revenue: 5100 },
-  { month: "Apr", revenue: 4600 },
-  { month: "May", revenue: 5800 },
-  { month: "Jun", revenue: 6200 },
-];
+// ── Period helpers ────────────────────────────────────────────────────────────
 
-const mockCategoryData = [
-  { name: "Services", value: 8500 },
-  { name: "Products", value: 3200 },
-  { name: "Consulting", value: 2100 },
-  { name: "Maintenance", value: 1800 },
-  { name: "Other", value: 900 },
-];
+const PERIODS = ["thisWeek", "thisMonth", "thisYear", "custom"] as const;
+type Period = (typeof PERIODS)[number];
 
-const mockProfitData = [
-  { date: "Mon", profit: 320 },
-  { date: "Tue", profit: -80 },
-  { date: "Wed", profit: 450 },
-  { date: "Thu", profit: 200 },
-  { date: "Fri", profit: -120 },
-  { date: "Sat", profit: 180 },
-  { date: "Sun", profit: 50 },
-];
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
 
-type Transaction = {
-  id: number;
-  date: string;
-  type: "income" | "expense";
-  description: string;
-  category: string;
-  amount: number;
-};
+function getDateRange(period: Period): { startDate: string; endDate: string } {
+  const today = new Date();
+  const end = fmt(today);
+  if (period === "thisWeek") {
+    const day = today.getDay();
+    const mon = new Date(today.getFullYear(), today.getMonth(), today.getDate() - day + (day === 0 ? -6 : 1));
+    return { startDate: fmt(mon), endDate: end };
+  }
+  if (period === "thisYear") return { startDate: fmt(new Date(today.getFullYear(), 0, 1)), endDate: end };
+  // thisMonth + custom fallback
+  return { startDate: fmt(new Date(today.getFullYear(), today.getMonth(), 1)), endDate: end };
+}
 
-const mockTransactions: Transaction[] = [
-  { id: 1, date: "2026-03-24", type: "income", description: "Web design - Silva Corp", category: "Services", amount: 2500 },
-  { id: 2, date: "2026-03-23", type: "expense", description: "Cloud hosting", category: "Technology", amount: 89.90 },
-  { id: 3, date: "2026-03-22", type: "income", description: "Logo design - Bakery", category: "Services", amount: 800 },
-  { id: 4, date: "2026-03-21", type: "expense", description: "Software license", category: "Technology", amount: 49.90 },
-  { id: 5, date: "2026-03-20", type: "income", description: "Social media - Gym", category: "Services", amount: 1200 },
-  { id: 6, date: "2026-03-19", type: "expense", description: "Office supplies", category: "Supplies", amount: 125.00 },
-  { id: 7, date: "2026-03-18", type: "income", description: "Consultation - Tech Co", category: "Consulting", amount: 450 },
-  { id: 8, date: "2026-03-17", type: "expense", description: "Internet bill", category: "Utilities", amount: 119.90 },
-  { id: 9, date: "2026-03-16", type: "income", description: "Maintenance contract", category: "Maintenance", amount: 1800 },
-  { id: 10, date: "2026-03-15", type: "expense", description: "Transport", category: "Transport", amount: 65.00 },
-  { id: 11, date: "2026-03-14", type: "income", description: "E-commerce setup", category: "Services", amount: 3200 },
-  { id: 12, date: "2026-03-13", type: "expense", description: "Marketing ads", category: "Marketing", amount: 250.00 },
-];
+function Skeleton({ className }: { className?: string }) {
+  return <div className={cn("animate-pulse rounded-lg bg-border/50", className)} />;
+}
+function ChartSkeleton() {
+  return <div className="space-y-3"><Skeleton className="h-4 w-32" /><Skeleton className="h-[300px] w-full" /></div>;
+}
+function TableRowSkeleton() {
+  return (
+    <tr className="border-b border-border">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <td key={i} className="px-3 py-3"><Skeleton className="h-4 w-full" /></td>
+      ))}
+    </tr>
+  );
+}
 
-const ITEMS_PER_PAGE = 5;
+// ── Page ──────────────────────────────────────────────────────────────────────
 
-const periods = ["thisWeek", "thisMonth", "thisYear", "custom"] as const;
-type Period = (typeof periods)[number];
-
-const categories = ["all", "Services", "Technology", "Consulting", "Maintenance", "Supplies", "Utilities", "Transport", "Marketing"];
+const ITEMS_PER_PAGE = 10;
 
 export default function FinancialPage() {
   const t = useTranslations("financial");
+
+  // Filters
   const [period, setPeriod] = useState<Period>("thisMonth");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | FinancialRecordType>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => {
-    return mockTransactions.filter((tx) => {
-      if (typeFilter !== "all" && tx.type !== typeFilter) return false;
-      if (categoryFilter !== "all" && tx.category !== categoryFilter) return false;
-      if (search && !tx.description.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    });
-  }, [search, typeFilter, categoryFilter]);
+  // Data
+  const [summary, setSummary] = useState<FinancialSummary | null>(null);
+  const [trendData, setTrendData] = useState<MonthlyTrend[]>([]);
+  const [categoryData, setCategoryData] = useState<CategoryBreakdown[]>([]);
+  const [dailyData, setDailyData] = useState<DailyTotal[]>([]);
+  const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  // Loading flags
+  const [loadingCharts, setLoadingCharts] = useState(true);
+  const [loadingTable, setLoadingTable] = useState(true);
+
+  // Computed date range
+  const dateRange =
+    period === "custom" && customStart && customEnd
+      ? { startDate: customStart, endDate: customEnd }
+      : getDateRange(period);
+
+  const fetchCharts = useCallback(async () => {
+    setLoadingCharts(true);
+    try {
+      const [summaryRes, trendRes, catRes, dailyRes] = await Promise.all([
+        financialService.getSummary(dateRange.startDate, dateRange.endDate),
+        financialService.getMonthlyTrend(6),
+        financialService.getCategories(dateRange.startDate, dateRange.endDate, "expense"),
+        financialService.getDailyTotals(dateRange.startDate, dateRange.endDate),
+      ]);
+
+      if (summaryRes.success) setSummary(summaryRes.data);
+      if (trendRes.success) setTrendData(trendRes.data);
+      if (catRes.success) {
+        setCategoryData(catRes.data);
+        const cats = catRes.data.map((c) => c.category).filter(Boolean);
+        setCategories(cats);
+      }
+      if (dailyRes.success) setDailyData(dailyRes.data);
+    } catch {
+      // Silently handle - data stays empty
+    } finally {
+      setLoadingCharts(false);
+    }
+  }, [dateRange.startDate, dateRange.endDate]);
+
+  const fetchRecords = useCallback(async () => {
+    setLoadingTable(true);
+    try {
+      const res = await financialService.getRecords({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+        type: typeFilter === "all" ? undefined : typeFilter,
+        category: categoryFilter === "all" ? undefined : categoryFilter,
+        search: search || undefined,
+        page,
+        limit: ITEMS_PER_PAGE,
+      });
+      if (res.success) {
+        setRecords(res.data);
+        setMeta(res.meta ?? null);
+      }
+    } catch {
+      setRecords([]);
+    } finally {
+      setLoadingTable(false);
+    }
+  }, [dateRange.startDate, dateRange.endDate, typeFilter, categoryFilter, search, page]);
+
+  useEffect(() => {
+    fetchCharts();
+  }, [fetchCharts]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter, categoryFilter, search, period, customStart, customEnd]);
+
+  const handleExport = async () => {
+    try {
+      const blob = await financialService.exportCsv(
+        dateRange.startDate,
+        dateRange.endDate,
+        typeFilter === "all" ? undefined : typeFilter,
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `financial-${dateRange.startDate}-${dateRange.endDate}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // export failed silently
+    }
+  };
+
+  const revenueChartData = trendData.map((m) => ({
+    month: m.month,
+    income: m.income,
+    expense: m.expense,
+  }));
+
+  const donutChartData = categoryData.map((c) => ({
+    name: c.category || "Other",
+    value: c.total,
+  }));
+
+  const profitChartData = dailyData.map((d) => ({
+    date: d.date,
+    profit: d.income - d.expense,
+  }));
+
+  const totalPages = meta ? meta.totalPages : 1;
+  const totalRecords = meta ? meta.total : records.length;
 
   return (
-    <AppShell>
+    <>
       <div className="p-4 md:p-6 lg:p-8">
+        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             {t("title")}
           </h1>
-          <button className="inline-flex items-center gap-2 self-start rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-background">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 self-start rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-background"
+          >
             <Download className="h-4 w-4" />
             {t("export")}
           </button>
         </div>
 
         {/* Period selector */}
-        <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-          {periods.map((p) => (
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          {PERIODS.map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
@@ -125,59 +216,66 @@ export default function FinancialPage() {
                 "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
                 period === p
                   ? "bg-primary text-white"
-                  : "bg-surface text-text-secondary border border-border hover:bg-background"
+                  : "bg-surface text-text-secondary border border-border hover:bg-background",
               )}
             >
               {t(p)}
             </button>
           ))}
+          {period === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <span className="text-text-muted">-</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Summary cards */}
+        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {loadingCharts ? (
+            Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+          ) : summary ? (
+            <>
+              {([
+                { label: t("totalIncome"), value: summary.total_income, color: "text-success" },
+                { label: t("totalExpenses"), value: summary.total_expense, color: "text-danger" },
+                { label: t("netProfit"), value: summary.net, color: summary.net >= 0 ? "text-success" : "text-danger" },
+              ] as const).map((card) => (
+                <div key={card.label} className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+                  <p className="text-sm text-text-secondary">{card.label}</p>
+                  <p className={cn("mt-1 text-2xl font-bold", card.color)}>
+                    R$ {card.value.toFixed(2).replace(".", ",")}
+                  </p>
+                </div>
+              ))}
+            </>
+          ) : null}
         </div>
 
         {/* Charts row */}
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Revenue trend */}
-          <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-            <h2 className="mb-4 text-base font-semibold text-text-primary">
-              {t("revenueTrend")}
-            </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockRevenueTrend} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#DFE6E9" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#B2BEC3" />
-                <YAxis tick={{ fontSize: 12 }} stroke="#B2BEC3" />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid #DFE6E9",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#00D4AA"
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: "#00D4AA" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Expense by category */}
-          <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-            <h2 className="mb-4 text-base font-semibold text-text-primary">
-              {t("expenseByCategory")}
-            </h2>
-            <CategoryDonutChart data={mockCategoryData} />
-          </div>
-
-          {/* Daily profit */}
-          <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-            <h2 className="mb-4 text-base font-semibold text-text-primary">
-              {t("dailyProfit")}
-            </h2>
-            <ProfitBarChart data={mockProfitData} />
-          </div>
+          {([
+            { title: t("revenueTrend"), el: <RevenueExpensesChart data={revenueChartData} incomeLabel={t("income")} expenseLabel={t("expense")} /> },
+            { title: t("expenseByCategory"), el: <CategoryDonutChart data={donutChartData} /> },
+            { title: t("dailyProfit"), el: <ProfitBarChart data={profitChartData} /> },
+          ]).map((chart) => (
+            <div key={chart.title} className="overflow-x-auto rounded-xl border border-border bg-surface p-5 shadow-sm">
+              {loadingCharts ? <ChartSkeleton /> : (
+                <><h2 className="mb-4 text-base font-semibold text-text-primary">{chart.title}</h2>{chart.el}</>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Transactions section */}
@@ -194,19 +292,15 @@ export default function FinancialPage() {
                 type="text"
                 placeholder={t("searchPlaceholder")}
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <select
               value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value as "all" | "income" | "expense");
-                setPage(1);
-              }}
+              onChange={(e) =>
+                setTypeFilter(e.target.value as "all" | FinancialRecordType)
+              }
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="all">{t("allTypes")}</option>
@@ -215,15 +309,13 @@ export default function FinancialPage() {
             </select>
             <select
               value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setCategoryFilter(e.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
+              <option value="all">{t("allCategories")}</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
-                  {cat === "all" ? t("allCategories") : cat}
+                  {cat}
                 </option>
               ))}
             </select>
@@ -242,76 +334,111 @@ export default function FinancialPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginated.map((tx) => (
-                  <tr
-                    key={tx.id}
-                    className="border-b border-border transition-colors hover:bg-background"
-                  >
-                    <td className="px-3 py-3 text-text-primary">{tx.date}</td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={cn(
-                          "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
-                          tx.type === "income"
-                            ? "bg-success/10 text-success"
-                            : "bg-danger/10 text-danger"
-                        )}
+                {loadingTable
+                  ? Array.from({ length: 5 }).map((_, i) => (
+                      <TableRowSkeleton key={i} />
+                    ))
+                  : records.map((rec) => (
+                      <tr
+                        key={rec.id}
+                        className="border-b border-border transition-colors hover:bg-background"
                       >
-                        {t(tx.type)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-text-primary">{tx.description}</td>
-                    <td className="px-3 py-3 text-text-secondary">{tx.category}</td>
+                        <td className="px-3 py-3 text-text-primary">
+                          {rec.record_date}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span
+                            className={cn(
+                              "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
+                              rec.type === "income"
+                                ? "bg-success/10 text-success"
+                                : "bg-danger/10 text-danger",
+                            )}
+                          >
+                            {t(rec.type)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-text-primary">
+                          {rec.description ?? "-"}
+                        </td>
+                        <td className="px-3 py-3 text-text-secondary">
+                          {rec.category ?? "-"}
+                        </td>
+                        <td
+                          className={cn(
+                            "px-3 py-3 text-right font-semibold",
+                            rec.type === "income" ? "text-success" : "text-danger",
+                          )}
+                        >
+                          {rec.type === "income" ? "+" : "-"}R${" "}
+                          {rec.amount.toFixed(2).replace(".", ",")}
+                        </td>
+                      </tr>
+                    ))}
+                {!loadingTable && records.length === 0 && (
+                  <tr>
                     <td
-                      className={cn(
-                        "px-3 py-3 text-right font-semibold",
-                        tx.type === "income" ? "text-success" : "text-danger"
-                      )}
+                      colSpan={5}
+                      className="px-3 py-8 text-center text-text-muted"
                     >
-                      {tx.type === "income" ? "+" : "-"}R$ {tx.amount.toFixed(2).replace(".", ",")}
+                      {t("noTransactions")}
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
 
           {/* Mobile card layout */}
           <div className="mt-4 space-y-3 md:hidden">
-            {paginated.map((tx) => (
-              <div
-                key={tx.id}
-                className="rounded-lg border border-border bg-background p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={cn(
-                      "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      tx.type === "income"
-                        ? "bg-success/10 text-success"
-                        : "bg-danger/10 text-danger"
-                    )}
+            {loadingTable
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                ))
+              : records.map((rec) => (
+                  <div
+                    key={rec.id}
+                    className="rounded-lg border border-border bg-background p-4"
                   >
-                    {t(tx.type)}
-                  </span>
-                  <span className="text-xs text-text-muted">{tx.date}</span>
-                </div>
-                <p className="mt-2 text-sm font-medium text-text-primary">
-                  {tx.description}
-                </p>
-                <div className="mt-1 flex items-center justify-between">
-                  <span className="text-xs text-text-secondary">{tx.category}</span>
-                  <span
-                    className={cn(
-                      "text-sm font-semibold",
-                      tx.type === "income" ? "text-success" : "text-danger"
-                    )}
-                  >
-                    {tx.type === "income" ? "+" : "-"}R$ {tx.amount.toFixed(2).replace(".", ",")}
-                  </span>
-                </div>
-              </div>
-            ))}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={cn(
+                          "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
+                          rec.type === "income"
+                            ? "bg-success/10 text-success"
+                            : "bg-danger/10 text-danger",
+                        )}
+                      >
+                        {t(rec.type)}
+                      </span>
+                      <span className="text-xs text-text-muted">
+                        {rec.record_date}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm font-medium text-text-primary">
+                      {rec.description ?? "-"}
+                    </p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="text-xs text-text-secondary">
+                        {rec.category ?? "-"}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-sm font-semibold",
+                          rec.type === "income" ? "text-success" : "text-danger",
+                        )}
+                      >
+                        {rec.type === "income" ? "+" : "-"}R${" "}
+                        {rec.amount.toFixed(2).replace(".", ",")}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            {!loadingTable && records.length === 0 && (
+              <p className="py-8 text-center text-text-muted">
+                {t("noTransactions")}
+              </p>
+            )}
           </div>
 
           {/* Pagination */}
@@ -319,14 +446,14 @@ export default function FinancialPage() {
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-text-muted">
                 {t("showing")} {(page - 1) * ITEMS_PER_PAGE + 1}-
-                {Math.min(page * ITEMS_PER_PAGE, filtered.length)} {t("of")}{" "}
-                {filtered.length}
+                {Math.min(page * ITEMS_PER_PAGE, totalRecords)} {t("of")}{" "}
+                {totalRecords}
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="rounded-lg border border-border p-1.5 text-text-secondary transition-colors hover:bg-background disabled:opacity-40"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:bg-background disabled:opacity-40"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -336,7 +463,7 @@ export default function FinancialPage() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="rounded-lg border border-border p-1.5 text-text-secondary transition-colors hover:bg-background disabled:opacity-40"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:bg-background disabled:opacity-40"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -345,6 +472,6 @@ export default function FinancialPage() {
           )}
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { AppShell } from "@/components/layout/app-shell";
+
 import { SummaryCard } from "@/components/shared/summary-card";
 import { FabMenu } from "@/components/shared/fab-menu";
 import { RevenueExpensesChart } from "@/components/charts/revenue-expenses-chart";
+import { financialService } from "@/services/financial.service";
+import { eventsService } from "@/services/events.service";
+import { useWebSocketEvent } from "@/hooks/use-websocket";
+import type {
+  FinancialSummary,
+  MonthlyTrend,
+  CalendarEvent,
+  FinancialRecord,
+} from "@/lib/types";
 import {
   DollarSign,
   TrendingDown,
@@ -14,82 +23,262 @@ import {
   FileText,
   ArrowDownCircle,
   ArrowUpCircle,
+  Sparkles,
+  ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 
-// ── Mock data ──────────────────────────────────────────────
-const mockChartData = [
-  { month: "Jan", income: 4200, expense: 2800 },
-  { month: "Feb", income: 3800, expense: 3100 },
-  { month: "Mar", income: 5100, expense: 2900 },
-  { month: "Apr", income: 4600, expense: 3400 },
-  { month: "May", income: 5800, expense: 3200 },
-  { month: "Jun", income: 6200, expense: 3600 },
+// ─── Date helpers ───────────────────────────────────────────────────────────
+
+function startOfMonth(): string {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+}
+
+function endOfToday(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+function startOfPrevMonth(): string {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() - 1, 1)
+    .toISOString()
+    .split("T")[0];
+}
+
+function endOfPrevMonth(): string {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 0)
+    .toISOString()
+    .split("T")[0];
+}
+
+// ─── Formatting helpers ─────────────────────────────────────────────────────
+
+function formatCurrency(value: number): string {
+  return (
+    "$" +
+    value
+      .toFixed(2)
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  );
+}
+
+function pctChange(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
+
+// ─── Event color assignment ─────────────────────────────────────────────────
+
+const EVENT_COLORS = [
+  "bg-primary",
+  "bg-secondary",
+  "bg-info",
+  "bg-warning",
+  "bg-success",
 ];
 
-const mockEvents = [
-  { id: 1, title: "Client meeting - Silva Corp", date: "2026-03-25", time: "10:00" },
-  { id: 2, title: "Invoice due - Project Alpha", date: "2026-03-26", time: "12:00" },
-  { id: 3, title: "Tax payment deadline", date: "2026-03-28", time: "18:00" },
-  { id: 4, title: "Service delivery - Maria Santos", date: "2026-03-30", time: "14:00" },
-  { id: 5, title: "Monthly report review", date: "2026-03-31", time: "09:00" },
-];
+function eventColor(index: number): string {
+  return EVENT_COLORS[index % EVENT_COLORS.length];
+}
 
-const mockTransactions = [
-  { id: 1, type: "income" as const, description: "Web design - Silva Corp", amount: 2500, date: "2026-03-24" },
-  { id: 2, type: "expense" as const, description: "Cloud hosting", amount: -89.90, date: "2026-03-23" },
-  { id: 3, type: "income" as const, description: "Logo design - Bakery", amount: 800, date: "2026-03-22" },
-  { id: 4, type: "expense" as const, description: "Software license", amount: -49.90, date: "2026-03-21" },
-  { id: 5, type: "income" as const, description: "Social media - Gym", amount: 1200, date: "2026-03-20" },
-  { id: 6, type: "expense" as const, description: "Office supplies", amount: -125.00, date: "2026-03-19" },
-  { id: 7, type: "income" as const, description: "Consultation - Tech Co", amount: 450, date: "2026-03-18" },
-  { id: 8, type: "expense" as const, description: "Internet bill", amount: -119.90, date: "2026-03-17" },
-  { id: 9, type: "income" as const, description: "Maintenance contract", amount: 1800, date: "2026-03-16" },
-  { id: 10, type: "expense" as const, description: "Transport", amount: -65.00, date: "2026-03-15" },
-];
+// ─── Skeleton components ────────────────────────────────────────────────────
 
-// ── Skeleton loader ────────────────────────────────────────
 function CardSkeleton() {
   return (
-    <div className="animate-pulse rounded-xl border border-border bg-surface p-5 shadow-sm">
+    <div className="animate-pulse rounded-2xl border border-border/50 bg-surface p-5">
       <div className="flex items-center justify-between">
-        <div className="h-10 w-10 rounded-lg bg-border" />
-        <div className="h-5 w-14 rounded-full bg-border" />
+        <div className="h-11 w-11 rounded-xl bg-border/50" />
+        <div className="h-6 w-14 rounded-full bg-border/50" />
       </div>
-      <div className="mt-3 h-4 w-24 rounded bg-border" />
-      <div className="mt-2 h-7 w-32 rounded bg-border" />
-      <div className="mt-1 h-3 w-20 rounded bg-border" />
+      <div className="mt-3.5 h-4 w-24 rounded bg-border/50" />
+      <div className="mt-2 h-7 w-32 rounded bg-border/50" />
     </div>
   );
 }
 
+function ChartSkeleton() {
+  return (
+    <div className="flex h-[300px] items-center justify-center">
+      <div className="h-full w-full animate-pulse rounded-lg bg-border/30" />
+    </div>
+  );
+}
+
+function ListSkeleton({ rows }: { rows: number }) {
+  return (
+    <ul className="divide-y divide-border/30">
+      {Array.from({ length: rows }).map((_, i) => (
+        <li key={i} className="flex items-center gap-4 px-5 py-3.5">
+          <div className="h-9 w-9 animate-pulse rounded-xl bg-border/50" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-3/4 animate-pulse rounded bg-border/50" />
+            <div className="h-3 w-1/2 animate-pulse rounded bg-border/50" />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// ─── Error banner ───────────────────────────────────────────────────────────
+
+function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-danger/30 bg-danger/5 px-5 py-4">
+      <AlertCircle className="h-5 w-5 shrink-0 text-danger" />
+      <p className="flex-1 text-sm text-danger">{message}</p>
+      <button
+        onClick={onRetry}
+        className="rounded-lg bg-danger/10 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger/20"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
+// ─── Dashboard state ────────────────────────────────────────────────────────
+
+interface DashboardState {
+  summary: FinancialSummary | null;
+  prevSummary: FinancialSummary | null;
+  trend: MonthlyTrend[];
+  events: CalendarEvent[];
+  transactions: FinancialRecord[];
+  loading: boolean;
+  error: string | null;
+}
+
+const INITIAL_STATE: DashboardState = {
+  summary: null,
+  prevSummary: null,
+  trend: [],
+  events: [],
+  transactions: [],
+  loading: true,
+  error: null,
+};
+
+// ─── Page component ─────────────────────────────────────────────────────────
+
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
-  const [loading] = useState(false);
+  const [state, setState] = useState<DashboardState>(INITIAL_STATE);
+
+  const fetchData = () => {
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+
+    Promise.all([
+      financialService.getSummary(startOfMonth(), endOfToday()),
+      financialService.getSummary(startOfPrevMonth(), endOfPrevMonth()),
+      financialService.getMonthlyTrend(6),
+      eventsService.getUpcoming(5),
+      financialService.getRecords({ limit: 8 }),
+    ])
+      .then(([sumRes, prevRes, trendRes, eventsRes, txRes]) => {
+        setState({
+          summary: sumRes.data,
+          prevSummary: prevRes.data,
+          trend: trendRes.data,
+          events: eventsRes.data,
+          transactions: txRes.data,
+          loading: false,
+          error: null,
+        });
+      })
+      .catch((err: Error) => {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: err.message || "Failed to load dashboard data.",
+        }));
+      });
+  };
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Real-time updates via WebSocket ────────────────────────────────────────
+
+  useWebSocketEvent("financial:created", (record) => {
+    setState((prev) => {
+      const newTransactions = [record, ...prev.transactions].slice(0, 8);
+      const newSummary = prev.summary
+        ? {
+            ...prev.summary,
+            total_income:
+              prev.summary.total_income +
+              (record.type === "income" ? record.amount : 0),
+            total_expense:
+              prev.summary.total_expense +
+              (record.type === "expense" ? record.amount : 0),
+            net:
+              prev.summary.net +
+              (record.type === "income" ? record.amount : -record.amount),
+            count: prev.summary.count + 1,
+          }
+        : prev.summary;
+      return { ...prev, transactions: newTransactions, summary: newSummary };
+    });
+  });
+
+  useWebSocketEvent("event:created", (event) => {
+    setState((prev) => ({
+      ...prev,
+      events: [event, ...prev.events].slice(0, 5),
+    }));
+  });
+
+  const { summary, prevSummary, trend, events, transactions, loading, error } =
+    state;
+
+  // Compute % changes
+  const revenueChange = pctChange(
+    summary?.total_income ?? 0,
+    prevSummary?.total_income ?? 0,
+  );
+  const expenseChange = pctChange(
+    summary?.total_expense ?? 0,
+    prevSummary?.total_expense ?? 0,
+  );
+  const profitChange = pctChange(
+    summary?.net ?? 0,
+    prevSummary?.net ?? 0,
+  );
 
   const fabActions = [
-    {
-      icon: FileText,
-      label: t("createBudget"),
-      onClick: () => console.log("create budget"),
-    },
-    {
-      icon: ArrowDownCircle,
-      label: t("registerExpense"),
-      onClick: () => console.log("register expense"),
-    },
-    {
-      icon: ArrowUpCircle,
-      label: t("registerIncome"),
-      onClick: () => console.log("register income"),
-    },
+    { icon: FileText, label: t("createBudget"), onClick: () => {} },
+    { icon: ArrowDownCircle, label: t("registerExpense"), onClick: () => {} },
+    { icon: ArrowUpCircle, label: t("registerIncome"), onClick: () => {} },
   ];
 
   return (
-    <AppShell>
+    <>
       <div className="p-4 md:p-6 lg:p-8">
-        <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
-          {t("title")}
-        </h1>
+        {/* Page header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary md:text-3xl">
+              {t("title")}
+            </h1>
+            <p className="mt-1 text-sm text-text-muted">
+              {t("subtitle")}
+            </p>
+          </div>
+          <div className="hidden items-center gap-2 md:flex">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium text-primary">
+              AI Active
+            </span>
+          </div>
+        </div>
+
+        {/* Error state */}
+        {error && <ErrorBanner message={error} onRetry={fetchData} />}
 
         {/* Summary cards */}
         {loading ? (
@@ -99,142 +288,184 @@ export default function DashboardPage() {
             <CardSkeleton />
             <CardSkeleton />
           </div>
-        ) : (
+        ) : summary ? (
           <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <SummaryCard
               icon={DollarSign}
               label={t("revenue")}
-              value="R$ 6.200,00"
-              change={12.5}
+              value={formatCurrency(summary.total_income)}
+              change={revenueChange}
               changeLabel={t("vsLastMonth")}
             />
             <SummaryCard
               icon={TrendingDown}
               label={t("expenses")}
-              value="R$ 3.600,00"
-              change={-4.2}
+              value={formatCurrency(summary.total_expense)}
+              change={expenseChange}
               changeLabel={t("vsLastMonth")}
             />
             <SummaryCard
               icon={TrendingUp}
               label={t("profit")}
-              value="R$ 2.600,00"
-              change={8.3}
+              value={formatCurrency(summary.net)}
+              change={profitChange}
               changeLabel={t("vsLastMonth")}
             />
             <SummaryCard
               icon={Calendar}
               label={t("upcomingEvents")}
-              value="5"
+              value={String(events.length)}
               change={0}
               changeLabel={t("thisWeek")}
             />
           </div>
-        )}
+        ) : null}
 
         {/* Quick actions (desktop) */}
         <div className="mt-8 hidden flex-wrap gap-3 md:flex">
-          <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark">
+          <button className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30">
+            <FileText className="h-4 w-4" />
             {t("createBudget")}
           </button>
-          <button className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-background">
+          <button className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface px-5 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-all hover:border-primary/20 hover:shadow-md">
+            <ArrowDownCircle className="h-4 w-4 text-danger" />
             {t("registerExpense")}
           </button>
-          <button className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-background">
+          <button className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface px-5 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-all hover:border-primary/20 hover:shadow-md">
+            <ArrowUpCircle className="h-4 w-4 text-success" />
             {t("registerIncome")}
           </button>
         </div>
 
         {/* Revenue vs Expenses chart */}
-        <div className="mt-8 rounded-xl border border-border bg-surface p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-text-primary">
-            {t("revenueVsExpenses")}
-          </h2>
-          <RevenueExpensesChart
-            data={mockChartData}
-            incomeLabel={t("revenue")}
-            expenseLabel={t("expenses")}
-          />
+        <div className="mt-8 overflow-hidden rounded-2xl border border-border/50 bg-surface shadow-sm">
+          <div className="flex items-center justify-between border-b border-border/30 px-5 py-4">
+            <h2 className="text-base font-semibold text-text-primary">
+              {t("revenueVsExpenses")}
+            </h2>
+            <span className="text-xs font-medium text-text-muted">
+              Last 6 months
+            </span>
+          </div>
+          <div className="overflow-x-auto p-5">
+            {loading ? (
+              <ChartSkeleton />
+            ) : (
+              <RevenueExpensesChart
+                data={trend}
+                incomeLabel={t("revenue")}
+                expenseLabel={t("expenses")}
+              />
+            )}
+          </div>
         </div>
 
         {/* Two-column: Events & Transactions */}
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Upcoming events */}
-          <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-text-primary">
-              {t("upcomingEvents")}
-            </h2>
-            <ul className="mt-4 space-y-3">
-              {mockEvents.map((event) => (
-                <li
-                  key={event.id}
-                  className="flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-background"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info/10">
-                    <Calendar className="h-4 w-4 text-info" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text-primary">
-                      {event.title}
-                    </p>
-                    <p className="text-xs text-text-muted">
-                      {event.date} - {event.time}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          <div className="overflow-hidden rounded-2xl border border-border/50 bg-surface shadow-sm">
+            <div className="flex items-center justify-between border-b border-border/30 px-5 py-4">
+              <h2 className="text-base font-semibold text-text-primary">
+                {t("upcomingEvents")}
+              </h2>
+              <button className="flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:text-primary-dark">
+                {t("viewAll")} <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            {loading ? (
+              <ListSkeleton rows={5} />
+            ) : events.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-text-muted">
+                {t("noUpcomingEvents")}
+              </p>
+            ) : (
+              <ul className="divide-y divide-border/30">
+                {events.map((event, idx) => (
+                  <li
+                    key={event.id}
+                    className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-background/50"
+                  >
+                    <div
+                      className={`h-2 w-2 rounded-full ${eventColor(idx)}`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-text-primary">
+                        {event.title}
+                      </p>
+                      <p className="text-xs text-text-muted">
+                        {event.event_date}
+                        {event.event_time ? ` \u00B7 ${event.event_time}` : ""}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Recent transactions */}
-          <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-text-primary">
-              {t("recentTransactions")}
-            </h2>
-            <ul className="mt-4 space-y-2">
-              {mockTransactions.map((tx) => (
-                <li
-                  key={tx.id}
-                  className="flex items-center justify-between rounded-lg p-2 transition-colors hover:bg-background"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                        tx.type === "income"
-                          ? "bg-success/10"
-                          : "bg-danger/10"
+          <div className="overflow-hidden rounded-2xl border border-border/50 bg-surface shadow-sm">
+            <div className="flex items-center justify-between border-b border-border/30 px-5 py-4">
+              <h2 className="text-base font-semibold text-text-primary">
+                {t("recentTransactions")}
+              </h2>
+              <button className="flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:text-primary-dark">
+                {t("viewAll")} <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            {loading ? (
+              <ListSkeleton rows={8} />
+            ) : transactions.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-text-muted">
+                {t("noRecentTransactions")}
+              </p>
+            ) : (
+              <ul className="divide-y divide-border/30">
+                {transactions.map((tx) => (
+                  <li
+                    key={tx.id}
+                    className="flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-background/50"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                          tx.type === "income"
+                            ? "bg-success/10 ring-1 ring-success/20"
+                            : "bg-danger/10 ring-1 ring-danger/20"
+                        }`}
+                      >
+                        {tx.type === "income" ? (
+                          <ArrowUpCircle className="h-4 w-4 text-success" />
+                        ) : (
+                          <ArrowDownCircle className="h-4 w-4 text-danger" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-text-primary">
+                          {tx.description || tx.category || t("transactions")}
+                        </p>
+                        <p className="text-xs text-text-muted">
+                          {tx.reference_person || tx.record_date}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`shrink-0 text-sm font-semibold tabular-nums ${
+                        tx.type === "income" ? "text-success" : "text-danger"
                       }`}
                     >
-                      {tx.type === "income" ? (
-                        <ArrowUpCircle className="h-4 w-4 text-success" />
-                      ) : (
-                        <ArrowDownCircle className="h-4 w-4 text-danger" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">
-                        {tx.description}
-                      </p>
-                      <p className="text-xs text-text-muted">{tx.date}</p>
-                    </div>
-                  </div>
-                  <span
-                    className={`text-sm font-semibold ${
-                      tx.type === "income" ? "text-success" : "text-danger"
-                    }`}
-                  >
-                    {tx.type === "income" ? "+" : ""}
-                    R$ {Math.abs(tx.amount).toFixed(2).replace(".", ",")}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                      {tx.type === "income" ? "+" : "-"}
+                      {formatCurrency(tx.amount)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Mobile FAB */}
       <FabMenu actions={fabActions} />
-    </AppShell>
+    </>
   );
 }

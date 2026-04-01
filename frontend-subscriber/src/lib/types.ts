@@ -37,7 +37,7 @@ export interface AuthTokens {
 }
 
 export interface LoginPayload {
-  phone: string;
+  email: string;
   password: string;
 }
 

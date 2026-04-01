@@ -26,7 +26,8 @@
     "financial": "Finanças",
     "calendar": "Agenda",
     "documents": "Documentos",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "logout": "Sair"
   },
   "auth": {
     "login": "Entrar",
@@ -46,10 +47,12 @@
     "registerError": "Erro ao cadastrar. Tente novamente.",
     "passwordMismatch": "As senhas não coincidem.",
     "fieldRequired": "Este campo é obrigatório.",
-    "invalidEmail": "Por favor insira um e-mail válido."
+    "invalidEmail": "Por favor insira um e-mail válido.",
+    "passwordHint": "Mínimo 8 caracteres"
   },
   "dashboard": {
     "title": "Painel Principal",
+    "subtitle": "Veja o que esta acontecendo com seu negocio hoje.",
     "revenue": "Receitas",
     "expenses": "Despesas",
     "profit": "Lucro",
@@ -62,7 +65,10 @@
     "noRecentTransactions": "Nenhuma transação recente",
     "viewAll": "Ver tudo",
     "vsLastMonth": "vs. mês anterior",
-    "quickActions": "Ações rápidas"
+    "quickActions": "Ações rápidas",
+    "thisWeek": "esta semana",
+    "revenueVsExpenses": "Receitas vs Despesas",
+    "transactions": "Transações"
   },
   "financial": {
     "title": "Finanças",
@@ -85,9 +91,19 @@
     "thisWeek": "Esta semana",
     "thisMonth": "Este mês",
     "thisYear": "Este ano",
+    "custom": "Personalizado",
     "customRange": "Período personalizado",
+    "export": "Exportar",
     "exportCsv": "Exportar CSV",
+    "transactions": "Transações",
+    "allTypes": "Todos os tipos",
     "noTransactions": "Nenhuma transação",
+    "expenseByCategory": "Despesas por categoria",
+    "allCategories": "Todas as categorias",
+    "searchPlaceholder": "Buscar transações...",
+    "showing": "Mostrando",
+    "of": "de",
+    "selectDate": "Selecionar data",
     "categories": {
       "materials": "Materiais",
       "labor": "Mão de obra",
@@ -110,7 +126,11 @@
     "location": "Local",
     "status": "Status",
     "weekView": "Visão semanal",
+    "swipeHint": "Deslize para mudar semanas",
     "monthView": "Visão mensal",
+    "eventsFor": "Eventos de {date}",
+    "selectDate": "Selecione uma data",
+    "errorLoading": "Erro ao carregar eventos",
     "days": {
       "mon": "Seg",
       "tue": "Ter",
@@ -154,7 +174,14 @@
     "createBudget": "Criar orçamento",
     "createServiceOrder": "Criar ordem de serviço",
     "filterByType": "Filtrar por tipo",
-    "filterByStatus": "Filtrar por status"
+    "filterByStatus": "Filtrar por status",
+    "allTypes": "Todos os tipos",
+    "allStatuses": "Todos os status",
+    "docNumber": "N° Doc",
+    "noDocumentsHint": "Seus orçamentos e ordens de serviço aparecerão aqui",
+    "type": "Tipo",
+    "actions": "Ações",
+    "loadError": "Erro ao carregar documentos. Tente novamente."
   },
   "profile": {
     "title": "Perfil",
@@ -175,6 +202,14 @@
     "language": "Idioma",
     "selectLanguage": "Selecionar idioma",
     "saveChanges": "Salvar alterações",
-    "profileUpdated": "Perfil atualizado"
+    "logoHint": "PNG, JPG ou WEBP, máx 500x500px",
+    "languagePreference": "Preferência de idioma",
+    "saved": "Salvo",
+    "saving": "Salvando...",
+    "profileUpdated": "Perfil atualizado",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "trial": "Teste",
+    "noPlan": "Sem plano"
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import Image from "next/image";
 import { usePathname, Link } from "@/i18n/routing";
 import {
   LayoutDashboard,
@@ -9,6 +10,7 @@ import {
   FileText,
   User,
   X,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +45,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -52,19 +54,29 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-border bg-surface transition-transform duration-200 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-surface transition-transform duration-300 ease-out",
           "md:translate-x-0 md:static md:z-auto",
-          open ? "translate-x-0" : "-translate-x-full"
+          "border-r border-border/50",
+          open ? "translate-x-0" : "-translate-x-full",
         )}
       >
         {/* Header */}
-        <div className="flex h-16 items-center justify-between border-b border-border px-5">
-          <span className="text-xl font-bold text-primary">
-            {tCommon("appName")}
-          </span>
+        <div className="flex h-16 items-center justify-between border-b border-border/50 px-5">
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/bosszap_logo.png"
+              alt="BossZap"
+              width={36}
+              height={38}
+              className="h-9 w-auto"
+            />
+            <span className="text-lg font-bold tracking-tight text-text-primary">
+              {tCommon("appName")}
+            </span>
+          </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-text-secondary hover:bg-background md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-background md:hidden"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
@@ -84,20 +96,40 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     href={item.href}
                     onClick={onClose}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                       active
-                        ? "border-l-[3px] border-primary bg-primary/[0.08] text-primary"
-                        : "text-text-secondary hover:bg-background hover:text-text-primary"
+                        ? "bg-gradient-to-r from-primary/10 to-primary/5 text-primary shadow-sm"
+                        : "text-text-secondary hover:bg-background hover:text-text-primary",
                     )}
                   >
-                    <Icon className="h-5 w-5 shrink-0" />
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
+                        active
+                          ? "bg-primary/15 text-primary"
+                          : "text-text-muted group-hover:text-text-secondary",
+                      )}
+                    >
+                      <Icon className="h-[18px] w-[18px]" />
+                    </div>
                     <span>{t(item.labelKey)}</span>
+                    {active && (
+                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                    )}
                   </Link>
                 </li>
               );
             })}
           </ul>
         </nav>
+
+        {/* Footer */}
+        <div className="border-t border-border/50 p-3">
+          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-danger/5 hover:text-danger">
+            <LogOut className="h-[18px] w-[18px]" />
+            <span>{t("logout")}</span>
+          </button>
+        </div>
       </aside>
     </>
   );

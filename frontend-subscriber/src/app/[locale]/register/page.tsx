@@ -2,22 +2,18 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Globe } from 'lucide-react';
+import Image from 'next/image';
+import { Globe, Eye, EyeOff, Loader2, Mail, Lock, User, Phone } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
+import { ParticleCanvas } from '@/components/shared/particle-canvas';
 import { cn } from '@/lib/utils';
 
-const localeLabels: Record<string, string> = {
-  es: 'ES',
-  en: 'EN',
-  'pt-BR': 'PT',
-};
-
+const localeLabels: Record<string, string> = { es: 'ES', en: 'EN', 'pt-BR': 'PT' };
 const locales = ['es', 'en', 'pt-BR'] as const;
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
-  const tCommon = useTranslations('common');
   const { register } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -27,8 +23,8 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [globalError, setGlobalError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
 
@@ -37,84 +33,35 @@ export default function RegisterPage() {
     setLangMenuOpen(false);
   };
 
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!name.trim()) newErrors.name = t('fieldRequired');
-    if (!email.trim()) {
-      newErrors.email = t('fieldRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = t('invalidEmail');
-    }
-    if (!phone.trim()) newErrors.phone = t('fieldRequired');
-    if (!password) newErrors.password = t('fieldRequired');
-    if (!confirmPassword) {
-      newErrors.confirmPassword = t('fieldRequired');
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = t('passwordMismatch');
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setGlobalError('');
-
-    if (!validate()) return;
-
+    setError('');
+    if (password !== confirmPassword) { setError(t('passwordMismatch')); return; }
     setLoading(true);
-    try {
-      await register({
-        phone,
-        password,
-        owner_name: name,
-        email,
-      });
-      router.push('/dashboard');
-    } catch {
-      setGlobalError(t('registerError'));
-    } finally {
-      setLoading(false);
-    }
+    try { await register({ name, email, phone, password }); router.push('/dashboard'); }
+    catch { setError(t('registerError')); }
+    finally { setLoading(false); }
   };
 
+  const inputBase = "w-full rounded-xl border border-white/10 bg-white/[0.06] py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/25 transition-all focus:border-primary/60 focus:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-primary/20";
+  const iconBase = "pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25";
+
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      {/* Language switcher — top right */}
-      <div className="flex justify-end p-4">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-[#0f1628] via-[#1a1f36] to-[#12182e]">
+      <ParticleCanvas particleCount={70} color="0, 212, 170" maxDistance={140} speed={0.25} />
+
+      {/* Language */}
+      <div className="relative z-50 flex justify-end p-4 sm:p-6">
         <div className="relative">
-          <button
-            onClick={() => setLangMenuOpen(!langMenuOpen)}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface"
-            aria-label="Switch language"
-          >
+          <button onClick={() => setLangMenuOpen(!langMenuOpen)} className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/50 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10 hover:text-white/80">
             <Globe className="h-4 w-4" />
           </button>
-
           {langMenuOpen && (
             <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setLangMenuOpen(false)}
-                aria-hidden="true"
-              />
-              <div className="absolute right-0 z-50 mt-1 w-32 rounded-lg border border-border bg-surface py-1 shadow-lg">
-                {locales.map((locale) => (
-                  <button
-                    key={locale}
-                    onClick={() => switchLocale(locale)}
-                    className={cn(
-                      'flex w-full items-center px-3 py-2 text-sm transition-colors hover:bg-background',
-                      'text-text-secondary hover:text-text-primary'
-                    )}
-                  >
-                    {localeLabels[locale]}
-                    {locale === 'pt-BR' && (
-                      <span className="ml-1 text-text-muted">(Brasil)</span>
-                    )}
-                  </button>
+              <div className="fixed inset-0 z-[60]" onClick={() => setLangMenuOpen(false)} />
+              <div className="absolute right-0 z-[70] mt-2 w-36 overflow-hidden rounded-xl border border-white/15 bg-[#252b48]/95 py-1 shadow-2xl backdrop-blur-xl">
+                {locales.map((l) => (
+                  <button key={l} onClick={() => switchLocale(l)} className="flex w-full items-center px-4 py-2.5 text-sm text-white/70 hover:bg-white/10 hover:text-white">{localeLabels[l]}</button>
                 ))}
               </div>
             </>
@@ -122,181 +69,84 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Centered card */}
-      <div className="flex flex-1 items-center justify-center px-4 pb-12">
-        <div className="w-full max-w-md">
-          {/* Logo / App name */}
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-primary">
-              {tCommon('appName')}
-            </h1>
+      <div className="relative z-10 flex flex-1 items-center justify-center px-4 pb-12">
+        <div className="w-full max-w-[400px]">
+          {/* Logo */}
+          <div className="relative mb-8 flex justify-center">
+            <div className="absolute inset-0 m-auto h-44 w-44 rounded-full bg-white/15 blur-[80px]" />
+            <Image src="/bosszap_logo.png" alt="BossZap" width={180} height={189} className="relative h-36 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]" priority />
           </div>
 
           {/* Card */}
-          <div className="rounded-xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-            <h2 className="mb-6 text-center text-xl font-semibold text-text-primary">
-              {t('register')}
-            </h2>
+          <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.07] to-white/[0.03] p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+            <h2 className="mb-6 text-center text-xl font-semibold text-white/90">{t('register')}</h2>
 
-            {/* Global error */}
-            {globalError && (
-              <div className="mb-4 rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">
-                {globalError}
-              </div>
-            )}
+            {error && <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Full Name */}
+              {/* Name */}
               <div>
-                <label
-                  htmlFor="name"
-                  className="mb-1 block text-sm font-medium text-text-secondary"
-                >
-                  {t('name')}
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className={cn(
-                    'w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1',
-                    errors.name
-                      ? 'border-danger focus:border-danger focus:ring-danger'
-                      : 'border-border focus:border-primary focus:ring-primary'
-                  )}
-                  placeholder={t('name')}
-                />
-                {errors.name && (
-                  <p className="mt-1 text-xs text-danger">{errors.name}</p>
-                )}
+                <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-white/50">{t('name')}</label>
+                <div className="relative">
+                  <User className={iconBase} />
+                  <input id="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputBase} placeholder={t('name')} />
+                </div>
               </div>
 
               {/* Email */}
               <div>
-                <label
-                  htmlFor="email"
-                  className="mb-1 block text-sm font-medium text-text-secondary"
-                >
-                  {t('email')}
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={cn(
-                    'w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1',
-                    errors.email
-                      ? 'border-danger focus:border-danger focus:ring-danger'
-                      : 'border-border focus:border-primary focus:ring-primary'
-                  )}
-                  placeholder={t('email')}
-                />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-danger">{errors.email}</p>
-                )}
+                <label htmlFor="reg-email" className="mb-1.5 block text-sm font-medium text-white/50">{t('email')}</label>
+                <div className="relative">
+                  <Mail className={iconBase} />
+                  <input id="reg-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputBase} placeholder={t('email')} />
+                </div>
               </div>
 
               {/* Phone */}
               <div>
-                <label
-                  htmlFor="phone"
-                  className="mb-1 block text-sm font-medium text-text-secondary"
-                >
-                  {t('phone')}
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className={cn(
-                    'w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1',
-                    errors.phone
-                      ? 'border-danger focus:border-danger focus:ring-danger'
-                      : 'border-border focus:border-primary focus:ring-primary'
-                  )}
-                  placeholder={t('phoneHint')}
-                />
-                {errors.phone && (
-                  <p className="mt-1 text-xs text-danger">{errors.phone}</p>
-                )}
+                <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-white/50">{t('phone')}</label>
+                <div className="relative">
+                  <Phone className={iconBase} />
+                  <input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className={inputBase} placeholder="+55 11 99999-0000" />
+                </div>
               </div>
 
               {/* Password */}
               <div>
-                <label
-                  htmlFor="password"
-                  className="mb-1 block text-sm font-medium text-text-secondary"
-                >
-                  {t('password')}
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={cn(
-                    'w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1',
-                    errors.password
-                      ? 'border-danger focus:border-danger focus:ring-danger'
-                      : 'border-border focus:border-primary focus:ring-primary'
-                  )}
-                  placeholder={t('password')}
-                />
-                {errors.password && (
-                  <p className="mt-1 text-xs text-danger">{errors.password}</p>
-                )}
+                <label htmlFor="reg-password" className="mb-1.5 block text-sm font-medium text-white/50">{t('password')}</label>
+                <div className="relative">
+                  <Lock className={iconBase} />
+                  <input id="reg-password" type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} className={cn(inputBase, "pr-11")} placeholder={t('passwordHint')} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* Confirm Password */}
               <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="mb-1 block text-sm font-medium text-text-secondary"
-                >
-                  {t('confirmPassword')}
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={cn(
-                    'w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1',
-                    errors.confirmPassword
-                      ? 'border-danger focus:border-danger focus:ring-danger'
-                      : 'border-border focus:border-primary focus:ring-primary'
-                  )}
-                  placeholder={t('confirmPassword')}
-                />
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-xs text-danger">
-                    {errors.confirmPassword}
-                  </p>
-                )}
+                <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium text-white/50">{t('confirmPassword')}</label>
+                <div className="relative">
+                  <Lock className={iconBase} />
+                  <input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputBase} placeholder={t('confirmPassword')} />
+                </div>
               </div>
 
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
-                {loading ? tCommon('loading') : t('createAccount')}
+              <button type="submit" disabled={loading} className="group relative mt-2 flex w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-primary to-[#00c49a] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40 active:scale-[0.98] disabled:opacity-50">
+                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 transition-opacity group-hover:opacity-100" />
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('register')}
               </button>
             </form>
 
-            {/* Login link */}
-            <p className="mt-6 text-center text-sm text-text-secondary">
+            <div className="mt-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-white/10" />
+              <span className="text-xs text-white/25">or</span>
+              <div className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <p className="mt-4 text-center text-sm text-white/40">
               {t('alreadyHaveAccount')}{' '}
-              <Link
-                href="/login"
-                className="font-medium text-primary hover:underline"
-              >
-                {t('login')}
-              </Link>
+              <Link href="/login" className="font-medium text-primary hover:text-primary/80">{t('login')}</Link>
             </p>
           </div>
         </div>

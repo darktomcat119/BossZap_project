@@ -26,7 +26,8 @@
     "financial": "Financial",
     "calendar": "Calendar",
     "documents": "Documents",
-    "profile": "Profile"
+    "profile": "Profile",
+    "logout": "Log Out"
   },
   "auth": {
     "login": "Log In",
@@ -46,10 +47,12 @@
     "registerError": "Registration failed. Please try again.",
     "passwordMismatch": "Passwords do not match.",
     "fieldRequired": "This field is required.",
-    "invalidEmail": "Please enter a valid email address."
+    "invalidEmail": "Please enter a valid email address.",
+    "passwordHint": "Minimum 8 characters"
   },
   "dashboard": {
     "title": "Main Dashboard",
+    "subtitle": "Here's what's happening with your business today.",
     "revenue": "Revenue",
     "expenses": "Expenses",
     "profit": "Profit",
@@ -62,7 +65,10 @@
     "noRecentTransactions": "No recent transactions",
     "viewAll": "View all",
     "vsLastMonth": "vs. last month",
-    "quickActions": "Quick actions"
+    "quickActions": "Quick actions",
+    "thisWeek": "this week",
+    "revenueVsExpenses": "Revenue vs Expenses",
+    "transactions": "Transactions"
   },
   "financial": {
     "title": "Financial",
@@ -85,9 +91,19 @@
     "thisWeek": "This week",
     "thisMonth": "This month",
     "thisYear": "This year",
+    "custom": "Custom",
     "customRange": "Custom range",
+    "export": "Export",
     "exportCsv": "Export CSV",
+    "transactions": "Transactions",
+    "allTypes": "All types",
     "noTransactions": "No transactions",
+    "expenseByCategory": "Expense by category",
+    "allCategories": "All categories",
+    "searchPlaceholder": "Search transactions...",
+    "showing": "Showing",
+    "of": "of",
+    "selectDate": "Select date",
     "categories": {
       "materials": "Materials",
       "labor": "Labor",
@@ -111,6 +127,10 @@
     "status": "Status",
     "weekView": "Week view",
     "monthView": "Month view",
+    "swipeHint": "Swipe to change weeks",
+    "eventsFor": "Events for {date}",
+    "selectDate": "Select a date",
+    "errorLoading": "Failed to load events",
     "days": {
       "mon": "Mon",
       "tue": "Tue",
@@ -154,7 +174,14 @@
     "createBudget": "Create budget",
     "createServiceOrder": "Create service order",
     "filterByType": "Filter by type",
-    "filterByStatus": "Filter by status"
+    "filterByStatus": "Filter by status",
+    "allTypes": "All types",
+    "allStatuses": "All statuses",
+    "docNumber": "Doc #",
+    "noDocumentsHint": "Your budgets and service orders will appear here",
+    "type": "Type",
+    "actions": "Actions",
+    "loadError": "Failed to load documents. Please try again."
   },
   "profile": {
     "title": "Profile",
@@ -175,6 +202,14 @@
     "language": "Language",
     "selectLanguage": "Select language",
     "saveChanges": "Save changes",
-    "profileUpdated": "Profile updated"
+    "profileUpdated": "Profile updated",
+    "logoHint": "PNG, JPG or WEBP, max 500x500px",
+    "languagePreference": "Language preference",
+    "saved": "Saved",
+    "saving": "Saving...",
+    "active": "Active",
+    "inactive": "Inactive",
+    "trial": "Trial",
+    "noPlan": "No plan"
   }
 }

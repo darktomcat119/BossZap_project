@@ -41,7 +41,7 @@ export function AppShell({ children }: AppShellProps) {
           {/* Mobile hamburger */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-lg p-2 text-text-secondary hover:bg-background md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary hover:bg-background md:hidden"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />

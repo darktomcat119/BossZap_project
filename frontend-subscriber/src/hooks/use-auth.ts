@@ -67,7 +67,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!res.success) {
       throw new Error(res.error?.message || 'Login failed');
     }
-    setUser(res.data.subscriber);
+    // Tokens are stored by authService.login, now fetch profile
+    const profile = await authService.getProfile();
+    if (profile.success) {
+      setUser(profile.data);
+    }
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {

@@ -26,7 +26,8 @@
     "financial": "Finanzas",
     "calendar": "Agenda",
     "documents": "Documentos",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "logout": "Cerrar Sesión"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -46,10 +47,12 @@
     "registerError": "Error al registrarse. Inténtalo de nuevo.",
     "passwordMismatch": "Las contraseñas no coinciden.",
     "fieldRequired": "Este campo es obligatorio.",
-    "invalidEmail": "Por favor ingresa un correo electrónico válido."
+    "invalidEmail": "Por favor ingresa un correo electrónico válido.",
+    "passwordHint": "Mínimo 8 caracteres"
   },
   "dashboard": {
     "title": "Panel Principal",
+    "subtitle": "Esto es lo que pasa hoy con tu negocio.",
     "revenue": "Ingresos",
     "expenses": "Gastos",
     "profit": "Ganancia",
@@ -62,7 +65,10 @@
     "noRecentTransactions": "No hay transacciones recientes",
     "viewAll": "Ver todo",
     "vsLastMonth": "vs. mes anterior",
-    "quickActions": "Acciones rápidas"
+    "quickActions": "Acciones rápidas",
+    "thisWeek": "esta semana",
+    "revenueVsExpenses": "Ingresos vs Gastos",
+    "transactions": "Transacciones"
   },
   "financial": {
     "title": "Finanzas",
@@ -85,9 +91,19 @@
     "thisWeek": "Esta semana",
     "thisMonth": "Este mes",
     "thisYear": "Este año",
+    "custom": "Personalizado",
     "customRange": "Rango personalizado",
+    "export": "Exportar",
     "exportCsv": "Exportar CSV",
+    "transactions": "Transacciones",
+    "allTypes": "Todos los tipos",
     "noTransactions": "No hay transacciones",
+    "expenseByCategory": "Gastos por categoría",
+    "allCategories": "Todas las categorías",
+    "searchPlaceholder": "Buscar transacciones...",
+    "showing": "Mostrando",
+    "of": "de",
+    "selectDate": "Seleccionar fecha",
     "categories": {
       "materials": "Materiales",
       "labor": "Mano de obra",
@@ -110,7 +126,11 @@
     "location": "Ubicación",
     "status": "Estado",
     "weekView": "Vista semanal",
+    "swipeHint": "Desliza para cambiar semanas",
     "monthView": "Vista mensual",
+    "eventsFor": "Eventos del {date}",
+    "selectDate": "Selecciona una fecha",
+    "errorLoading": "Error al cargar eventos",
     "days": {
       "mon": "Lun",
       "tue": "Mar",
@@ -154,7 +174,14 @@
     "createBudget": "Crear presupuesto",
     "createServiceOrder": "Crear orden de servicio",
     "filterByType": "Filtrar por tipo",
-    "filterByStatus": "Filtrar por estado"
+    "filterByStatus": "Filtrar por estado",
+    "allTypes": "Todos los tipos",
+    "allStatuses": "Todos los estados",
+    "docNumber": "N° Doc",
+    "noDocumentsHint": "Tus presupuestos y órdenes de servicio aparecerán aquí",
+    "type": "Tipo",
+    "actions": "Acciones",
+    "loadError": "Error al cargar documentos. Inténtalo de nuevo."
   },
   "profile": {
     "title": "Perfil",
@@ -175,6 +202,14 @@
     "language": "Idioma",
     "selectLanguage": "Seleccionar idioma",
     "saveChanges": "Guardar cambios",
-    "profileUpdated": "Perfil actualizado"
+    "logoHint": "PNG, JPG o WEBP, máx 500x500px",
+    "languagePreference": "Preferencia de idioma",
+    "saved": "Guardado",
+    "saving": "Guardando...",
+    "profileUpdated": "Perfil actualizado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "trial": "Prueba",
+    "noPlan": "Sin plan"
   }
 }

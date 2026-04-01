@@ -8,13 +8,16 @@ import type {
 } from '@/lib/types';
 
 export const authService = {
-  /** Authenticate with phone + password. Returns tokens and subscriber profile. */
-  async login(payload: LoginPayload): Promise<ApiResponse<AuthResponse>> {
-    const res = await api.post<AuthResponse>('/auth/login', payload);
+  /** Authenticate with email + password. Returns tokens. */
+  async login(payload: LoginPayload): Promise<ApiResponse<any>> {
+    const res = await api.post<any>('/auth/login', payload);
 
-    if (res.success && res.data.tokens) {
-      localStorage.setItem('access_token', res.data.tokens.access_token);
-      localStorage.setItem('refresh_token', res.data.tokens.refresh_token);
+    if (res.success && res.data) {
+      const tokens = res.data.tokens || res.data;
+      if (tokens.access_token) {
+        localStorage.setItem('access_token', tokens.access_token);
+        localStorage.setItem('refresh_token', tokens.refresh_token);
+      }
     }
 
     return res;

@@ -1,60 +1,137 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { AppShell } from "@/components/layout/app-shell";
-import { Download, FileText, Eye, X } from "lucide-react";
+import { Download, FileText, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { budgetsService } from "@/services/budgets.service";
+import type { Budget, BudgetStatus } from "@/lib/types";
 
-// ── Mock data ──────────────────────────────────────────────
-type Document = {
-  id: number;
-  docNumber: string;
-  type: "budget" | "service_order";
-  client: string;
-  amount: number;
-  status: "draft" | "sent" | "approved" | "rejected";
-  date: string;
+// ── Constants ───────────────────────────────────────────────
+
+type DocTypeFilter = "all" | "budget" | "service_order";
+type StatusFilter = "all" | BudgetStatus;
+
+const STATUS_BADGE: Record<BudgetStatus, string> = {
+  draft: "bg-gray-500/10 text-gray-500",
+  sent: "bg-blue-500/10 text-blue-500",
+  accepted: "bg-green-500/10 text-green-500",
+  rejected: "bg-red-500/10 text-red-500",
 };
-
-const mockDocuments: Document[] = [
-  { id: 1, docNumber: "BUD-001", type: "budget", client: "Silva Corp", amount: 5000, status: "approved", date: "2026-03-20" },
-  { id: 2, docNumber: "SO-001", type: "service_order", client: "Silva Corp", amount: 5000, status: "approved", date: "2026-03-21" },
-  { id: 3, docNumber: "BUD-002", type: "budget", client: "Bakery Plus", amount: 1200, status: "sent", date: "2026-03-18" },
-  { id: 4, docNumber: "BUD-003", type: "budget", client: "Tech Solutions", amount: 8500, status: "draft", date: "2026-03-15" },
-  { id: 5, docNumber: "SO-002", type: "service_order", client: "Gym Fit", amount: 2400, status: "approved", date: "2026-03-12" },
-  { id: 6, docNumber: "BUD-004", type: "budget", client: "Maria Santos", amount: 900, status: "rejected", date: "2026-03-10" },
-  { id: 7, docNumber: "SO-003", type: "service_order", client: "Bakery Plus", amount: 1200, status: "sent", date: "2026-03-08" },
-];
 
 const TYPE_BADGE: Record<string, string> = {
   budget: "bg-info/10 text-info",
   service_order: "bg-secondary/10 text-secondary",
 };
 
-const STATUS_BADGE: Record<string, string> = {
-  draft: "bg-text-muted/10 text-text-muted",
-  sent: "bg-warning/10 text-warning",
-  approved: "bg-success/10 text-success",
-  rejected: "bg-danger/10 text-danger",
-};
+// ── Skeleton rows ───────────────────────────────────────────
+
+function SkeletonTable() {
+  return (
+    <div className="mt-6 hidden md:block">
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-3 py-3">
+            <div className="h-4 w-20 animate-pulse rounded bg-border" />
+            <div className="h-4 w-16 animate-pulse rounded bg-border" />
+            <div className="h-4 w-28 animate-pulse rounded bg-border" />
+            <div className="ml-auto h-4 w-20 animate-pulse rounded bg-border" />
+            <div className="h-4 w-16 animate-pulse rounded bg-border" />
+            <div className="h-4 w-20 animate-pulse rounded bg-border" />
+            <div className="h-4 w-10 animate-pulse rounded bg-border" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkeletonCards() {
+  return (
+    <div className="mt-6 space-y-3 md:hidden">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-border bg-surface p-4 shadow-sm"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-24 animate-pulse rounded bg-border" />
+            <div className="h-5 w-16 animate-pulse rounded-full bg-border" />
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <div className="h-5 w-16 animate-pulse rounded-full bg-border" />
+            <div className="h-4 w-28 animate-pulse rounded bg-border" />
+          </div>
+          <div className="mt-3 flex items-center justify-between">
+            <div className="h-5 w-24 animate-pulse rounded bg-border" />
+            <div className="h-4 w-20 animate-pulse rounded bg-border" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Helpers ─────────────────────────────────────────────────
+
+function formatCurrency(amount: number): string {
+  return `R$ ${amount.toFixed(2).replace(".", ",")}`;
+}
+
+function formatDate(iso: string): string {
+  return iso.slice(0, 10);
+}
+
+function handleDownload(pdfUrl: string | null): void {
+  if (!pdfUrl) return;
+  window.open(pdfUrl, "_blank", "noopener");
+}
+
+// ── Page ────────────────────────────────────────────────────
 
 export default function DocumentsPage() {
   const t = useTranslations("documents");
-  const [typeFilter, setTypeFilter] = useState<"all" | "budget" | "service_order">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "sent" | "approved" | "rejected">("all");
-  const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
+
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [typeFilter, setTypeFilter] = useState<DocTypeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  const fetchDocuments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await budgetsService.getAll({ page: 1, limit: 20 });
+      if (res.success) {
+        setBudgets(res.data);
+      } else {
+        setError(res.error?.message ?? t("loadError"));
+      }
+    } catch {
+      setError(t("loadError"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   const filtered = useMemo(() => {
-    return mockDocuments.filter((doc) => {
-      if (typeFilter !== "all" && doc.type !== typeFilter) return false;
+    return budgets.filter((doc) => {
+      if (typeFilter !== "all" && doc.document_type !== typeFilter) return false;
       if (statusFilter !== "all" && doc.status !== statusFilter) return false;
       return true;
     });
-  }, [typeFilter, statusFilter]);
+  }, [budgets, typeFilter, statusFilter]);
+
+  // ── Render ──────────────────────────────────────────────
 
   return (
-    <AppShell>
+    <>
       <div className="p-4 md:p-6 lg:p-8">
         <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
           {t("title")}
@@ -64,7 +141,7 @@ export default function DocumentsPage() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+            onChange={(e) => setTypeFilter(e.target.value as DocTypeFilter)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="all">{t("allTypes")}</option>
@@ -73,19 +150,45 @@ export default function DocumentsPage() {
           </select>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="all">{t("allStatuses")}</option>
             <option value="draft">{t("draft")}</option>
             <option value="sent">{t("sent")}</option>
-            <option value="approved">{t("approved")}</option>
+            <option value="accepted">{t("accepted")}</option>
             <option value="rejected">{t("rejected")}</option>
           </select>
         </div>
 
+        {/* Loading skeleton */}
+        {loading && (
+          <>
+            <SkeletonTable />
+            <SkeletonCards />
+          </>
+        )}
+
+        {/* Error state */}
+        {!loading && error && (
+          <div className="mt-12 flex flex-col items-center text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-danger/10">
+              <AlertCircle className="h-8 w-8 text-danger" />
+            </div>
+            <p className="mt-4 text-base font-medium text-text-secondary">
+              {error}
+            </p>
+            <button
+              onClick={fetchDocuments}
+              className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+            >
+              {t("loadError")}
+            </button>
+          </div>
+        )}
+
         {/* Empty state */}
-        {filtered.length === 0 && (
+        {!loading && !error && filtered.length === 0 && (
           <div className="mt-12 flex flex-col items-center text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background">
               <FileText className="h-8 w-8 text-text-muted" />
@@ -100,7 +203,7 @@ export default function DocumentsPage() {
         )}
 
         {/* Desktop table */}
-        {filtered.length > 0 && (
+        {!loading && !error && filtered.length > 0 && (
           <div className="mt-6 hidden overflow-x-auto md:block">
             <table className="w-full text-left text-sm">
               <thead>
@@ -108,7 +211,9 @@ export default function DocumentsPage() {
                   <th className="px-3 py-3 font-medium">{t("docNumber")}</th>
                   <th className="px-3 py-3 font-medium">{t("type")}</th>
                   <th className="px-3 py-3 font-medium">{t("client")}</th>
-                  <th className="px-3 py-3 text-right font-medium">{t("amount")}</th>
+                  <th className="px-3 py-3 text-right font-medium">
+                    {t("amount")}
+                  </th>
                   <th className="px-3 py-3 font-medium">{t("status")}</th>
                   <th className="px-3 py-3 font-medium">{t("date")}</th>
                   <th className="px-3 py-3 font-medium">{t("actions")}</th>
@@ -121,21 +226,25 @@ export default function DocumentsPage() {
                     className="border-b border-border transition-colors hover:bg-background"
                   >
                     <td className="px-3 py-3 font-medium text-text-primary">
-                      {doc.docNumber}
+                      {doc.document_number ?? "—"}
                     </td>
                     <td className="px-3 py-3">
                       <span
                         className={cn(
                           "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
-                          TYPE_BADGE[doc.type]
+                          TYPE_BADGE[doc.document_type] ?? TYPE_BADGE.budget
                         )}
                       >
-                        {t(doc.type)}
+                        {doc.document_type === "service_order"
+                          ? t("serviceOrder")
+                          : t("budget")}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-text-primary">{doc.client}</td>
+                    <td className="px-3 py-3 text-text-primary">
+                      {doc.client_name ?? "—"}
+                    </td>
                     <td className="px-3 py-3 text-right font-semibold text-text-primary">
-                      R$ {doc.amount.toFixed(2).replace(".", ",")}
+                      {formatCurrency(doc.total_amount)}
                     </td>
                     <td className="px-3 py-3">
                       <span
@@ -147,23 +256,23 @@ export default function DocumentsPage() {
                         {t(doc.status)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-text-secondary">{doc.date}</td>
+                    <td className="px-3 py-3 text-text-secondary">
+                      {formatDate(doc.created_at)}
+                    </td>
                     <td className="px-3 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setPreviewDoc(doc)}
-                          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-background hover:text-primary"
-                          title={t("preview")}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-background hover:text-primary"
-                          title={t("download")}
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleDownload(doc.pdf_url)}
+                        disabled={!doc.pdf_url}
+                        className={cn(
+                          "rounded-lg p-1.5 transition-colors",
+                          doc.pdf_url
+                            ? "text-text-secondary hover:bg-background hover:text-primary"
+                            : "cursor-not-allowed text-text-muted/40"
+                        )}
+                        title={t("downloadPdf")}
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -173,7 +282,7 @@ export default function DocumentsPage() {
         )}
 
         {/* Mobile card layout */}
-        {filtered.length > 0 && (
+        {!loading && !error && filtered.length > 0 && (
           <div className="mt-6 space-y-3 md:hidden">
             {filtered.map((doc) => (
               <div
@@ -182,7 +291,7 @@ export default function DocumentsPage() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-text-primary">
-                    {doc.docNumber}
+                    {doc.document_number ?? "—"}
                   </span>
                   <span
                     className={cn(
@@ -197,103 +306,45 @@ export default function DocumentsPage() {
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 text-xs font-medium",
-                      TYPE_BADGE[doc.type]
+                      TYPE_BADGE[doc.document_type] ?? TYPE_BADGE.budget
                     )}
                   >
-                    {t(doc.type)}
+                    {doc.document_type === "service_order"
+                      ? t("serviceOrder")
+                      : t("budget")}
                   </span>
-                  <span className="text-sm text-text-secondary">{doc.client}</span>
+                  <span className="text-sm text-text-secondary">
+                    {doc.client_name ?? "—"}
+                  </span>
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-base font-bold text-text-primary">
-                    R$ {doc.amount.toFixed(2).replace(".", ",")}
+                    {formatCurrency(doc.total_amount)}
                   </span>
-                  <span className="text-xs text-text-muted">{doc.date}</span>
+                  <span className="text-xs text-text-muted">
+                    {formatDate(doc.created_at)}
+                  </span>
                 </div>
-                <div className="mt-3 flex gap-2 border-t border-border pt-3">
+                <div className="mt-3 border-t border-border pt-3">
                   <button
-                    onClick={() => setPreviewDoc(doc)}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-background"
+                    onClick={() => handleDownload(doc.pdf_url)}
+                    disabled={!doc.pdf_url}
+                    className={cn(
+                      "flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium transition-colors",
+                      doc.pdf_url
+                        ? "text-text-secondary hover:bg-background"
+                        : "cursor-not-allowed text-text-muted/40"
+                    )}
                   >
-                    <Eye className="h-3.5 w-3.5" />
-                    {t("preview")}
-                  </button>
-                  <button className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-background">
                     <Download className="h-3.5 w-3.5" />
-                    {t("download")}
+                    {t("downloadPdf")}
                   </button>
                 </div>
               </div>
             ))}
           </div>
         )}
-
-        {/* Preview dialog */}
-        {previewDoc && (
-          <>
-            <div
-              className="fixed inset-0 z-40 bg-black/40"
-              onClick={() => setPreviewDoc(null)}
-              aria-hidden="true"
-            />
-            <div className="fixed inset-4 z-50 mx-auto flex max-w-lg flex-col rounded-2xl bg-surface p-6 shadow-xl md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-text-primary">
-                  {previewDoc.docNumber}
-                </h3>
-                <button
-                  onClick={() => setPreviewDoc(null)}
-                  className="rounded-lg p-1.5 text-text-secondary hover:bg-background"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="mt-4 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{t("type")}</span>
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      TYPE_BADGE[previewDoc.type]
-                    )}
-                  >
-                    {t(previewDoc.type)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{t("client")}</span>
-                  <span className="font-medium text-text-primary">{previewDoc.client}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{t("amount")}</span>
-                  <span className="font-semibold text-text-primary">
-                    R$ {previewDoc.amount.toFixed(2).replace(".", ",")}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{t("status")}</span>
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      STATUS_BADGE[previewDoc.status]
-                    )}
-                  >
-                    {t(previewDoc.status)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{t("date")}</span>
-                  <span className="text-text-primary">{previewDoc.date}</span>
-                </div>
-              </div>
-              <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark">
-                <Download className="h-4 w-4" />
-                {t("download")}
-              </button>
-            </div>
-          </>
-        )}
       </div>
-    </AppShell>
+    </>
   );
 }
