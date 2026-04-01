@@ -11,7 +11,7 @@ import {
 } from '../../database/entities';
 import { AdminSubscriberFiltersDto } from './dto/admin-subscriber-filters.dto';
 
-interface PaginatedResult<T> {
+export interface PaginatedResult<T> {
   data: T[];
   total: number;
   page: number;
@@ -19,7 +19,7 @@ interface PaginatedResult<T> {
   totalPages: number;
 }
 
-interface SubscriberDetail {
+export interface SubscriberDetail {
   subscriber: Subscriber;
   subscription: Subscription | null;
   usage: UsageTracking | null;

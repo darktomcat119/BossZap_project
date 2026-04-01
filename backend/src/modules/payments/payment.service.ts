@@ -12,7 +12,7 @@ import { Subscriber } from '../../database/entities/subscriber.entity';
 import { Plan } from '../../database/entities/plan.entity';
 import { StripeService } from './stripe.service';
 
-interface PaginatedPayments {
+export interface PaginatedPayments {
   data: Payment[];
   total: number;
   page: number;
@@ -27,7 +27,7 @@ interface RevenueReport {
   endDate: Date;
 }
 
-interface SubscriptionWithPlan {
+export interface SubscriptionWithPlan {
   subscription: Subscription;
   plan: Plan;
 }
@@ -338,6 +338,16 @@ export class PaymentService {
 
     if (status === 'active' || status === 'trialing') {
       subscription.status = status;
+    } else if (status === 'past_due') {
+      subscription.status = 'past_due';
+      this.logger.warn(
+        `Subscription ${subscription.id} moved to past_due`,
+      );
+    } else if (status === 'canceled' || status === 'unpaid') {
+      subscription.status = 'cancelled';
+      this.logger.warn(
+        `Subscription ${subscription.id} moved to ${status}`,
+      );
     }
 
     if (currentPeriodStart) {

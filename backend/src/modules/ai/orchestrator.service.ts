@@ -272,7 +272,7 @@ export class OrchestratorService {
         month: monthStr,
         messages_count: () => 'messages_count + 1',
         ai_calls_count: () => 'ai_calls_count + 1',
-      } as Partial<UsageTracking>,
+      } as any,
       {
         conflictPaths: ['subscriber_id', 'month'],
       },

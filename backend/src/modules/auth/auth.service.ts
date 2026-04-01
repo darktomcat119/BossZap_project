@@ -20,7 +20,7 @@ interface TokenPayload {
   phone?: string;
 }
 
-interface AuthTokens {
+export interface AuthTokens {
   access_token: string;
   refresh_token: string;
 }
@@ -136,6 +136,27 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  async getSubscriberProfile(subscriberId: string) {
+    const subscriber = await this.subscriberRepo.findOne({
+      where: { id: subscriberId },
+      relations: ['plan'],
+    });
+    if (!subscriber) {
+      throw new UnauthorizedException('Subscriber not found');
+    }
+    const { password_hash, ...profile } = subscriber;
+    return profile;
+  }
+
+  async updateSubscriberProfile(
+    subscriberId: string,
+    data: Partial<Subscriber>,
+  ) {
+    const { password_hash, id, phone, ...allowed } = data as any;
+    await this.subscriberRepo.update(subscriberId, allowed);
+    return this.getSubscriberProfile(subscriberId);
   }
 
   private generateTokens(payload: TokenPayload): AuthTokens {

@@ -1,14 +1,14 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { dataSourceOptions } from '../config/data-source';
+import appDataSource from '../config/data-source';
 
 const SALT_ROUNDS = 12;
 
 async function seed() {
   const dataSource = new DataSource({
-    ...dataSourceOptions,
+    ...appDataSource.options,
     url: process.env.DATABASE_URL,
-  });
+  } as any);
 
   await dataSource.initialize();
   console.log('Database connected for seeding...');

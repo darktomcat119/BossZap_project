@@ -7,7 +7,7 @@ import {
   UsageTracking,
 } from '../../database/entities';
 
-interface OverviewResult {
+export interface OverviewResult {
   totalSubscribers: number;
   activeSubscribers: number;
   suspendedSubscribers: number;
@@ -16,12 +16,12 @@ interface OverviewResult {
   revenueThisMonth: number;
 }
 
-interface GrowthPoint {
+export interface GrowthPoint {
   month: string;
   count: number;
 }
 
-interface RevenuePoint {
+export interface RevenuePoint {
   month: string;
   revenue: number;
 }
@@ -34,7 +34,7 @@ interface TopSubscriberUsage {
   total_budgets: number;
 }
 
-interface UsageStatsResult {
+export interface UsageStatsResult {
   totalMessages: number;
   totalAiCalls: number;
   totalBudgets: number;

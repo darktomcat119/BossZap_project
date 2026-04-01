@@ -123,10 +123,11 @@ export class NotificationQueueService {
         notification,
       );
 
-      await this.whatsappService.sendTextMessage(
-        notification.subscriber_id,
-        message,
-      );
+      await this.whatsappService.sendText({
+        to: notification.subscriber_id,
+        text: message,
+        subscriberId: notification.subscriber_id,
+      });
 
       await this.notificationRepo.update(notification.id, {
         status: 'sent',
@@ -157,11 +158,13 @@ export class NotificationQueueService {
     notification: PendingNotification,
   ): Promise<void> {
     try {
-      await this.whatsappService.sendHsmTemplate(
-        notification.subscriber_id,
-        notification.type,
-        notification.payload,
-      );
+      await this.whatsappService.sendTemplate({
+        to: notification.subscriber_id,
+        templateName: notification.type,
+        language: 'en',
+        components: notification.payload?.components as Record<string, unknown>[] | undefined,
+        subscriberId: notification.subscriber_id,
+      });
 
       await this.notificationRepo.update(notification.id, {
         status: 'sent',

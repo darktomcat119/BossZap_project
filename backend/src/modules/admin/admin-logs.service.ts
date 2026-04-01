@@ -12,7 +12,7 @@ interface AuditLogFilters {
   limit: number;
 }
 
-interface PaginatedAuditLogs {
+export interface PaginatedAuditLogs {
   data: AuditLog[];
   total: number;
   page: number;

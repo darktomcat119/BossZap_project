@@ -32,9 +32,11 @@ export class InboundProcessor extends WorkerHost {
     );
 
     try {
-      await this.windowTracker.updateWindow(
-        await this.resolveSubscriberId(message.from),
+      const subscriberId = await this.resolveSubscriberId(
+        message.from,
       );
+
+      await this.windowTracker.updateWindow(subscriberId);
 
       let textContent = message.text || '';
 
@@ -55,10 +57,6 @@ export class InboundProcessor extends WorkerHost {
           (loc?.name ? ` - ${loc.name}` : '') +
           ']';
       }
-
-      const subscriberId = await this.resolveSubscriberId(
-        message.from,
-      );
 
       const response = await this.orchestrator.processMessage({
         subscriberId,

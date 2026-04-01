@@ -26,6 +26,6 @@ import { QUEUE_NAMES } from '../queue/constants';
   ],
   controllers: [WebhookController],
   providers: [WhatsappService, MediaService, WindowTrackerService],
-  exports: [WhatsappService, WindowTrackerService],
+  exports: [WhatsappService, MediaService, WindowTrackerService],
 })
 export class WhatsappModule {}

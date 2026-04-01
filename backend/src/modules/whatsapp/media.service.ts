@@ -44,7 +44,7 @@ export class MediaService {
       await this.whatsappService.downloadMedia(mediaUrl);
 
     const formData = new FormData();
-    const audioBlob = new Blob([audioBuffer], {
+    const audioBlob = new Blob([new Uint8Array(audioBuffer) as any], {
       type: 'audio/ogg',
     });
     formData.append('file', audioBlob, 'audio.ogg');

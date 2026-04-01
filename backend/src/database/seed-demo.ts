@@ -1,689 +1,548 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { dataSourceOptions } from '../config/data-source';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const SALT_ROUNDS = 12;
 
-function daysAgo(n: number): Date {
+function daysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d;
-}
-
-function daysFromNow(n: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d;
-}
-
-function dateOnly(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
+function daysFromNow(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+function tsAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString();
+}
+
 function randomBetween(min: number, max: number): number {
-  return Math.round((Math.random() * (max - min) + min) * 100) / 100;
+  return Math.round(
+    (Math.random() * (max - min) + min) * 100,
+  ) / 100;
+}
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 async function seedDemo() {
-  const dataSource = new DataSource({
-    ...dataSourceOptions,
+  const ds = new DataSource({
+    type: 'postgres',
     url: process.env.DATABASE_URL,
+    entities: [],
+    synchronize: false,
   });
 
-  await dataSource.initialize();
+  await ds.initialize();
   console.log('Database connected for demo seeding...\n');
 
-  // === 1. Plan ===
-  const planRepo = dataSource.getRepository('plans');
-  let plan = await planRepo.findOne({
-    where: { name: 'Profesional' },
-  });
-
+  // === 1. Get Plan ===
+  let [plan] = await ds.query(
+    `SELECT id FROM plans WHERE name = 'Profesional' LIMIT 1`,
+  );
   if (!plan) {
-    plan = await planRepo.save({
-      name: 'Profesional',
-      price_monthly: 29.90,
-      max_budgets_per_month: 50,
-      max_messages_per_month: 500,
-      max_ai_calls_per_month: 300,
-      trial_days: 7,
-      is_active: true,
-    });
+    [plan] = await ds.query(
+      `INSERT INTO plans (name, price_monthly,
+        max_budgets_per_month, max_messages_per_month,
+        max_ai_calls_per_month, trial_days)
+       VALUES ('Profesional', 29.90, 50, 500, 300, 7)
+       RETURNING id`,
+    );
     console.log('Plan created: Profesional');
+  } else {
+    console.log('Plan exists, using it');
   }
+  const planId = plan.id;
 
   // === 2. Admin User ===
-  const adminRepo = dataSource.getRepository('admin_users');
-  const existingAdmin = await adminRepo.findOne({
-    where: { email: 'admin@bosszap.com' },
-  });
-
+  const [existingAdmin] = await ds.query(
+    `SELECT id FROM admin_users
+     WHERE email = 'admin@bosszap.com' LIMIT 1`,
+  );
   if (!existingAdmin) {
     const hash = await bcrypt.hash('BossZap2024!', SALT_ROUNDS);
-    await adminRepo.save({
-      email: 'admin@bosszap.com',
-      password_hash: hash,
-      role: 'master',
-      preferred_language: 'es',
-    });
-    console.log('Admin created: admin@bosszap.com / BossZap2024!');
+    await ds.query(
+      `INSERT INTO admin_users
+        (email, password_hash, role, preferred_language)
+       VALUES ($1, $2, 'master', 'es')`,
+      ['admin@bosszap.com', hash],
+    );
+    console.log('Admin: admin@bosszap.com / BossZap2024!');
   }
 
-  // === 3. Demo Subscriber ===
-  const subRepo = dataSource.getRepository('subscribers');
-  let subscriber = await subRepo.findOne({
-    where: { phone: '+5511999990001' },
-  });
-
-  if (!subscriber) {
-    subscriber = await subRepo.save({
-      phone: '+5511999990001',
-      business_name: 'Carlos Pintura Profesional',
-      owner_name: 'Carlos Mendez',
-      email: 'carlos@demo.bosszap.com',
-      address: 'Av. Paulista 1000, Sao Paulo, SP',
-      preferred_language: 'es',
-      status: 'active',
-      plan_id: plan.id,
-      onboarding_completed_at: daysAgo(45),
-    });
-    console.log('Demo subscriber created: Carlos Mendez');
-  }
-
-  // === 4. Demo Subscriber Login ===
-  // So the client can log into the subscriber dashboard
-  const subLoginCheck = await dataSource.query(
-    `SELECT id FROM subscribers WHERE email = $1`,
-    ['carlos@demo.bosszap.com'],
+  // === 3. Main Demo Subscriber ===
+  let [sub] = await ds.query(
+    `SELECT id FROM subscribers
+     WHERE phone = '+5511999990001' LIMIT 1`,
   );
-
-  if (subLoginCheck.length > 0) {
+  if (!sub) {
     const hash = await bcrypt.hash('Demo2024!', SALT_ROUNDS);
-    await dataSource.query(
-      `UPDATE subscribers SET password_hash = $1 WHERE email = $2`,
-      [hash, 'carlos@demo.bosszap.com'],
+    [sub] = await ds.query(
+      `INSERT INTO subscribers
+        (phone, business_name, owner_name, email, address,
+         preferred_language, status, password_hash,
+         plan_id, onboarding_completed_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       RETURNING id`,
+      [
+        '+5511999990001',
+        'Carlos Pintura Profesional',
+        'Carlos Mendez',
+        'carlos@demo.bosszap.com',
+        'Av. Paulista 1000, Sao Paulo, SP',
+        'es',
+        'active',
+        hash,
+        planId,
+        tsAgo(45),
+      ],
     );
     console.log(
-      'Subscriber login: carlos@demo.bosszap.com / Demo2024!',
+      'Subscriber: carlos@demo.bosszap.com / Demo2024!',
     );
   }
+  const subId = sub.id;
 
-  // === 5. Subscription ===
-  const subscRepo = dataSource.getRepository('subscriptions');
-  const existingSub = await subscRepo.findOne({
-    where: { subscriber_id: subscriber.id },
-  });
-
+  // === 4. Subscription ===
+  const [existingSub] = await ds.query(
+    `SELECT id FROM subscriptions
+     WHERE subscriber_id = $1 LIMIT 1`,
+    [subId],
+  );
   if (!existingSub) {
-    await subscRepo.save({
-      subscriber_id: subscriber.id,
-      plan_id: plan.id,
-      status: 'active',
-      current_period_start: daysAgo(15),
-      current_period_end: daysFromNow(15),
-    });
+    await ds.query(
+      `INSERT INTO subscriptions
+        (subscriber_id, plan_id, status,
+         current_period_start, current_period_end)
+       VALUES ($1, $2, 'active', $3, $4)`,
+      [subId, planId, daysAgo(15), daysFromNow(15)],
+    );
     console.log('Subscription created (active)');
   }
 
-  // === 6. Financial Records (last 6 months) ===
-  const finRepo = dataSource.getRepository('financial_records');
-  const existingFin = await finRepo.count({
-    where: { subscriber_id: subscriber.id },
-  });
+  // === 5. Financial Records (6 months) ===
+  const [finCount] = await ds.query(
+    `SELECT COUNT(*) as c FROM financial_records
+     WHERE subscriber_id = $1`,
+    [subId],
+  );
+  if (parseInt(finCount.c) === 0) {
+    const incomeDescs = [
+      'Pintura residencial',
+      'Pintura comercial',
+      'Pintura exterior',
+      'Impermeabilizacion',
+      'Textura decorativa',
+      'Reparacion de paredes',
+    ];
+    const expenseItems = [
+      { desc: 'Pintura latex', cat: 'materials' },
+      { desc: 'Rodillos y brochas', cat: 'materials' },
+      { desc: 'Cinta de enmascarar', cat: 'materials' },
+      { desc: 'Lija y masilla', cat: 'materials' },
+      { desc: 'Transporte al trabajo', cat: 'transport' },
+      { desc: 'Gasolina', cat: 'transport' },
+      { desc: 'Almuerzo en obra', cat: 'food' },
+      { desc: 'Escalera nueva', cat: 'tools' },
+      { desc: 'Ayudante del dia', cat: 'labor' },
+    ];
+    const persons = [
+      'Sr. Rodriguez', 'Sra. Garcia', 'Sr. Lopez',
+      'Empresa ABC', 'Condominio Sol', 'Sr. Martinez',
+    ];
 
-  if (existingFin === 0) {
-    const categories = {
-      income: [
-        'Pintura residencial',
-        'Pintura comercial',
-        'Pintura exterior',
-        'Impermeabilizacion',
-        'Textura decorativa',
-        'Reparacion de paredes',
-      ],
-      expense: [
-        { desc: 'Pintura latex', cat: 'materials' },
-        { desc: 'Rodillos y brochas', cat: 'materials' },
-        { desc: 'Cinta de enmascarar', cat: 'materials' },
-        { desc: 'Lija y masilla', cat: 'materials' },
-        { desc: 'Transporte al trabajo', cat: 'transport' },
-        { desc: 'Gasolina', cat: 'transport' },
-        { desc: 'Almuerzo en obra', cat: 'food' },
-        { desc: 'Escalera nueva', cat: 'tools' },
-        { desc: 'Ayudante del dia', cat: 'labor' },
-      ],
-    };
+    let total = 0;
+    for (let m = 5; m >= 0; m--) {
+      const base = new Date();
+      base.setMonth(base.getMonth() - m);
 
-    const records: Array<Record<string, unknown>> = [];
-
-    for (let monthsAgo = 5; monthsAgo >= 0; monthsAgo--) {
-      const baseDate = new Date();
-      baseDate.setMonth(baseDate.getMonth() - monthsAgo);
-
-      // 4-8 income records per month
-      const incomeCount = 4 + Math.floor(Math.random() * 5);
-      for (let i = 0; i < incomeCount; i++) {
+      const incCount = 4 + Math.floor(Math.random() * 5);
+      for (let i = 0; i < incCount; i++) {
         const day = 1 + Math.floor(Math.random() * 27);
         const d = new Date(
-          baseDate.getFullYear(),
-          baseDate.getMonth(),
-          day,
+          base.getFullYear(), base.getMonth(), day,
         );
-        const desc =
-          categories.income[
-            Math.floor(Math.random() * categories.income.length)
-          ];
-        const persons = [
-          'Sr. Rodriguez',
-          'Sra. Garcia',
-          'Sr. Lopez',
-          'Empresa ABC',
-          'Condominio Sol',
-          'Sr. Martinez',
-          'Sra. Oliveira',
-        ];
-
-        records.push({
-          subscriber_id: subscriber.id,
-          type: 'income',
-          amount: randomBetween(200, 2500),
-          description: desc,
-          category: 'labor',
-          reference_person:
-            persons[Math.floor(Math.random() * persons.length)],
-          record_date: dateOnly(d),
-        });
+        await ds.query(
+          `INSERT INTO financial_records
+            (subscriber_id, type, amount, description,
+             category, reference_person, record_date)
+           VALUES ($1,'income',$2,$3,'labor',$4,$5)`,
+          [
+            subId,
+            randomBetween(200, 2500),
+            pick(incomeDescs),
+            pick(persons),
+            d.toISOString().split('T')[0],
+          ],
+        );
+        total++;
       }
 
-      // 6-12 expense records per month
-      const expenseCount = 6 + Math.floor(Math.random() * 7);
-      for (let i = 0; i < expenseCount; i++) {
+      const expCount = 6 + Math.floor(Math.random() * 7);
+      for (let i = 0; i < expCount; i++) {
         const day = 1 + Math.floor(Math.random() * 27);
         const d = new Date(
-          baseDate.getFullYear(),
-          baseDate.getMonth(),
-          day,
+          base.getFullYear(), base.getMonth(), day,
         );
-        const exp =
-          categories.expense[
-            Math.floor(Math.random() * categories.expense.length)
-          ];
-
-        records.push({
-          subscriber_id: subscriber.id,
-          type: 'expense',
-          amount: randomBetween(15, 350),
-          description: exp.desc,
-          category: exp.cat,
-          record_date: dateOnly(d),
-        });
+        const exp = pick(expenseItems);
+        await ds.query(
+          `INSERT INTO financial_records
+            (subscriber_id, type, amount, description,
+             category, record_date)
+           VALUES ($1,'expense',$2,$3,$4,$5)`,
+          [
+            subId,
+            randomBetween(15, 350),
+            exp.desc,
+            exp.cat,
+            d.toISOString().split('T')[0],
+          ],
+        );
+        total++;
       }
     }
-
-    await finRepo.save(records);
-    console.log(`Financial records created: ${records.length}`);
+    console.log(`Financial records created: ${total}`);
   }
 
-  // === 7. Events (past + upcoming) ===
-  const eventRepo = dataSource.getRepository('events');
-  const existingEvents = await eventRepo.count({
-    where: { subscriber_id: subscriber.id },
-  });
-
-  if (existingEvents === 0) {
-    const events: Array<Record<string, unknown>> = [];
-
-    // Past completed events
+  // === 6. Events ===
+  const [evCount] = await ds.query(
+    `SELECT COUNT(*) as c FROM events
+     WHERE subscriber_id = $1`,
+    [subId],
+  );
+  if (parseInt(evCount.c) === 0) {
     const pastJobs = [
       'Pintura sala - Sr. Rodriguez',
       'Pintura exterior - Condominio Sol',
       'Textura decorativa - Sra. Garcia',
       'Pintura oficina - Empresa ABC',
       'Reparacion pared - Sr. Lopez',
-      'Impermeabilizacion terraza - Sr. Martinez',
+      'Impermeabilizacion - Sr. Martinez',
       'Pintura dormitorio - Sra. Oliveira',
       'Pintura cocina - Sr. Fernandez',
     ];
-
     for (let i = 0; i < pastJobs.length; i++) {
-      events.push({
-        subscriber_id: subscriber.id,
-        title: pastJobs[i],
-        description: 'Trabajo completado satisfactoriamente',
-        event_date: dateOnly(daysAgo(3 + i * 4)),
-        event_time: `${8 + Math.floor(Math.random() * 4)}:00`,
-        location: `Calle ${10 + i * 5}, Sao Paulo`,
-        status: 'completed',
-      });
+      await ds.query(
+        `INSERT INTO events
+          (subscriber_id, title, description, event_date,
+           event_time, location, status)
+         VALUES ($1,$2,$3,$4,$5,$6,'completed')`,
+        [
+          subId,
+          pastJobs[i],
+          'Trabajo completado satisfactoriamente',
+          daysAgo(3 + i * 4),
+          `${8 + Math.floor(Math.random() * 4)}:00`,
+          `Calle ${10 + i * 5}, Sao Paulo`,
+        ],
+      );
     }
 
-    // Upcoming scheduled events
-    const upcomingJobs = [
-      {
-        title: 'Pintura sala completa - Sra. Perez',
-        loc: 'Av. Brasil 250, Apt 12',
-      },
-      {
-        title: 'Textura pared acento - Sr. Santos',
-        loc: 'Rua Augusta 480',
-      },
-      {
-        title: 'Pintura exterior casa - Sr. Almeida',
-        loc: 'Calle Los Olivos 33',
-      },
-      {
-        title: 'Impermeabilizacion - Condominio Luna',
-        loc: 'Av. Libertador 1200',
-      },
-      {
-        title: 'Pintura oficina corporativa - Tech Corp',
-        loc: 'Av. Faria Lima 900, Piso 5',
-      },
+    const upcoming = [
+      { t: 'Pintura sala - Sra. Perez', l: 'Av. Brasil 250' },
+      { t: 'Textura pared - Sr. Santos', l: 'Rua Augusta 480' },
+      { t: 'Pintura exterior - Sr. Almeida', l: 'Los Olivos 33' },
+      { t: 'Impermeabilizacion - Cond. Luna', l: 'Libertador 1200' },
+      { t: 'Pintura oficina - Tech Corp', l: 'Faria Lima 900' },
     ];
-
-    for (let i = 0; i < upcomingJobs.length; i++) {
-      events.push({
-        subscriber_id: subscriber.id,
-        title: upcomingJobs[i].title,
-        description: 'Presupuesto aceptado por el cliente',
-        event_date: dateOnly(daysFromNow(1 + i * 2)),
-        event_time: `${9 + i}:00`,
-        location: upcomingJobs[i].loc,
-        status: 'scheduled',
-      });
+    for (let i = 0; i < upcoming.length; i++) {
+      await ds.query(
+        `INSERT INTO events
+          (subscriber_id, title, description, event_date,
+           event_time, location, status)
+         VALUES ($1,$2,$3,$4,$5,$6,'scheduled')`,
+        [
+          subId,
+          upcoming[i].t,
+          'Presupuesto aceptado por el cliente',
+          daysFromNow(1 + i * 2),
+          `${9 + i}:00`,
+          upcoming[i].l,
+        ],
+      );
     }
 
-    // One cancelled event
-    events.push({
-      subscriber_id: subscriber.id,
-      title: 'Pintura garaje - Sr. Vidal (cancelado)',
-      description: 'Cliente cancelo por viaje',
-      event_date: dateOnly(daysFromNow(3)),
-      event_time: '14:00',
-      location: 'Calle 7 de Septiembre 88',
-      status: 'cancelled',
-    });
-
-    await eventRepo.save(events);
-    console.log(`Events created: ${events.length}`);
+    await ds.query(
+      `INSERT INTO events
+        (subscriber_id, title, description, event_date,
+         event_time, location, status)
+       VALUES ($1,$2,$3,$4,$5,$6,'cancelled')`,
+      [
+        subId,
+        'Pintura garaje - Sr. Vidal',
+        'Cliente cancelo por viaje',
+        daysFromNow(3),
+        '14:00',
+        'Calle 7 de Septiembre 88',
+      ],
+    );
+    console.log(`Events created: ${pastJobs.length + upcoming.length + 1}`);
   }
 
-  // === 8. Budgets / Service Orders ===
-  const budgetRepo = dataSource.getRepository('budgets');
-  const existingBudgets = await budgetRepo.count({
-    where: { subscriber_id: subscriber.id },
-  });
-
-  if (existingBudgets === 0) {
-    const budgets: Array<Record<string, unknown>> = [
+  // === 7. Budgets ===
+  const [budCount] = await ds.query(
+    `SELECT COUNT(*) as c FROM budgets
+     WHERE subscriber_id = $1`,
+    [subId],
+  );
+  if (parseInt(budCount.c) === 0) {
+    const budgets = [
       {
-        subscriber_id: subscriber.id,
-        document_type: 'budget',
-        client_name: 'Sra. Perez',
-        client_phone: '+5511988880001',
-        description: 'Pintura completa sala y comedor',
-        items: JSON.stringify([
-          {
-            description: 'Pintura latex premium (20L)',
-            quantity: 3,
-            unit_price: 85.0,
-            total: 255.0,
-          },
-          {
-            description: 'Mano de obra (2 dias)',
-            quantity: 2,
-            unit_price: 350.0,
-            total: 700.0,
-          },
-          {
-            description: 'Materiales auxiliares',
-            quantity: 1,
-            unit_price: 60.0,
-            total: 60.0,
-          },
-        ]),
-        total_amount: 1015.0,
-        status: 'accepted',
-        valid_until: dateOnly(daysFromNow(15)),
-        notes: 'Incluye limpieza final',
+        type: 'budget', client: 'Sra. Perez',
+        phone: '+5511988880001',
+        desc: 'Pintura completa sala y comedor',
+        items: [
+          { description: 'Pintura latex premium (20L)', quantity: 3, unit_price: 85, total: 255 },
+          { description: 'Mano de obra (2 dias)', quantity: 2, unit_price: 350, total: 700 },
+          { description: 'Materiales auxiliares', quantity: 1, unit_price: 60, total: 60 },
+        ],
+        total: 1015, status: 'accepted',
       },
       {
-        subscriber_id: subscriber.id,
-        document_type: 'budget',
-        client_name: 'Sr. Santos',
-        client_phone: '+5511988880002',
-        description: 'Textura decorativa pared acento',
-        items: JSON.stringify([
-          {
-            description: 'Textura especial (5L)',
-            quantity: 2,
-            unit_price: 120.0,
-            total: 240.0,
-          },
-          {
-            description: 'Mano de obra especializada',
-            quantity: 1,
-            unit_price: 500.0,
-            total: 500.0,
-          },
-        ]),
-        total_amount: 740.0,
-        status: 'sent',
-        valid_until: dateOnly(daysFromNow(10)),
+        type: 'budget', client: 'Sr. Santos',
+        phone: '+5511988880002',
+        desc: 'Textura decorativa pared acento',
+        items: [
+          { description: 'Textura especial (5L)', quantity: 2, unit_price: 120, total: 240 },
+          { description: 'Mano de obra especializada', quantity: 1, unit_price: 500, total: 500 },
+        ],
+        total: 740, status: 'sent',
       },
       {
-        subscriber_id: subscriber.id,
-        document_type: 'budget',
-        client_name: 'Sr. Almeida',
-        client_phone: '+5511988880003',
-        description: 'Pintura exterior casa completa',
-        items: JSON.stringify([
-          {
-            description: 'Pintura exterior (20L)',
-            quantity: 5,
-            unit_price: 95.0,
-            total: 475.0,
-          },
-          {
-            description: 'Impermeabilizante',
-            quantity: 2,
-            unit_price: 110.0,
-            total: 220.0,
-          },
-          {
-            description: 'Andamio alquiler (3 dias)',
-            quantity: 3,
-            unit_price: 80.0,
-            total: 240.0,
-          },
-          {
-            description: 'Mano de obra (4 dias)',
-            quantity: 4,
-            unit_price: 350.0,
-            total: 1400.0,
-          },
-        ]),
-        total_amount: 2335.0,
-        status: 'accepted',
-        valid_until: dateOnly(daysFromNow(12)),
+        type: 'budget', client: 'Sr. Almeida',
+        phone: '+5511988880003',
+        desc: 'Pintura exterior casa completa',
+        items: [
+          { description: 'Pintura exterior (20L)', quantity: 5, unit_price: 95, total: 475 },
+          { description: 'Impermeabilizante', quantity: 2, unit_price: 110, total: 220 },
+          { description: 'Andamio alquiler (3 dias)', quantity: 3, unit_price: 80, total: 240 },
+          { description: 'Mano de obra (4 dias)', quantity: 4, unit_price: 350, total: 1400 },
+        ],
+        total: 2335, status: 'accepted',
       },
       {
-        subscriber_id: subscriber.id,
-        document_type: 'budget',
-        client_name: 'Empresa XYZ',
-        client_phone: '+5511988880004',
-        client_email: 'compras@xyz.com',
-        description: 'Pintura oficinas planta baja',
-        items: JSON.stringify([
-          {
-            description: 'Pintura acrilica (20L)',
-            quantity: 8,
-            unit_price: 90.0,
-            total: 720.0,
-          },
-          {
-            description: 'Mano de obra (5 dias)',
-            quantity: 5,
-            unit_price: 400.0,
-            total: 2000.0,
-          },
-          {
-            description: 'Materiales auxiliares',
-            quantity: 1,
-            unit_price: 150.0,
-            total: 150.0,
-          },
-        ]),
-        total_amount: 2870.0,
-        status: 'draft',
-        valid_until: dateOnly(daysFromNow(15)),
+        type: 'budget', client: 'Empresa XYZ',
+        phone: '+5511988880004',
+        desc: 'Pintura oficinas planta baja',
+        items: [
+          { description: 'Pintura acrilica (20L)', quantity: 8, unit_price: 90, total: 720 },
+          { description: 'Mano de obra (5 dias)', quantity: 5, unit_price: 400, total: 2000 },
+        ],
+        total: 2720, status: 'draft',
       },
       {
-        subscriber_id: subscriber.id,
-        document_type: 'budget',
-        client_name: 'Sra. Oliveira',
-        client_phone: '+5511988880005',
-        description: 'Pintura dormitorio matrimonial',
-        items: JSON.stringify([
-          {
-            description: 'Pintura premium colores (4L)',
-            quantity: 2,
-            unit_price: 65.0,
-            total: 130.0,
-          },
-          {
-            description: 'Mano de obra (1 dia)',
-            quantity: 1,
-            unit_price: 300.0,
-            total: 300.0,
-          },
-        ]),
-        total_amount: 430.0,
-        status: 'rejected',
-        valid_until: dateOnly(daysAgo(5)),
-        notes: 'Cliente opto por otro presupuesto',
+        type: 'budget', client: 'Sra. Oliveira',
+        phone: '+5511988880005',
+        desc: 'Pintura dormitorio matrimonial',
+        items: [
+          { description: 'Pintura premium (4L)', quantity: 2, unit_price: 65, total: 130 },
+          { description: 'Mano de obra (1 dia)', quantity: 1, unit_price: 300, total: 300 },
+        ],
+        total: 430, status: 'rejected',
       },
-
-      // Service Orders
       {
-        subscriber_id: subscriber.id,
-        document_type: 'service_order',
-        client_name: 'Condominio Sol',
-        client_phone: '+5511988880006',
-        client_email: 'admin@condominiosol.com',
-        description:
-          'Pintura area comun - hall y escaleras',
-        items: JSON.stringify([
-          {
-            description: 'Pintura latex (20L)',
-            quantity: 6,
-            unit_price: 85.0,
-            total: 510.0,
-          },
-          {
-            description: 'Mano de obra (3 dias, 2 pintores)',
-            quantity: 6,
-            unit_price: 300.0,
-            total: 1800.0,
-          },
-          {
-            description: 'Proteccion pisos y muebles',
-            quantity: 1,
-            unit_price: 100.0,
-            total: 100.0,
-          },
-        ]),
-        total_amount: 2410.0,
-        status: 'accepted',
-        valid_until: dateOnly(daysFromNow(30)),
-        notes: 'Horario: 8h-17h, sin fines de semana',
+        type: 'service_order', client: 'Condominio Sol',
+        phone: '+5511988880006',
+        desc: 'Pintura area comun - hall y escaleras',
+        items: [
+          { description: 'Pintura latex (20L)', quantity: 6, unit_price: 85, total: 510 },
+          { description: 'Mano de obra (3 dias)', quantity: 6, unit_price: 300, total: 1800 },
+        ],
+        total: 2310, status: 'accepted',
       },
     ];
 
-    await budgetRepo.save(budgets);
+    for (let i = 0; i < budgets.length; i++) {
+      const b = budgets[i];
+      const prefix = b.type === 'budget' ? 'BUD' : 'OS';
+      await ds.query(
+        `INSERT INTO budgets
+          (subscriber_id, document_type, document_number,
+           client_name, client_phone, description,
+           items, total_amount, status, valid_until)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          subId,
+          b.type,
+          `${prefix}-${String(i + 1).padStart(3, '0')}`,
+          b.client,
+          b.phone,
+          b.desc,
+          JSON.stringify(b.items),
+          b.total,
+          b.status,
+          daysFromNow(15),
+        ],
+      );
+    }
     console.log(`Budgets/Orders created: ${budgets.length}`);
   }
 
-  // === 9. Usage Tracking ===
-  const usageRepo = dataSource.getRepository('usage_tracking');
-  const existingUsage = await usageRepo.count({
-    where: { subscriber_id: subscriber.id },
-  });
+  // === 8. Usage Tracking ===
+  const curMonth = new Date();
+  curMonth.setDate(1);
+  const monthStr = curMonth.toISOString().split('T')[0];
 
-  if (existingUsage === 0) {
-    const currentMonth = new Date();
-    currentMonth.setDate(1);
-
-    await usageRepo.save({
-      subscriber_id: subscriber.id,
-      month: dateOnly(currentMonth),
-      messages_count: 127,
-      budgets_count: 6,
-      ai_calls_count: 89,
-    });
-    console.log('Usage tracking created for current month');
+  const [usageCount] = await ds.query(
+    `SELECT COUNT(*) as c FROM usage_tracking
+     WHERE subscriber_id = $1`,
+    [subId],
+  );
+  if (parseInt(usageCount.c) === 0) {
+    await ds.query(
+      `INSERT INTO usage_tracking
+        (subscriber_id, month, messages_count,
+         budgets_count, ai_calls_count)
+       VALUES ($1,$2,127,6,89)`,
+      [subId, monthStr],
+    );
+    console.log('Usage tracking created');
   }
 
-  // === 10. More demo subscribers for admin dashboard ===
+  // === 9. More Subscribers (admin dashboard) ===
   const demoSubs = [
-    {
-      phone: '+5511999990002',
-      business_name: 'Eletrica Silva',
-      owner_name: 'Roberto Silva',
-      email: 'roberto@demo.bosszap.com',
-      status: 'active',
-    },
-    {
-      phone: '+5511999990003',
-      business_name: 'Maria Beleza',
-      owner_name: 'Maria Fernandez',
-      email: 'maria@demo.bosszap.com',
-      status: 'active',
-    },
-    {
-      phone: '+5511999990004',
-      business_name: 'Pedro Encanamentos',
-      owner_name: 'Pedro Costa',
-      email: 'pedro@demo.bosszap.com',
-      status: 'active',
-    },
-    {
-      phone: '+5511999990005',
-      business_name: 'Ana Limpieza Pro',
-      owner_name: 'Ana Souza',
-      email: 'ana@demo.bosszap.com',
-      status: 'suspended',
-    },
-    {
-      phone: '+5511999990006',
-      business_name: 'Jorge Carpinteria',
-      owner_name: 'Jorge Ramirez',
-      email: 'jorge@demo.bosszap.com',
-      status: 'active',
-    },
-    {
-      phone: '+5511999990007',
-      business_name: 'Lucia Jardineria',
-      owner_name: 'Lucia Torres',
-      email: 'lucia@demo.bosszap.com',
-      status: 'cancelled',
-    },
-    {
-      phone: '+5511999990008',
-      business_name: 'Fernando AC Service',
-      owner_name: 'Fernando Lima',
-      email: 'fernando@demo.bosszap.com',
-      status: 'active',
-    },
-    {
-      phone: '+5511999990009',
-      business_name: 'Marcos Construccion',
-      owner_name: 'Marcos Vidal',
-      email: 'marcos@demo.bosszap.com',
-      status: 'trialing',
-    },
+    { phone: '+5511999990002', biz: 'Eletrica Silva', name: 'Roberto Silva', email: 'roberto@demo.bosszap.com', st: 'active' },
+    { phone: '+5511999990003', biz: 'Maria Beleza', name: 'Maria Fernandez', email: 'maria@demo.bosszap.com', st: 'active' },
+    { phone: '+5511999990004', biz: 'Pedro Encanamentos', name: 'Pedro Costa', email: 'pedro@demo.bosszap.com', st: 'active' },
+    { phone: '+5511999990005', biz: 'Ana Limpieza Pro', name: 'Ana Souza', email: 'ana@demo.bosszap.com', st: 'suspended' },
+    { phone: '+5511999990006', biz: 'Jorge Carpinteria', name: 'Jorge Ramirez', email: 'jorge@demo.bosszap.com', st: 'active' },
+    { phone: '+5511999990007', biz: 'Lucia Jardineria', name: 'Lucia Torres', email: 'lucia@demo.bosszap.com', st: 'cancelled' },
+    { phone: '+5511999990008', biz: 'Fernando AC Service', name: 'Fernando Lima', email: 'fernando@demo.bosszap.com', st: 'active' },
+    { phone: '+5511999990009', biz: 'Marcos Construccion', name: 'Marcos Vidal', email: 'marcos@demo.bosszap.com', st: 'trialing' },
   ];
 
-  for (const sub of demoSubs) {
-    const exists = await subRepo.findOne({
-      where: { phone: sub.phone },
-    });
+  for (const s of demoSubs) {
+    const [exists] = await ds.query(
+      `SELECT id FROM subscribers WHERE phone = $1`,
+      [s.phone],
+    );
     if (!exists) {
-      const created = await subRepo.save({
-        ...sub,
-        preferred_language: 'es',
-        plan_id: plan.id,
-        onboarding_completed_at:
-          sub.status !== 'trialing'
-            ? daysAgo(Math.floor(Math.random() * 60) + 5)
-            : null,
-      });
+      const onboarded = s.st !== 'trialing'
+        ? tsAgo(Math.floor(Math.random() * 60) + 5)
+        : null;
 
-      // Create subscription for each
-      const subStatus =
-        sub.status === 'suspended'
-          ? 'past_due'
-          : sub.status === 'cancelled'
-            ? 'cancelled'
-            : sub.status === 'trialing'
-              ? 'trialing'
-              : 'active';
+      const [created] = await ds.query(
+        `INSERT INTO subscribers
+          (phone, business_name, owner_name, email,
+           preferred_language, status, plan_id,
+           onboarding_completed_at)
+         VALUES ($1,$2,$3,$4,'es',$5,$6,$7)
+         RETURNING id`,
+        [s.phone, s.biz, s.name, s.email, s.st, planId, onboarded],
+      );
 
-      await subscRepo.save({
-        subscriber_id: created.id,
-        plan_id: plan.id,
-        status: subStatus,
-        trial_ends_at:
-          subStatus === 'trialing' ? daysFromNow(5) : null,
-        current_period_start: daysAgo(15),
-        current_period_end: daysFromNow(15),
-      });
+      const subSt = s.st === 'suspended' ? 'past_due'
+        : s.st === 'cancelled' ? 'cancelled'
+        : s.st === 'trialing' ? 'trialing' : 'active';
 
-      // Usage tracking
-      const currentMonth = new Date();
-      currentMonth.setDate(1);
-      await usageRepo.save({
-        subscriber_id: created.id,
-        month: dateOnly(currentMonth),
-        messages_count:
+      const [subsc] = await ds.query(
+        `INSERT INTO subscriptions
+          (subscriber_id, plan_id, status,
+           trial_ends_at, current_period_start,
+           current_period_end)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         RETURNING id`,
+        [
+          created.id, planId, subSt,
+          subSt === 'trialing' ? daysFromNow(5) : null,
+          daysAgo(15), daysFromNow(15),
+        ],
+      );
+
+      // Payments
+      if (subSt !== 'trialing') {
+        const pCount = subSt === 'cancelled' ? 2 : 3;
+        for (let i = 0; i < pCount; i++) {
+          await ds.query(
+            `INSERT INTO payments
+              (subscription_id, amount, status,
+               payment_method, paid_at)
+             VALUES ($1, 29.90, $2, $3, $4)`,
+            [
+              subsc.id,
+              subSt === 'past_due' && i === 0
+                ? 'failed' : 'succeeded',
+              Math.random() > 0.5
+                ? 'credit_card' : 'pix',
+              subSt === 'past_due' && i === 0
+                ? null : tsAgo(i * 30),
+            ],
+          );
+        }
+      }
+
+      // Usage
+      await ds.query(
+        `INSERT INTO usage_tracking
+          (subscriber_id, month, messages_count,
+           budgets_count, ai_calls_count)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [
+          created.id, monthStr,
           Math.floor(Math.random() * 300) + 20,
-        budgets_count: Math.floor(Math.random() * 20),
-        ai_calls_count:
+          Math.floor(Math.random() * 20),
           Math.floor(Math.random() * 150) + 10,
-      });
+        ],
+      );
     }
   }
   console.log(`Demo subscribers created: ${demoSubs.length}`);
 
-  // === 11. Payments for admin dashboard ===
-  const paymentRepo = dataSource.getRepository('payments');
-  const allSubs = await subscRepo.find();
-
-  for (const sub of allSubs) {
-    const existingPayments = await paymentRepo.count({
-      where: { subscription_id: sub.id },
-    });
-    if (existingPayments === 0 && sub.status !== 'trialing') {
-      const paymentCount =
-        sub.status === 'cancelled' ? 2 : 3;
-      for (let i = 0; i < paymentCount; i++) {
-        await paymentRepo.save({
-          subscription_id: sub.id,
-          amount: 29.90,
-          status:
-            sub.status === 'past_due' && i === 0
-              ? 'failed'
-              : 'succeeded',
-          payment_method:
+  // === 10. Payments for main subscriber ===
+  const [mainSubsc] = await ds.query(
+    `SELECT id FROM subscriptions
+     WHERE subscriber_id = $1 LIMIT 1`,
+    [subId],
+  );
+  if (mainSubsc) {
+    const [pCount] = await ds.query(
+      `SELECT COUNT(*) as c FROM payments
+       WHERE subscription_id = $1`,
+      [mainSubsc.id],
+    );
+    if (parseInt(pCount.c) === 0) {
+      for (let i = 0; i < 3; i++) {
+        await ds.query(
+          `INSERT INTO payments
+            (subscription_id, amount, status,
+             payment_method, paid_at)
+           VALUES ($1, 29.90, 'succeeded', $2, $3)`,
+          [
+            mainSubsc.id,
             Math.random() > 0.5 ? 'credit_card' : 'pix',
-          paid_at:
-            sub.status === 'past_due' && i === 0
-              ? null
-              : daysAgo(i * 30),
-        });
+            tsAgo(i * 30),
+          ],
+        );
       }
+      console.log('Payments created for main subscriber');
     }
   }
-  console.log('Payment records created for all subscribers');
 
-  await dataSource.destroy();
+  await ds.destroy();
 
   console.log('\n========================================');
   console.log('  DEMO SEED COMPLETE!');
   console.log('========================================');
   console.log('');
-  console.log('  Subscriber Dashboard Login:');
-  console.log('    URL:      http://localhost:3001/es/login');
-  console.log('    Email:    carlos@demo.bosszap.com');
-  console.log('    Password: Demo2024!');
+  console.log('  Subscriber Dashboard:');
+  console.log('    http://localhost:3001/es/login');
+  console.log('    carlos@demo.bosszap.com / Demo2024!');
   console.log('');
-  console.log('  Admin Dashboard Login:');
-  console.log('    URL:      http://localhost:3002/es/login');
-  console.log('    Email:    admin@bosszap.com');
-  console.log('    Password: BossZap2024!');
+  console.log('  Admin Dashboard:');
+  console.log('    http://localhost:3002/es/login');
+  console.log('    admin@bosszap.com / BossZap2024!');
   console.log('');
   console.log('  Landing Page:');
-  console.log('    URL:      http://localhost:3003/es');
+  console.log('    http://localhost:3003/es');
   console.log('========================================\n');
 }
 
