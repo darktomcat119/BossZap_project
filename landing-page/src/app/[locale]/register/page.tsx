@@ -3,7 +3,20 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
-import { Zap, ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import Image from "next/image";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Loader2,
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { ParticleCanvas } from "@/components/shared/particle-canvas";
 
 type FormData = {
   name: string;
@@ -13,6 +26,8 @@ type FormData = {
   confirmPassword: string;
 };
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const TOTAL_STEPS = 4;
 
 export default function RegisterPage() {
@@ -20,6 +35,8 @@ export default function RegisterPage() {
   const tPricing = useTranslations("pricing");
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [apiError, setApiError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState<FormData>({
     name: "",
     email: "",
@@ -31,6 +48,7 @@ export default function RegisterPage() {
   const update = (field: keyof FormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+    setApiError("");
   };
 
   const validateStep1 = () => {
@@ -52,12 +70,54 @@ export default function RegisterPage() {
     return Object.keys(e).length === 0;
   };
 
+  const registerAccount = async () => {
+    setStep(4);
+    setApiError("");
+
+    try {
+      const res = await fetch(`${API_URL}/api/v1/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          phone: form.phone,
+          owner_name: form.name,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setApiError(
+          data?.error?.message || data?.message || "Registration failed",
+        );
+        setStep(3);
+        return;
+      }
+
+      // Store tokens and redirect to subscriber dashboard
+      const tokens = data?.data || data;
+      if (tokens.access_token) {
+        localStorage.setItem("access_token", tokens.access_token);
+        localStorage.setItem("refresh_token", tokens.refresh_token);
+      }
+
+      // Redirect to subscriber app
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
+      window.location.href = `${appUrl}/es/dashboard`;
+    } catch {
+      setApiError("Connection error. Please try again.");
+      setStep(3);
+    }
+  };
+
   const next = () => {
     if (step === 1 && !validateStep1()) return;
     if (step === 2 && !validateStep2()) return;
     if (step === 3) {
-      setStep(4);
-      // In production: call API to create account + Stripe checkout
+      registerAccount();
       return;
     }
     setStep((s) => Math.min(s + 1, TOTAL_STEPS));
@@ -67,222 +127,257 @@ export default function RegisterPage() {
 
   const features = tPricing.raw("plan.features") as string[];
 
+  const inputCls = (hasError: boolean) =>
+    `w-full rounded-xl border ${
+      hasError ? "border-red-500/50" : "border-white/10"
+    } bg-white/[0.06] py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/25 transition-all focus:border-emerald-500/60 focus:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-emerald-500/20`;
+
+  const iconCls =
+    "pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
-      {/* Logo */}
-      <Link
-        href="/"
-        className="flex items-center gap-2 mb-8"
-      >
-        <Zap className="w-7 h-7 text-primary" />
-        <span className="text-2xl font-bold text-text-primary">
-          BossZap
-        </span>
-      </Link>
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#0f1628] via-[#1a1f36] to-[#12182e] px-4 py-8">
+      <ParticleCanvas
+        particleCount={50}
+        color="0, 212, 170"
+        maxDistance={130}
+        speed={0.2}
+      />
 
-      {/* Progress */}
-      <div className="flex items-center gap-2 mb-8">
-        {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-          <div
-            key={i}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              i + 1 <= step
-                ? "w-10 bg-primary"
-                : "w-10 bg-border"
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Card */}
-      <div className="w-full max-w-md bg-surface rounded-2xl shadow-lg p-6 md:p-8">
-        <h1 className="text-2xl font-bold text-text-primary mb-1">
-          {t("title")}
-        </h1>
-        <p className="text-sm text-text-muted mb-6">
-          {step <= 3
-            ? t(`step${step}` as "step1" | "step2" | "step3")
-            : t("step4")}
-        </p>
-
-        {/* Step 1: Personal info */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                {t("name")}
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => update("name", e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                  errors.name
-                    ? "border-danger"
-                    : "border-border"
-                }`}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                {t("email")}
-              </label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) =>
-                  update("email", e.target.value)
-                }
-                className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                  errors.email
-                    ? "border-danger"
-                    : "border-border"
-                }`}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                {t("phone")}
-              </label>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) =>
-                  update("phone", e.target.value)
-                }
-                placeholder="+55 11 99999-9999"
-                className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                  errors.phone
-                    ? "border-danger"
-                    : "border-border"
-                }`}
-              />
-            </div>
+      <div className="relative z-10 w-full max-w-full sm:max-w-[420px]">
+        {/* Logo */}
+        <Link href="/" className="mb-6 flex justify-center">
+          <div className="relative">
+            <div className="absolute inset-0 m-auto h-20 w-20 rounded-full bg-white/15 blur-[50px]" />
+            <Image
+              src="/bosszap_logo.png"
+              alt="BossZap"
+              width={80}
+              height={84}
+              className="relative h-16 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+            />
           </div>
-        )}
+        </Link>
 
-        {/* Step 2: Password */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                {t("password")}
-              </label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) =>
-                  update("password", e.target.value)
-                }
-                className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                  errors.password
-                    ? "border-danger"
-                    : "border-border"
-                }`}
-              />
-              <p className="mt-1 text-xs text-text-muted">
-                {t("passwordHint")}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                {t("confirmPassword")}
-              </label>
-              <input
-                type="password"
-                value={form.confirmPassword}
-                onChange={(e) =>
-                  update("confirmPassword", e.target.value)
-                }
-                className={`w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                  errors.confirmPassword
-                    ? "border-danger"
-                    : "border-border"
-                }`}
-              />
-              {errors.confirmPassword && (
-                <p className="mt-1 text-xs text-danger">
-                  {t("passwordMismatch")}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Progress */}
+        <div className="mb-6 flex items-center justify-center gap-2">
+          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i + 1 <= step
+                  ? "w-10 bg-emerald-500"
+                  : "w-10 bg-white/10"
+              }`}
+            />
+          ))}
+        </div>
 
-        {/* Step 3: Plan selection */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <div className="border-2 border-primary rounded-xl p-5">
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-extrabold text-text-primary">
-                  {tPricing("plan.price")}
-                </span>
-                <span className="text-text-muted">
-                  {tPricing("plan.period")}
-                </span>
-              </div>
-              <ul className="mt-4 space-y-2.5">
-                {features.map((f, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-2 text-sm text-text-primary"
-                  >
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 text-xs text-text-muted text-center">
-                {t("trialInfo")}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Redirecting */}
-        {step === 4 && (
-          <div className="flex flex-col items-center py-8">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="mt-4 text-text-secondary">
-              {t("redirectingToPayment")}
-            </p>
-          </div>
-        )}
-
-        {/* Actions */}
-        {step < 4 && (
-          <div className="mt-6 flex gap-3">
-            {step > 1 && (
-              <button
-                onClick={back}
-                className="flex items-center gap-1 px-4 py-3 text-sm font-medium text-text-secondary border border-border rounded-lg hover:bg-background transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {t("back")}
-              </button>
-            )}
-            <button
-              onClick={next}
-              className="flex-1 flex items-center justify-center gap-1 px-4 py-3 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              {step === 3 ? t("createAccount") : t("continue")}
-              {step < 3 && <ArrowRight className="w-4 h-4" />}
-            </button>
-          </div>
-        )}
-
-        {/* Login link */}
-        {step < 4 && (
-          <p className="mt-6 text-center text-sm text-text-muted">
-            {t("alreadyHaveAccount")}{" "}
-            <Link
-              href="/login"
-              className="text-primary font-medium hover:underline"
-            >
-              {t("login")}
-            </Link>
+        {/* Card */}
+        <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.07] to-white/[0.03] p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+          <h1 className="text-xl font-bold text-white/90 mb-1">
+            {t("title")}
+          </h1>
+          <p className="text-sm text-white/40 mb-6">
+            {step <= 3
+              ? t(`step${step}` as "step1" | "step2" | "step3")
+              : t("step4")}
           </p>
-        )}
+
+          {apiError && (
+            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              {apiError}
+            </div>
+          )}
+
+          {/* Step 1: Personal info */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-white/50">
+                  {t("name")}
+                </label>
+                <div className="relative">
+                  <User className={iconCls} />
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => update("name", e.target.value)}
+                    className={inputCls(!!errors.name)}
+                    placeholder={t("name")}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-white/50">
+                  {t("email")}
+                </label>
+                <div className="relative">
+                  <Mail className={iconCls} />
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => update("email", e.target.value)}
+                    className={inputCls(!!errors.email)}
+                    placeholder={t("email")}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-white/50">
+                  {t("phone")}
+                </label>
+                <div className="relative">
+                  <Phone className={iconCls} />
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => update("phone", e.target.value)}
+                    placeholder="+55 11 99999-9999"
+                    className={inputCls(!!errors.phone)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Password */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-white/50">
+                  {t("password")}
+                </label>
+                <div className="relative">
+                  <Lock className={iconCls} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={(e) =>
+                      update("password", e.target.value)
+                    }
+                    className={`${inputCls(!!errors.password)} pr-11`}
+                    placeholder={t("passwordHint")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-white/30">
+                  {t("passwordHint")}
+                </p>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-white/50">
+                  {t("confirmPassword")}
+                </label>
+                <div className="relative">
+                  <Lock className={iconCls} />
+                  <input
+                    type="password"
+                    value={form.confirmPassword}
+                    onChange={(e) =>
+                      update("confirmPassword", e.target.value)
+                    }
+                    className={inputCls(!!errors.confirmPassword)}
+                    placeholder={t("confirmPassword")}
+                  />
+                </div>
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {t("passwordMismatch")}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Plan selection */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-extrabold text-white">
+                    {tPricing("plan.price")}
+                  </span>
+                  <span className="text-white/40">
+                    {tPricing("plan.period")}
+                  </span>
+                </div>
+                <ul className="mt-4 space-y-2.5">
+                  {features.map((f, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 text-sm text-white/70"
+                    >
+                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-4 text-xs text-white/30 text-center">
+                  {t("trialInfo")}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Processing */}
+          {step === 4 && (
+            <div className="flex flex-col items-center py-8">
+              <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+              <p className="mt-4 text-white/50">
+                {t("redirectingToPayment")}
+              </p>
+            </div>
+          )}
+
+          {/* Actions */}
+          {step < 4 && (
+            <div className="mt-6 flex gap-3">
+              {step > 1 && (
+                <button
+                  onClick={back}
+                  className="flex items-center gap-1 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/60 transition-colors hover:bg-white/5"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  {t("back")}
+                </button>
+              )}
+              <button
+                onClick={next}
+                className="group relative flex-1 flex items-center justify-center gap-1 overflow-hidden rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-xl hover:shadow-emerald-500/30 active:scale-[0.98]"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 transition-opacity group-hover:opacity-100" />
+                {step === 3
+                  ? t("createAccount")
+                  : t("continue")}
+                {step < 3 && <ArrowRight className="w-4 h-4" />}
+              </button>
+            </div>
+          )}
+
+          {/* Login link */}
+          {step < 4 && (
+            <p className="mt-6 text-center text-sm text-white/40">
+              {t("alreadyHaveAccount")}{" "}
+              <Link
+                href="/login"
+                className="font-medium text-emerald-400 hover:text-emerald-300"
+              >
+                {t("login")}
+              </Link>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
