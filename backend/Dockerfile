@@ -8,7 +8,7 @@ COPY . .
 CMD ["npm", "run", "start:dev"]
 
 FROM base AS build
-RUN npm ci
+RUN npm install
 COPY . .
 RUN npm run build
 

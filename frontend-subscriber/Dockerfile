@@ -20,13 +20,13 @@ CMD ["npm", "run", "dev"]
 FROM base AS deps
 
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # --- Builder ---
 FROM base AS builder
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 
