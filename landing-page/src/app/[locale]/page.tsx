@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import { usePathname, useRouter, Link } from "@/i18n/routing";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -50,19 +51,84 @@ const scaleIn = {
 function LanguageSwitcher({ dark = true }: { dark?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
+  const params = useParams();
+  const currentLocale = (params?.locale as string) || "es";
+  const [open, setOpen] = useState(false);
+
   const locales = [
-    { code: "es" as const, label: "ES" },
-    { code: "en" as const, label: "EN" },
-    { code: "pt-BR" as const, label: "PT" },
+    { code: "es" as const, label: "Español", flag: "🇪🇸" },
+    { code: "en" as const, label: "English", flag: "🇺🇸" },
+    { code: "pt-BR" as const, label: "Português", flag: "🇧🇷" },
   ];
+
+  const current = locales.find((l) => l.code === currentLocale) || locales[0];
+
   return (
-    <div className="flex items-center gap-0.5">
-      <Globe className={cn("w-3.5 h-3.5", dark ? "text-gray-400" : "text-gray-500")} />
-      {locales.map((loc) => (
-        <button key={loc.code} onClick={() => router.replace(pathname, { locale: loc.code })} className={cn("px-1.5 py-0.5 text-xs rounded transition-colors", dark ? "text-gray-400 hover:text-emerald-400" : "text-gray-500 hover:text-emerald-600")}>
-          {loc.label}
-        </button>
-      ))}
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all",
+          dark
+            ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+            : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+        )}
+      >
+        <span className="text-base leading-none">{current.flag}</span>
+        <span className="hidden sm:inline">{current.label}</span>
+        <span className="sm:hidden uppercase">{current.code.split("-")[0]}</span>
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className={cn(
+              "absolute right-0 mt-2 w-44 rounded-xl border shadow-xl z-50 overflow-hidden",
+              dark
+                ? "bg-[#0f1628] border-white/10"
+                : "bg-white border-gray-200",
+            )}
+          >
+            {locales.map((loc) => {
+              const isActive = loc.code === currentLocale;
+              return (
+                <button
+                  key={loc.code}
+                  type="button"
+                  onClick={() => {
+                    router.replace(pathname, { locale: loc.code });
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left",
+                    dark
+                      ? "text-gray-300 hover:bg-white/5"
+                      : "text-gray-700 hover:bg-gray-50",
+                    isActive && (dark ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"),
+                  )}
+                >
+                  <span className="text-xl leading-none">{loc.flag}</span>
+                  <span className="font-medium">{loc.label}</span>
+                  {isActive && (
+                    <Check className={cn("w-4 h-4 ml-auto", dark ? "text-emerald-400" : "text-emerald-600")} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -287,11 +353,11 @@ function FeaturesSection() {
     { image: "/images/feature-calendar.jpg", icon: CalendarCheck, iconColor: "text-emerald-600", iconBg: "bg-emerald-50", title: t("schedule.title"), description: t("schedule.description") },
     { image: "/images/feature-finance.jpg", icon: DollarSign, iconColor: "text-blue-600", iconBg: "bg-blue-50", title: t("finance.title"), description: t("finance.description") },
     { image: "/images/feature-pdf.jpg", icon: FileText, iconColor: "text-purple-600", iconBg: "bg-purple-50", title: t("budgets.title"), description: t("budgets.description") },
-    { image: "/images/feature-whatsapp.jpg", icon: MessageCircle, iconColor: "text-green-600", iconBg: "bg-green-50", title: "WhatsApp AI", description: tFeatSection("subtitle") },
-    { image: "/images/feature-dashboard.jpg", icon: LayoutDashboard, iconColor: "text-orange-600", iconBg: "bg-orange-50", title: "Dashboard", description: "Charts, reports, and analytics from any device." },
-    { image: "/images/feature-ai.jpg", icon: Bot, iconColor: "text-cyan-600", iconBg: "bg-cyan-50", title: "AI Assistant", description: "Understands text and voice. Works 24/7." },
-    { image: "/images/feature-reports.jpg", icon: BarChart3, iconColor: "text-rose-600", iconBg: "bg-rose-50", title: "Reports & CSV", description: "Export your financial data anytime." },
-    { image: "/images/feature-team.jpg", icon: Users, iconColor: "text-indigo-600", iconBg: "bg-indigo-50", title: "Client Tracking", description: "Never lose track of a client or job." },
+    { image: "/images/feature-whatsapp.jpg", icon: MessageCircle, iconColor: "text-green-600", iconBg: "bg-green-50", title: tFeatSection("whatsappAi"), description: tFeatSection("subtitle") },
+    { image: "/images/feature-dashboard.jpg", icon: LayoutDashboard, iconColor: "text-orange-600", iconBg: "bg-orange-50", title: tFeatSection("dashboard"), description: tFeatSection("dashboardDesc") },
+    { image: "/images/feature-ai.jpg", icon: Bot, iconColor: "text-cyan-600", iconBg: "bg-cyan-50", title: tFeatSection("aiAssistant"), description: tFeatSection("aiAssistantDesc") },
+    { image: "/images/feature-reports.jpg", icon: BarChart3, iconColor: "text-rose-600", iconBg: "bg-rose-50", title: tFeatSection("reportsCsv"), description: tFeatSection("reportsCsvDesc") },
+    { image: "/images/feature-team.jpg", icon: Users, iconColor: "text-indigo-600", iconBg: "bg-indigo-50", title: tFeatSection("clientTracking"), description: tFeatSection("clientTrackingDesc") },
   ];
 
   return (
@@ -352,31 +418,53 @@ function HowItWorksSection() {
 
 /* ─── Demo / Carousel Section ─── */
 function DemoSection() {
+  const tDemo = useTranslations("demoSection");
+
   const demoScreens = [
     {
       id: "demo-schedule",
       messages: [
-        { id: 1, type: "sent" as const, text: "Tenho um serviço amanhã às 9h na Av. Paulista", time: "08:15" },
-        { id: 2, type: "received" as const, text: "Agendado! 📅\n\"Serviço - Av. Paulista\"\nAmanhã, 9:00\nTe aviso 1h antes!", time: "08:15" },
-        { id: 3, type: "sent" as const, text: "Gastei R$80 em material", time: "08:16" },
-        { id: 4, type: "received" as const, text: "Registrado! 💰\nDespesa: R$80,00 - Materiais\nSaldo do mês: R$4.320,00", time: "08:16" },
+        { id: 1, type: "sent" as const, text: "Tenho uma pintura amanhã às 14h na Rua Augusta 480", time: "09:30" },
+        { id: 2, type: "received" as const, text: "Compromisso agendado! 📅\n\"Pintura - Rua Augusta 480\"\nAmanhã às 14:00\nVou te lembrar 1h antes!", time: "09:30" },
       ],
       badges: [
-        { position: "top-left" as const, icon: "pdf" as const, title: "Agenda organizada", subtitle: "Lembretes automáticos", appearsAfterMessage: 1 },
-        { position: "bottom-right" as const, icon: "revenue" as const, title: "+R$4.320", subtitle: "Lucro do mês", appearsAfterMessage: 3 },
+        { position: "top-left" as const, icon: "pdf" as const, title: "Agenda atualizada", subtitle: "Lembrete automático ativado", appearsAfterMessage: 1 },
+        { position: "bottom-right" as const, icon: "revenue" as const, title: "3 trabalhos", subtitle: "Agendados esta semana", appearsAfterMessage: 1 },
       ],
     },
     {
-      id: "demo-voice",
+      id: "demo-expense",
       messages: [
-        { id: 1, type: "sent" as const, text: "", time: "11:40", isVoice: true, voiceDuration: "0:12" },
-        { id: 2, type: "received" as const, text: "Entendi! Orçamento para pintura de sala para o Sr. Silva.", time: "11:40" },
-        { id: 3, type: "sent" as const, text: "Isso mesmo, manda pra ele", time: "11:41" },
-        { id: 4, type: "received" as const, text: "Orçamento criado e enviado! 📄\nCliente: Sr. Silva\nTotal: R$1.850,00 ✅", time: "11:41" },
+        { id: 1, type: "sent" as const, text: "Gastei R$150 em tinta e pincéis", time: "14:20" },
+        { id: 2, type: "received" as const, text: "Despesa registrada! 💰\nR$150,00 - Materiais\nSeu lucro este mês: R$2.190,00", time: "14:20" },
+      ],
+      badges: [
+        { position: "top-left" as const, icon: "revenue" as const, title: "Despesa salva", subtitle: "Categoria: Materiais", appearsAfterMessage: 1 },
+        { position: "bottom-right" as const, icon: "revenue" as const, title: "R$2.190", subtitle: "Lucro atualizado", appearsAfterMessage: 1 },
+      ],
+    },
+    {
+      id: "demo-quote",
+      messages: [
+        { id: 1, type: "sent" as const, text: "", time: "11:40", isVoice: true, voiceDuration: "0:08" },
+        { id: 2, type: "received" as const, text: "Entendi! Orçamento para reforma de banheiro para o Sr. Silva. Gerando PDF...", time: "11:40" },
+        { id: 3, type: "sent" as const, text: "Manda pra ele", time: "11:41" },
+        { id: 4, type: "received" as const, text: "PDF enviado para Sr. Silva! 📄\nReforma banheiro\nTotal: R$3.200,00 ✅", time: "11:41" },
       ],
       badges: [
         { position: "top-left" as const, icon: "pdf" as const, title: "Áudio transcrito", subtitle: "IA entende sua voz", appearsAfterMessage: 1 },
-        { position: "bottom-right" as const, icon: "pdf" as const, title: "PDF enviado", subtitle: "Com sua marca", appearsAfterMessage: 3 },
+        { position: "bottom-right" as const, icon: "pdf" as const, title: "PDF enviado", subtitle: "Com sua marca e logo", appearsAfterMessage: 3 },
+      ],
+    },
+    {
+      id: "demo-report",
+      messages: [
+        { id: 1, type: "sent" as const, text: "Quanto ganhei esse mês?", time: "18:00" },
+        { id: 2, type: "received" as const, text: "Relatório de Abril:\n\n📈 Receitas: R$8.500,00\n📉 Despesas: R$2.180,00\n💰 Lucro: R$6.320,00\n\n+23% comparado ao mês anterior! 🎉", time: "18:00" },
+      ],
+      badges: [
+        { position: "top-left" as const, icon: "revenue" as const, title: "Lucro +23%", subtitle: "vs. mês anterior", appearsAfterMessage: 1 },
+        { position: "bottom-right" as const, icon: "revenue" as const, title: "R$6.320", subtitle: "Lucro do mês", appearsAfterMessage: 1 },
       ],
     },
   ];
@@ -395,21 +483,21 @@ function DemoSection() {
           {/* Right: content */}
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
             <motion.span variants={fadeUp} className="inline-block px-4 py-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 rounded-full uppercase tracking-wider border border-emerald-500/20">
-              See it in action
+              {tDemo("badge")}
             </motion.span>
             <motion.h2 variants={fadeUp} className="mt-4 text-3xl md:text-4xl font-bold text-white tracking-tight">
-              Your virtual business partner
+              {tDemo("title")}
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-4 text-gray-400 leading-relaxed">
-              BossZap works like a smart assistant on WhatsApp. Just tell it what happened — a new job, an expense, a client request — and it handles the rest.
+              {tDemo("subtitle")}
             </motion.p>
 
             <motion.div variants={stagger} className="mt-8 space-y-4">
               {[
-                { icon: MessageCircle, text: "\"I have a painting job tomorrow at 2pm at Rua Augusta 480\"" },
-                { icon: DollarSign, text: "\"I spent R$150 on paint and brushes\"" },
-                { icon: FileText, text: "\"Create a quote for bathroom renovation for Mr. Silva\"" },
-                { icon: BarChart3, text: "\"How much did I earn this month?\"" },
+                { icon: MessageCircle, text: tDemo("example1") },
+                { icon: DollarSign, text: tDemo("example2") },
+                { icon: FileText, text: tDemo("example3") },
+                { icon: BarChart3, text: tDemo("example4") },
               ].map((item, i) => (
                 <motion.div key={i} variants={fadeUp} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">

@@ -172,8 +172,8 @@ function Badge({
         "border border-gray-100",
         "transition-all duration-500",
         isTopLeft
-          ? "top-16 -left-10 sm:-left-16"
-          : "bottom-20 -right-10 sm:-right-16",
+          ? "top-24 left-2 sm:-left-4"
+          : "bottom-28 right-2 sm:-right-4",
         visible
           ? "opacity-100 scale-100 translate-y-0"
           : "opacity-0 scale-75 translate-y-4",

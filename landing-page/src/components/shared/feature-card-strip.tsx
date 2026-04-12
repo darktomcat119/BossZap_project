@@ -81,7 +81,12 @@ export function FeatureCardStrip({
   }, [speed, direction, cards.length]);
 
   return (
-    <div className={cn("overflow-hidden", className)}>
+    <div className={cn("relative overflow-hidden", className)}>
+      {/* Left fade */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-12 lg:w-24 bg-gradient-to-r from-white to-transparent z-10" />
+      {/* Right fade */}
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-12 lg:w-24 bg-gradient-to-l from-white to-transparent z-10" />
+
       <div
         ref={trackRef}
         className="flex will-change-transform"

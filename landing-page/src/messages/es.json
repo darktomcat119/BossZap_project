@@ -170,7 +170,25 @@
     "forProfessionals": "Para Profesionales"
   },
   "featuresSection": {
-    "subtitle": "Todo gestionado a través de WhatsApp — la app que tus clientes ya usan."
+    "subtitle": "Todo gestionado a través de WhatsApp — la app que tus clientes ya usan.",
+    "whatsappAi": "WhatsApp IA",
+    "dashboard": "Dashboard",
+    "dashboardDesc": "Gráficos, reportes y análisis desde cualquier dispositivo.",
+    "aiAssistant": "Asistente IA",
+    "aiAssistantDesc": "Entiende texto y audio. Funciona 24/7.",
+    "reportsCsv": "Reportes y CSV",
+    "reportsCsvDesc": "Exporta tus datos financieros cuando quieras.",
+    "clientTracking": "Gestión de Clientes",
+    "clientTrackingDesc": "Nunca pierdas de vista un cliente o trabajo."
+  },
+  "demoSection": {
+    "badge": "Míralo en acción",
+    "title": "Tu socio virtual de negocios",
+    "subtitle": "BossZap funciona como un asistente inteligente en WhatsApp. Solo dile lo que pasó — un nuevo trabajo, un gasto, un pedido de cliente — y él se encarga del resto.",
+    "example1": "\"Tengo una pintura mañana a las 14h en Rua Augusta 480\"",
+    "example2": "\"Gasté R$150 en pintura y pinceles\"",
+    "example3": "\"Haz un presupuesto de reforma de baño para el Sr. Silva\"",
+    "example4": "\"¿Cuánto gané este mes?\""
   },
   "howItWorksSection": {
     "subtitle": "Tres pasos simples. Sin necesidad de entrenamiento."

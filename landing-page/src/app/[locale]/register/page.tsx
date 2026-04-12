@@ -148,13 +148,13 @@ export default function RegisterPage() {
         {/* Logo */}
         <Link href="/" className="mb-6 flex justify-center">
           <div className="relative">
-            <div className="absolute inset-0 m-auto h-20 w-20 rounded-full bg-white/15 blur-[50px]" />
+            <div className="absolute -inset-4 m-auto h-32 w-32 rounded-full bg-white/15 blur-[60px]" />
             <Image
               src="/bosszap_logo.png"
               alt="BossZap"
-              width={80}
-              height={84}
-              className="relative h-16 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+              width={160}
+              height={168}
+              className="relative h-32 w-auto drop-shadow-[0_0_40px_rgba(255,255,255,0.2)]"
             />
           </div>
         </Link>
