@@ -41,7 +41,7 @@ async function seed() {
   // --- 2. Admin User ---
   const adminRepo = dataSource.getRepository('admin_users');
   const existingAdmin = await adminRepo.findOne({
-    where: { email: 'admin@bosszap.com' },
+    where: { email: 'dev@bosszap.com.br' },
   });
 
   if (!existingAdmin) {
@@ -49,12 +49,12 @@ async function seed() {
     const hash = await bcrypt.hash(password, SALT_ROUNDS);
 
     await adminRepo.save({
-      email: 'admin@bosszap.com',
+      email: 'dev@bosszap.com.br',
       password_hash: hash,
       role: 'master',
       preferred_language: 'es',
     });
-    console.log('Admin user created: admin@bosszap.com');
+    console.log('Admin user created: dev@bosszap.com.br');
     console.log(
       `  Password: ${password} (change this immediately!)`,
     );

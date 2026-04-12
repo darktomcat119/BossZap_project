@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -69,6 +67,7 @@ services:
       NEXT_PUBLIC_WS_URL: http://localhost:3000
     volumes:
       - ./frontend-subscriber/src:/app/src
+      - ./frontend-subscriber/public:/app/public
       - /app/node_modules
     depends_on:
       - backend
@@ -86,6 +85,7 @@ services:
       NEXT_PUBLIC_WS_URL: http://localhost:3000
     volumes:
       - ./frontend-admin/src:/app/src
+      - ./frontend-admin/public:/app/public
       - /app/node_modules
     depends_on:
       - backend
@@ -100,6 +100,7 @@ services:
       - '3003:3000'
     volumes:
       - ./landing-page/src:/app/src
+      - ./landing-page/public:/app/public
       - /app/node_modules
 
 volumes:

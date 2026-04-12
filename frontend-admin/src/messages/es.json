@@ -55,7 +55,7 @@
     "password": "Contrasena",
     "logout": "Cerrar Sesion",
     "loginError": "Correo o contrasena invalidos",
-    "emailPlaceholder": "admin@bosszap.com",
+    "emailPlaceholder": "dev@bosszap.com.br",
     "passwordPlaceholder": "Ingrese su contrasena"
   },
   "overview": {

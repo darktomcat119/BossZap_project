@@ -101,13 +101,20 @@ export default function FinancialPage() {
       ]);
 
       if (summaryRes.success) setSummary(summaryRes.data);
-      if (trendRes.success) setTrendData(trendRes.data);
-      if (catRes.success) {
-        setCategoryData(catRes.data);
-        const cats = catRes.data.map((c) => c.category).filter(Boolean);
-        setCategories(cats);
+      if (trendRes.success) {
+        const t = trendRes.data as any;
+        setTrendData(Array.isArray(t) ? t : []);
       }
-      if (dailyRes.success) setDailyData(dailyRes.data);
+      if (catRes.success) {
+        const c = catRes.data as any;
+        const catList = Array.isArray(c) ? c : [];
+        setCategoryData(catList);
+        setCategories(catList.map((item: any) => item.category).filter(Boolean));
+      }
+      if (dailyRes.success) {
+        const d = dailyRes.data as any;
+        setDailyData(Array.isArray(d) ? d : []);
+      }
     } catch {
       // Silently handle - data stays empty
     } finally {
@@ -128,8 +135,11 @@ export default function FinancialPage() {
         limit: ITEMS_PER_PAGE,
       });
       if (res.success) {
-        setRecords(res.data);
-        setMeta(res.meta ?? null);
+        const raw = res.data as any;
+        const list = Array.isArray(raw) ? raw : (raw?.records ?? []);
+        setRecords(list);
+        const paginationMeta = res.meta ?? (raw?.total ? { page: raw.page ?? page, limit: ITEMS_PER_PAGE, total: raw.total, totalPages: Math.ceil(raw.total / ITEMS_PER_PAGE) } : null);
+        setMeta(paginationMeta);
       }
     } catch {
       setRecords([]);
@@ -250,12 +260,12 @@ export default function FinancialPage() {
               {([
                 { label: t("totalIncome"), value: summary.total_income, color: "text-success" },
                 { label: t("totalExpenses"), value: summary.total_expense, color: "text-danger" },
-                { label: t("netProfit"), value: summary.net, color: summary.net >= 0 ? "text-success" : "text-danger" },
+                { label: t("netProfit"), value: summary.net, color: Number(summary.net) >= 0 ? "text-success" : "text-danger" },
               ] as const).map((card) => (
                 <div key={card.label} className="rounded-xl border border-border bg-surface p-5 shadow-sm">
                   <p className="text-sm text-text-secondary">{card.label}</p>
                   <p className={cn("mt-1 text-2xl font-bold", card.color)}>
-                    R$ {card.value.toFixed(2).replace(".", ",")}
+                    R$ {(parseFloat(String(card.value)) || 0).toFixed(2).replace(".", ",")}
                   </p>
                 </div>
               ))}
@@ -371,7 +381,7 @@ export default function FinancialPage() {
                           )}
                         >
                           {rec.type === "income" ? "+" : "-"}R${" "}
-                          {rec.amount.toFixed(2).replace(".", ",")}
+                          {(parseFloat(String(rec.amount)) || 0).toFixed(2).replace(".", ",")}
                         </td>
                       </tr>
                     ))}
@@ -429,7 +439,7 @@ export default function FinancialPage() {
                         )}
                       >
                         {rec.type === "income" ? "+" : "-"}R${" "}
-                        {rec.amount.toFixed(2).replace(".", ",")}
+                        {(parseFloat(String(rec.amount)) || 0).toFixed(2).replace(".", ",")}
                       </span>
                     </div>
                   </div>

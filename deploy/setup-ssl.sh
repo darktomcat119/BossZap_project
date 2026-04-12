@@ -7,8 +7,8 @@ set -euo pipefail
 # Usage: sudo ./deploy/setup-ssl.sh
 # ============================================================
 
-DOMAIN="bosszap.com"
-EMAIL="admin@bosszap.com"
+DOMAIN="bosszap.com.br"
+EMAIL="dev@bosszap.com.br"
 
 echo "Requesting SSL certificates..."
 

@@ -31,7 +31,7 @@ class WebSocketService {
     this.socket.on('connect', () => {
       // Re-register listeners after reconnect
       for (const entry of this.listeners) {
-        this.socket?.on(entry.event, entry.callback as (...args: unknown[]) => void);
+        this.socket?.on(entry.event, entry.callback as any);
       }
     });
 
@@ -41,7 +41,7 @@ class WebSocketService {
 
     // Register existing listeners on the new socket
     for (const entry of this.listeners) {
-      this.socket.on(entry.event, entry.callback as (...args: unknown[]) => void);
+      this.socket.on(entry.event, entry.callback as any);
     }
   }
 
@@ -65,7 +65,7 @@ class WebSocketService {
     this.listeners.push(entry);
 
     if (this.socket) {
-      this.socket.on(event, callback as (...args: unknown[]) => void);
+      this.socket.on(event, callback as any);
     }
   }
 
@@ -79,7 +79,7 @@ class WebSocketService {
     );
 
     if (this.socket) {
-      this.socket.off(event, callback as (...args: unknown[]) => void);
+      this.socket.off(event, callback as any);
     }
   }
 

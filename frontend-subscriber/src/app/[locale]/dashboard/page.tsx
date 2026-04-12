@@ -30,43 +30,43 @@ import {
 
 // ─── Date helpers ───────────────────────────────────────────────────────────
 
-function startOfMonth(): string {
+function daysAgo(n: number): string {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split("T")[0];
 }
 
-function endOfToday(): string {
+function today(): string {
   return new Date().toISOString().split("T")[0];
 }
 
-function startOfPrevMonth(): string {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth() - 1, 1)
-    .toISOString()
-    .split("T")[0];
-}
-
-function endOfPrevMonth(): string {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 0)
-    .toISOString()
-    .split("T")[0];
-}
+// Current period: last 30 days. Previous period: 30 days before that.
+const PERIOD_DAYS = 30;
+const currentStart = () => daysAgo(PERIOD_DAYS);
+const currentEnd = () => today();
+const prevStart = () => daysAgo(PERIOD_DAYS * 2);
+const prevEnd = () => daysAgo(PERIOD_DAYS + 1);
 
 // ─── Formatting helpers ─────────────────────────────────────────────────────
 
-function formatCurrency(value: number): string {
+function n(v: unknown): number {
+  return typeof v === "string" ? parseFloat(v) || 0 : Number(v) || 0;
+}
+
+function formatCurrency(value: unknown): string {
   return (
     "$" +
-    value
+    n(value)
       .toFixed(2)
       .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   );
 }
 
-function pctChange(current: number, previous: number): number {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return Math.round(((current - previous) / previous) * 1000) / 10;
+function pctChange(current: unknown, previous: unknown): number {
+  const c = n(current);
+  const p = n(previous);
+  if (p === 0) return c > 0 ? 100 : 0;
+  return Math.round(((c - p) / p) * 1000) / 10;
 }
 
 // ─── Event color assignment ─────────────────────────────────────────────────
@@ -171,19 +171,21 @@ export default function DashboardPage() {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     Promise.all([
-      financialService.getSummary(startOfMonth(), endOfToday()),
-      financialService.getSummary(startOfPrevMonth(), endOfPrevMonth()),
+      financialService.getSummary(currentStart(), currentEnd()),
+      financialService.getSummary(prevStart(), prevEnd()),
       financialService.getMonthlyTrend(6),
       eventsService.getUpcoming(5),
       financialService.getRecords({ limit: 8 }),
     ])
       .then(([sumRes, prevRes, trendRes, eventsRes, txRes]) => {
+        const txRaw = txRes.data as any;
+        const trendRaw = trendRes.data as any;
         setState({
           summary: sumRes.data,
           prevSummary: prevRes.data,
-          trend: trendRes.data,
-          events: eventsRes.data,
-          transactions: txRes.data,
+          trend: Array.isArray(trendRaw) ? trendRaw : [],
+          events: Array.isArray(eventsRes.data) ? eventsRes.data : [],
+          transactions: Array.isArray(txRaw) ? txRaw : (txRaw?.records ?? []),
           loading: false,
           error: null,
         });

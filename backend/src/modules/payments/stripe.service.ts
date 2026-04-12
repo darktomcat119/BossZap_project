@@ -39,11 +39,11 @@ export class StripeService {
     );
     this.successUrl = this.configService.get<string>(
       'STRIPE_SUCCESS_URL',
-      'https://app.bosszap.com/payment/success?session_id={CHECKOUT_SESSION_ID}',
+      'https://app.bosszap.com.br/payment/success?session_id={CHECKOUT_SESSION_ID}',
     );
     this.cancelUrl = this.configService.get<string>(
       'STRIPE_CANCEL_URL',
-      'https://app.bosszap.com/payment/cancel',
+      'https://app.bosszap.com.br/payment/cancel',
     );
 
     this.stripe = new Stripe(secretKey, {
@@ -121,7 +121,7 @@ export class StripeService {
 
     const returnUrl = this.configService.get<string>(
       'STRIPE_PORTAL_RETURN_URL',
-      'https://app.bosszap.com/dashboard',
+      'https://app.bosszap.com.br/dashboard',
     );
 
     const session =

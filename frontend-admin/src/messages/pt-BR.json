@@ -55,7 +55,7 @@
     "password": "Senha",
     "logout": "Sair",
     "loginError": "E-mail ou senha invalidos",
-    "emailPlaceholder": "admin@bosszap.com",
+    "emailPlaceholder": "dev@bosszap.com.br",
     "passwordPlaceholder": "Digite sua senha"
   },
   "overview": {

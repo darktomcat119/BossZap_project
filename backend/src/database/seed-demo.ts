@@ -66,7 +66,7 @@ async function seedDemo() {
   // === 2. Admin User ===
   const [existingAdmin] = await ds.query(
     `SELECT id FROM admin_users
-     WHERE email = 'admin@bosszap.com' LIMIT 1`,
+     WHERE email = 'dev@bosszap.com.br' LIMIT 1`,
   );
   if (!existingAdmin) {
     const hash = await bcrypt.hash('BossZap2024!', SALT_ROUNDS);
@@ -74,9 +74,9 @@ async function seedDemo() {
       `INSERT INTO admin_users
         (email, password_hash, role, preferred_language)
        VALUES ($1, $2, 'master', 'es')`,
-      ['admin@bosszap.com', hash],
+      ['dev@bosszap.com.br', hash],
     );
-    console.log('Admin: admin@bosszap.com / BossZap2024!');
+    console.log('Admin: dev@bosszap.com.br / BossZap2024!');
   }
 
   // === 3. Main Demo Subscriber ===
@@ -97,7 +97,7 @@ async function seedDemo() {
         '+5511999990001',
         'Carlos Pintura Profesional',
         'Carlos Mendez',
-        'carlos@demo.bosszap.com',
+        'carlos@demo.bosszap.com.br',
         'Av. Paulista 1000, Sao Paulo, SP',
         'es',
         'active',
@@ -107,7 +107,7 @@ async function seedDemo() {
       ],
     );
     console.log(
-      'Subscriber: carlos@demo.bosszap.com / Demo2024!',
+      'Subscriber: carlos@demo.bosszap.com.br / Demo2024!',
     );
   }
   const subId = sub.id;
@@ -161,16 +161,22 @@ async function seedDemo() {
     ];
 
     let total = 0;
+    // Generate explicit year/month pairs for last 6 months
+    const now = new Date();
+    const months: Array<{ year: number; month: number }> = [];
     for (let m = 5; m >= 0; m--) {
-      const base = new Date();
-      base.setMonth(base.getMonth() - m);
+      const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+      months.push({ year: d.getFullYear(), month: d.getMonth() });
+    }
 
-      const incCount = 4 + Math.floor(Math.random() * 5);
+    for (const { year, month } of months) {
+      const maxDay = new Date(year, month + 1, 0).getDate();
+
+      const incCount = 5 + Math.floor(Math.random() * 4);
       for (let i = 0; i < incCount; i++) {
-        const day = 1 + Math.floor(Math.random() * 27);
-        const d = new Date(
-          base.getFullYear(), base.getMonth(), day,
-        );
+        const day = 1 + Math.floor(Math.random() * (maxDay - 1));
+        const dateStr =
+          `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         await ds.query(
           `INSERT INTO financial_records
             (subscriber_id, type, amount, description,
@@ -178,21 +184,20 @@ async function seedDemo() {
            VALUES ($1,'income',$2,$3,'labor',$4,$5)`,
           [
             subId,
-            randomBetween(200, 2500),
+            randomBetween(500, 3000),
             pick(incomeDescs),
             pick(persons),
-            d.toISOString().split('T')[0],
+            dateStr,
           ],
         );
         total++;
       }
 
-      const expCount = 6 + Math.floor(Math.random() * 7);
+      const expCount = 6 + Math.floor(Math.random() * 5);
       for (let i = 0; i < expCount; i++) {
-        const day = 1 + Math.floor(Math.random() * 27);
-        const d = new Date(
-          base.getFullYear(), base.getMonth(), day,
-        );
+        const day = 1 + Math.floor(Math.random() * (maxDay - 1));
+        const dateStr =
+          `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const exp = pick(expenseItems);
         await ds.query(
           `INSERT INTO financial_records
@@ -201,10 +206,10 @@ async function seedDemo() {
            VALUES ($1,'expense',$2,$3,$4,$5)`,
           [
             subId,
-            randomBetween(15, 350),
+            randomBetween(30, 400),
             exp.desc,
             exp.cat,
-            d.toISOString().split('T')[0],
+            dateStr,
           ],
         );
         total++;
@@ -410,14 +415,14 @@ async function seedDemo() {
 
   // === 9. More Subscribers (admin dashboard) ===
   const demoSubs = [
-    { phone: '+5511999990002', biz: 'Eletrica Silva', name: 'Roberto Silva', email: 'roberto@demo.bosszap.com', st: 'active' },
-    { phone: '+5511999990003', biz: 'Maria Beleza', name: 'Maria Fernandez', email: 'maria@demo.bosszap.com', st: 'active' },
-    { phone: '+5511999990004', biz: 'Pedro Encanamentos', name: 'Pedro Costa', email: 'pedro@demo.bosszap.com', st: 'active' },
-    { phone: '+5511999990005', biz: 'Ana Limpieza Pro', name: 'Ana Souza', email: 'ana@demo.bosszap.com', st: 'suspended' },
-    { phone: '+5511999990006', biz: 'Jorge Carpinteria', name: 'Jorge Ramirez', email: 'jorge@demo.bosszap.com', st: 'active' },
-    { phone: '+5511999990007', biz: 'Lucia Jardineria', name: 'Lucia Torres', email: 'lucia@demo.bosszap.com', st: 'cancelled' },
-    { phone: '+5511999990008', biz: 'Fernando AC Service', name: 'Fernando Lima', email: 'fernando@demo.bosszap.com', st: 'active' },
-    { phone: '+5511999990009', biz: 'Marcos Construccion', name: 'Marcos Vidal', email: 'marcos@demo.bosszap.com', st: 'trialing' },
+    { phone: '+5511999990002', biz: 'Eletrica Silva', name: 'Roberto Silva', email: 'roberto@demo.bosszap.com.br', st: 'active' },
+    { phone: '+5511999990003', biz: 'Maria Beleza', name: 'Maria Fernandez', email: 'maria@demo.bosszap.com.br', st: 'active' },
+    { phone: '+5511999990004', biz: 'Pedro Encanamentos', name: 'Pedro Costa', email: 'pedro@demo.bosszap.com.br', st: 'active' },
+    { phone: '+5511999990005', biz: 'Ana Limpieza Pro', name: 'Ana Souza', email: 'ana@demo.bosszap.com.br', st: 'suspended' },
+    { phone: '+5511999990006', biz: 'Jorge Carpinteria', name: 'Jorge Ramirez', email: 'jorge@demo.bosszap.com.br', st: 'active' },
+    { phone: '+5511999990007', biz: 'Lucia Jardineria', name: 'Lucia Torres', email: 'lucia@demo.bosszap.com.br', st: 'cancelled' },
+    { phone: '+5511999990008', biz: 'Fernando AC Service', name: 'Fernando Lima', email: 'fernando@demo.bosszap.com.br', st: 'active' },
+    { phone: '+5511999990009', biz: 'Marcos Construccion', name: 'Marcos Vidal', email: 'marcos@demo.bosszap.com.br', st: 'trialing' },
   ];
 
   for (const s of demoSubs) {
@@ -535,11 +540,11 @@ async function seedDemo() {
   console.log('');
   console.log('  Subscriber Dashboard:');
   console.log('    http://localhost:3001/es/login');
-  console.log('    carlos@demo.bosszap.com / Demo2024!');
+  console.log('    carlos@demo.bosszap.com.br / Demo2024!');
   console.log('');
   console.log('  Admin Dashboard:');
   console.log('    http://localhost:3002/es/login');
-  console.log('    admin@bosszap.com / BossZap2024!');
+  console.log('    dev@bosszap.com.br / BossZap2024!');
   console.log('');
   console.log('  Landing Page:');
   console.log('    http://localhost:3003/es');

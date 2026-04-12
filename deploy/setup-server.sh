@@ -7,8 +7,8 @@ set -euo pipefail
 # Usage: chmod +x setup-server.sh && ./setup-server.sh
 # ============================================================
 
-DOMAIN="bosszap.com"
-EMAIL="admin@bosszap.com"
+DOMAIN="bosszap.com.br"
+EMAIL="dev@bosszap.com.br"
 APP_USER="bosszap"
 APP_DIR="/opt/bosszap"
 

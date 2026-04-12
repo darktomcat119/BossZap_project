@@ -74,8 +74,9 @@ function SkeletonCards() {
 
 // ── Helpers ─────────────────────────────────────────────────
 
-function formatCurrency(amount: number): string {
-  return `R$ ${amount.toFixed(2).replace(".", ",")}`;
+function formatCurrency(amount: number | string): string {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  return `R$ ${(num || 0).toFixed(2).replace(".", ",")}`;
 }
 
 function formatDate(iso: string): string {
@@ -105,7 +106,9 @@ export default function DocumentsPage() {
     try {
       const res = await budgetsService.getAll({ page: 1, limit: 20 });
       if (res.success) {
-        setBudgets(res.data);
+        const raw = res.data as any;
+        const list = Array.isArray(raw) ? raw : (raw?.budgets ?? []);
+        setBudgets(list);
       } else {
         setError(res.error?.message ?? t("loadError"));
       }

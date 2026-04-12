@@ -7,11 +7,13 @@ import {
   Headers,
   RawBodyRequest,
   Req,
+  Res,
   HttpCode,
   HttpStatus,
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -53,13 +55,15 @@ export class WebhookController {
     @Query('hub.mode') mode: string,
     @Query('hub.verify_token') token: string,
     @Query('hub.challenge') challenge: string,
-  ): string {
+    @Res() res: Response,
+  ): void {
     if (mode === 'subscribe' && token === this.verifyToken) {
       this.logger.log('Webhook verified successfully');
-      return challenge;
+      res.status(200).send(challenge);
+      return;
     }
     this.logger.warn('Webhook verification failed');
-    throw new UnauthorizedException('Invalid verify token');
+    res.status(401).send('Invalid verify token');
   }
 
   @Post()

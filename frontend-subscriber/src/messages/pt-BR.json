@@ -68,7 +68,23 @@
     "quickActions": "Ações rápidas",
     "thisWeek": "esta semana",
     "revenueVsExpenses": "Receitas vs Despesas",
-    "transactions": "Transações"
+    "transactions": "Transações",
+    "yourCategory": "Sua Categoria de Serviço",
+    "yourCategoryHint": "Escolha o que melhor descreve seu negócio"
+  },
+  "categories": {
+    "painter": "Pintor",
+    "plumber": "Encanador",
+    "electrician": "Eletricista",
+    "beauty": "Salão de Beleza",
+    "carpenter": "Carpinteiro",
+    "gardener": "Jardineiro",
+    "ac_service": "Ar Condicionado",
+    "cleaning": "Limpeza",
+    "photographer": "Fotógrafo",
+    "construction": "Construção",
+    "mechanic": "Mecânico",
+    "catering": "Buffet"
   },
   "financial": {
     "title": "Finanças",

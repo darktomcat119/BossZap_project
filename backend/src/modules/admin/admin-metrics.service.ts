@@ -91,13 +91,14 @@ export class AdminMetricsService {
   }
 
   async getGrowthTrend(months: number = 12): Promise<GrowthPoint[]> {
+    const since = new Date();
+    since.setMonth(since.getMonth() - months);
+
     const rows = await this.subscriberRepo
       .createQueryBuilder('s')
       .select("TO_CHAR(s.created_at, 'YYYY-MM')", 'month')
       .addSelect('COUNT(*)::int', 'count')
-      .where('s.created_at >= NOW() - :interval::interval', {
-        interval: `${months} months`,
-      })
+      .where('s.created_at >= :since', { since })
       .groupBy("TO_CHAR(s.created_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany<{ month: string; count: number }>();
@@ -109,14 +110,15 @@ export class AdminMetricsService {
   }
 
   async getRevenueTrend(months: number = 12): Promise<RevenuePoint[]> {
+    const since = new Date();
+    since.setMonth(since.getMonth() - months);
+
     const rows = await this.paymentRepo
       .createQueryBuilder('p')
       .select("TO_CHAR(p.paid_at, 'YYYY-MM')", 'month')
       .addSelect('COALESCE(SUM(p.amount), 0)::numeric', 'revenue')
       .where('p.status = :status', { status: 'succeeded' })
-      .andWhere('p.paid_at >= NOW() - :interval::interval', {
-        interval: `${months} months`,
-      })
+      .andWhere('p.paid_at >= :since', { since })
       .groupBy("TO_CHAR(p.paid_at, 'YYYY-MM')")
       .orderBy('month', 'ASC')
       .getRawMany<{ month: string; revenue: string }>();

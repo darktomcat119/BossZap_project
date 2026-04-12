@@ -115,7 +115,7 @@ export class RecoveryService {
   ) {
     this.paymentLink = this.configService.get<string>(
       'PAYMENT_RECOVERY_LINK',
-      'https://app.bosszap.com/payment/update',
+      'https://app.bosszap.com.br/payment/update',
     );
   }
 

@@ -131,7 +131,9 @@ export default function CalendarPage() {
         limit: 200,
       });
       if (res.success) {
-        setEvents(res.data);
+        const raw = res.data as any;
+        const list = Array.isArray(raw) ? raw : (raw?.data ?? raw?.events ?? []);
+        setEvents(list);
       } else {
         setError(res.error?.message ?? "Unknown error");
       }

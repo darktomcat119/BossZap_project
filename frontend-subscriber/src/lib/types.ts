@@ -42,6 +42,7 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
+  name?: string;
   phone: string;
   password: string;
   business_name?: string;

@@ -1,79 +1,82 @@
 {
   "hero": {
-    "title": "Seu negocio, sob controle total",
-    "subtitle": "O assistente virtual com IA que gerencia sua agenda, financas e orcamentos pelo WhatsApp",
-    "cta": "Comece Gratis"
+    "title": "Seu negócio no piloto automático",
+    "subtitle": "O assistente com IA que gerencia sua agenda, finanças e orçamentos direto pelo WhatsApp. Sem apps, sem complicação — só resultados.",
+    "cta": "Comece Grátis por 7 Dias"
   },
   "features": {
-    "title": "Tudo o que voce precisa",
+    "title": "Tudo que seu negócio precisa",
     "schedule": {
       "title": "Agenda Inteligente",
-      "description": "Organize seus compromissos e trabalhos apenas enviando uma mensagem"
+      "description": "Agende compromissos, receba lembretes e organize seus trabalhos — tudo por mensagem de texto ou áudio no WhatsApp."
     },
     "finance": {
-      "title": "Controle Financeiro",
-      "description": "Registre receitas e despesas instantaneamente, veja seus ganhos em tempo real"
+      "title": "Controle Financeiro Completo",
+      "description": "Registre receitas e despesas na hora. Veja seu lucro, gráficos por categoria e exporte relatórios em CSV direto do dashboard."
     },
     "budgets": {
-      "title": "Orcamentos Profissionais",
-      "description": "Crie e envie orcamentos em PDF com sua marca em segundos"
+      "title": "Orçamentos em PDF Profissionais",
+      "description": "Crie orçamentos e ordens de serviço com sua marca. Gere PDFs e envie para seus clientes em segundos pelo WhatsApp."
     }
   },
   "howItWorks": {
     "title": "Como funciona?",
     "step1": {
-      "title": "Fale pelo WhatsApp",
-      "description": "Envie mensagens de texto ou audio como faz normalmente"
+      "title": "Mande uma mensagem",
+      "description": "Fale com o BossZap pelo WhatsApp como se fosse um colega de trabalho. Texto ou áudio, como preferir."
     },
     "step2": {
-      "title": "A IA cuida de tudo",
-      "description": "Nosso assistente inteligente organiza tudo automaticamente"
+      "title": "A IA organiza tudo",
+      "description": "Nosso assistente inteligente entende o que você precisa e registra compromissos, gastos e orçamentos automaticamente."
     },
     "step3": {
-      "title": "Veja seu Dashboard",
-      "description": "Acesse relatorios, graficos e documentos de qualquer dispositivo"
+      "title": "Acompanhe no Dashboard",
+      "description": "Acesse seu painel web com gráficos, calendário, documentos e relatórios — de qualquer celular ou computador."
     }
   },
   "pricing": {
-    "title": "Planos",
+    "title": "Investimento no seu negócio",
     "plan": {
       "name": "Profissional",
-      "price": "R$149,90",
-      "period": "/mes",
+      "price": "R$ 149,90",
+      "period": "/mês",
       "features": [
-        "500 mensagens/mes",
-        "50 orcamentos/mes",
-        "300 consultas IA/mes",
-        "Dashboard completo",
-        "Suporte prioritario"
+        "Até 500 mensagens por mês",
+        "Até 50 orçamentos em PDF por mês",
+        "300 consultas IA por mês",
+        "Dashboard completo com gráficos",
+        "Calendário e agenda integrados",
+        "Controle financeiro (receitas e despesas)",
+        "Exportação de relatórios CSV",
+        "Suporte prioritário por WhatsApp"
       ],
-      "cta": "Iniciar teste gratis"
+      "cta": "Começar teste grátis"
     },
-    "trial": "7 dias gratis, sem compromisso"
+    "trial": "7 dias grátis. Cancele quando quiser. Sem cartão na entrada."
   },
   "footer": {
     "rights": "Todos os direitos reservados",
-    "terms": "Termos",
-    "privacy": "Privacidade",
+    "terms": "Termos de Uso",
+    "privacy": "Política de Privacidade",
     "contact": "Contato"
   },
   "testimonials": {
-    "title": "O que nossos usuarios dizem",
+    "title": "Quem usa, recomenda",
     "items": [
       {
-        "name": "Carlos Mendez",
-        "role": "Eletricista independente",
-        "quote": "BossZap me economiza 2 horas por dia. Nao perco mais compromissos nem esqueco de cobrar."
+        "name": "Carlos Mendes",
+        "role": "Pintor autônomo — São Paulo, SP",
+        "quote": "Antes eu esquecia de cobrar trabalhos e perdia compromissos. Com o BossZap, mando um áudio e tá tudo registrado. Economizo umas 2 horas por dia."
       },
       {
-        "name": "Maria Fernandez",
-        "role": "Dona de salao de beleza",
-        "quote": "Minhas clientes agendam pelo WhatsApp e eu vejo tudo organizado no dashboard. Incrivel."
+        "name": "Maria Fernandes",
+        "role": "Dona de salão de beleza — Belo Horizonte, MG",
+        "quote": "Minhas clientes mandam mensagem e o BossZap organiza tudo no calendário. Os orçamentos em PDF dão uma imagem super profissional pro meu salão."
       },
       {
         "name": "Roberto Silva",
-        "role": "Encanador profissional",
-        "quote": "Os orcamentos em PDF me dao uma imagem profissional. Meus clientes confiam mais em mim."
+        "role": "Encanador profissional — Campo Grande, MS",
+        "quote": "O controle financeiro mudou meu negócio. Agora eu sei exatamente quanto gastei em material e quanto lucrei no mês. Tudo pelo WhatsApp mesmo."
       }
     ]
   },
@@ -81,49 +84,127 @@
     "title": "Perguntas frequentes",
     "items": [
       {
-        "question": "Preciso instalar algum app?",
-        "answer": "Nao. BossZap funciona diretamente pelo WhatsApp. Basta enviar uma mensagem para comecar."
+        "question": "Preciso instalar algum aplicativo?",
+        "answer": "Não! O BossZap funciona 100% pelo WhatsApp que você já tem no celular. Também tem um dashboard web que abre direto no navegador. Zero instalação."
+      },
+      {
+        "question": "Funciona com áudio ou só texto?",
+        "answer": "Os dois! Você pode mandar texto ou áudio. Nossa IA transcreve o áudio automaticamente e entende o que você precisa."
       },
       {
         "question": "Posso cancelar a qualquer momento?",
-        "answer": "Sim. Nao ha contratos nem fidelidade. Voce pode cancelar sua assinatura quando quiser pelo dashboard."
+        "answer": "Sim. Sem contrato, sem fidelidade, sem multa. Cancele quando quiser pelo dashboard. Durante os 7 dias grátis, não cobramos nada."
       },
       {
-        "question": "Meus dados estao seguros?",
-        "answer": "Absolutamente. Usamos criptografia de ponta a ponta e cumprimos as normas de protecao de dados."
+        "question": "Meus dados ficam seguros?",
+        "answer": "Totalmente. Usamos criptografia de ponta a ponta, servidores seguros e seguimos as normas da LGPD. Seus dados são só seus."
       },
       {
-        "question": "O que acontece apos os 7 dias gratis?",
-        "answer": "Seu plano Profissional sera ativado. Se decidir nao continuar, basta cancelar antes do fim do teste e nada sera cobrado."
+        "question": "Quantas pessoas podem usar minha conta?",
+        "answer": "Cada conta é vinculada a um número de WhatsApp. É ideal para MEIs e autônomos que trabalham sozinhos ou com equipe pequena."
+      },
+      {
+        "question": "O orçamento em PDF vai com minha marca?",
+        "answer": "Sim! O PDF vai com o nome da sua empresa, endereço, telefone, e-mail e logo. Seus clientes veem sua marca, não a do BossZap."
       }
     ]
   },
   "register": {
     "title": "Crie sua conta",
-    "step1": "Informacoes pessoais",
+    "step1": "Informações pessoais",
     "step2": "Senha",
     "step3": "Escolha seu plano",
     "step4": "Pagamento",
     "name": "Nome completo",
-    "email": "Email",
-    "phone": "Telefone",
+    "email": "E-mail",
+    "phone": "Telefone (WhatsApp)",
     "password": "Senha",
     "confirmPassword": "Confirmar senha",
-    "passwordHint": "Minimo 8 caracteres",
-    "passwordMismatch": "As senhas nao coincidem",
+    "passwordHint": "Mínimo 8 caracteres",
+    "passwordMismatch": "As senhas não coincidem",
     "continue": "Continuar",
     "back": "Voltar",
     "createAccount": "Criar conta",
-    "alreadyHaveAccount": "Ja tem uma conta?",
+    "alreadyHaveAccount": "Já tem uma conta?",
     "login": "Entrar",
-    "redirectingToPayment": "Redirecionando para o pagamento...",
-    "trialInfo": "7 dias gratis, cancele quando quiser"
+    "redirectingToPayment": "Criando sua conta...",
+    "trialInfo": "7 dias grátis, cancele quando quiser"
   },
   "nav": {
-    "home": "Inicio",
-    "features": "Funcoes",
-    "pricing": "Precos",
+    "home": "Início",
+    "features": "Funcionalidades",
+    "howItWorks": "Como funciona",
+    "demo": "Demo",
+    "pricing": "Preços",
+    "faq": "FAQ",
     "login": "Entrar",
-    "register": "Cadastrar"
+    "register": "Começar Grátis"
+  },
+  "labels": {
+    "aiPoweredBadge": "Assistente WhatsApp com IA",
+    "lgpdCompliant": "Conforme LGPD",
+    "textAndVoice": "Texto e Áudio",
+    "aiAssistant247": "Assistente IA 24/7",
+    "seeDemo": "Ver Demo",
+    "featured": "Destaque",
+    "popular": "Popular",
+    "showing": "Mostrando",
+    "selected": "Selecionado"
+  },
+  "stats": {
+    "whatsappValue": "WhatsApp",
+    "whatsappLabel": "Funciona onde você já está",
+    "voiceValue": "Texto e Áudio",
+    "voiceLabel": "Envie áudio ou mensagens de texto",
+    "alwaysOnValue": "24/7",
+    "alwaysOnLabel": "A IA nunca dorme",
+    "pdfValue": "PDF",
+    "pdfLabel": "Orçamentos profissionais com sua marca"
+  },
+  "sectionLabels": {
+    "features": "Funcionalidades",
+    "simple": "Simples",
+    "testimonials": "Depoimentos",
+    "pricing": "Preços",
+    "faq": "FAQ",
+    "forProfessionals": "Para Profissionais"
+  },
+  "featuresSection": {
+    "subtitle": "Tudo gerenciado pelo WhatsApp — o app que seus clientes já usam."
+  },
+  "howItWorksSection": {
+    "subtitle": "Três passos simples. Sem necessidade de treinamento."
+  },
+  "whoItsFor": {
+    "title": "Feito para MEIs brasileiros",
+    "subtitle": "Seja qual for sua profissão — o BossZap se adapta ao seu negócio."
+  },
+  "ctaBanner": {
+    "title": "Pare de perder tempo. Comece a crescer.",
+    "subtitle": "Junte-se a milhares de MEIs que gerenciam seus negócios pelo WhatsApp. A configuração leva 2 minutos."
+  },
+  "footerSections": {
+    "product": "Produto",
+    "legal": "Legal",
+    "tagline": "Assistente WhatsApp com IA para MEIs brasileiros. Gerencie sua agenda, finanças e orçamentos sem sair do WhatsApp.",
+    "madeIn": "Feito no Brasil com IA"
+  },
+  "categories": {
+    "painter": { "title": "Pintores", "subtitle": "Gerencie trabalhos enquanto pinta" },
+    "electrician": { "title": "Eletricistas", "subtitle": "Orçamentos rápidos pelo WhatsApp" },
+    "beauty": { "title": "Salões de Beleza", "subtitle": "Agende compromissos facilmente" },
+    "gardener": { "title": "Jardineiros", "subtitle": "Acompanhe cada chamada de serviço" },
+    "ac_service": { "title": "Serviço de AC", "subtitle": "Gerencie instalações em movimento" },
+    "cleaning": { "title": "Serviço de Limpeza", "subtitle": "Organize clientes com mãos livres" },
+    "photographer": { "title": "Fotógrafos", "subtitle": "Gerencie sessões e clientes" },
+    "chef": { "title": "Chefs e Buffet", "subtitle": "Receba pedidos enquanto cozinha" },
+    "lawyer": { "title": "Advogados", "subtitle": "Acompanhe casos e clientes" },
+    "accountant": { "title": "Contadores", "subtitle": "Fique em dia com cada prazo" },
+    "consultant": { "title": "Consultores", "subtitle": "Gerencie projetos sem esforço" },
+    "designer": { "title": "Designers", "subtitle": "Capture feedback rapidamente" },
+    "real_estate": { "title": "Corretores de Imóveis", "subtitle": "Nunca perca um lead" },
+    "doctor": { "title": "Médicos", "subtitle": "Consultas simplificadas" },
+    "architect": { "title": "Arquitetos", "subtitle": "Gestão de projetos instantânea" },
+    "tutor": { "title": "Tutores e Coaches", "subtitle": "Gerencie alunos sem problemas" }
   }
 }
