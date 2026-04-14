@@ -33,7 +33,6 @@ import { cn } from "@/lib/utils";
 import { ParticleCanvas } from "@/components/shared/particle-canvas";
 import { PhoneCarousel } from "@/components/shared/phone-carousel";
 import { Circle3DSlider } from "@/components/shared/circle-3d-slider";
-import { FeatureCardStrip } from "@/components/shared/feature-card-strip";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -305,7 +304,7 @@ function HeroSection() {
 
           {/* Right: Phone carousel */}
           <motion.div initial="hidden" animate="visible" variants={scaleIn} className="hidden lg:block">
-            <PhoneCarousel screens={chatScreens} interval={6000} />
+            <PhoneCarousel screens={chatScreens} />
           </motion.div>
         </div>
       </div>
@@ -350,14 +349,11 @@ function FeaturesSection() {
   const tFeatSection = useTranslations("featuresSection");
 
   const featureCards = [
+    { image: "/images/feature-team.jpg", icon: Users, iconColor: "text-indigo-600", iconBg: "bg-indigo-50", title: tFeatSection("clientTracking"), description: tFeatSection("clientTrackingDesc") },
     { image: "/images/feature-calendar.jpg", icon: CalendarCheck, iconColor: "text-emerald-600", iconBg: "bg-emerald-50", title: t("schedule.title"), description: t("schedule.description") },
     { image: "/images/feature-finance.jpg", icon: DollarSign, iconColor: "text-blue-600", iconBg: "bg-blue-50", title: t("finance.title"), description: t("finance.description") },
     { image: "/images/feature-pdf.jpg", icon: FileText, iconColor: "text-purple-600", iconBg: "bg-purple-50", title: t("budgets.title"), description: t("budgets.description") },
     { image: "/images/feature-whatsapp.jpg", icon: MessageCircle, iconColor: "text-green-600", iconBg: "bg-green-50", title: tFeatSection("whatsappAi"), description: tFeatSection("subtitle") },
-    { image: "/images/feature-dashboard.jpg", icon: LayoutDashboard, iconColor: "text-orange-600", iconBg: "bg-orange-50", title: tFeatSection("dashboard"), description: tFeatSection("dashboardDesc") },
-    { image: "/images/feature-ai.jpg", icon: Bot, iconColor: "text-cyan-600", iconBg: "bg-cyan-50", title: tFeatSection("aiAssistant"), description: tFeatSection("aiAssistantDesc") },
-    { image: "/images/feature-reports.jpg", icon: BarChart3, iconColor: "text-rose-600", iconBg: "bg-rose-50", title: tFeatSection("reportsCsv"), description: tFeatSection("reportsCsvDesc") },
-    { image: "/images/feature-team.jpg", icon: Users, iconColor: "text-indigo-600", iconBg: "bg-indigo-50", title: tFeatSection("clientTracking"), description: tFeatSection("clientTrackingDesc") },
   ];
 
   return (
@@ -368,11 +364,43 @@ function FeaturesSection() {
           <h2 className="mt-4 text-3xl md:text-5xl font-bold text-gray-900 tracking-tight">{t("title")}</h2>
           <p className="mt-4 text-gray-500 text-lg">{tFeatSection("subtitle")}</p>
         </motion.div>
-      </div>
 
-      {/* Scrolling feature cards */}
-      <div className="mt-14">
-        <FeatureCardStrip cards={featureCards} speed={30} direction="left" />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5"
+        >
+          {featureCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <motion.div
+                key={card.title}
+                variants={fadeUp}
+                className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden group hover:shadow-xl transition-shadow duration-300"
+              >
+                <div className="relative h-[160px] overflow-hidden">
+                  <Image
+                    src={card.image}
+                    alt={card.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-700"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent" />
+                  <div className={cn("absolute bottom-3 left-4 w-11 h-11 rounded-xl flex items-center justify-center shadow-lg", card.iconBg)}>
+                    <Icon className={cn("w-5 h-5", card.iconColor)} />
+                  </div>
+                </div>
+                <div className="px-5 pb-5 pt-2">
+                  <h3 className="text-base font-bold text-gray-900 leading-snug">{card.title}</h3>
+                  <p className="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-3">{card.description}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       </div>
     </section>
   );
@@ -774,7 +802,6 @@ function Footer() {
         </div>
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-600">&copy; {new Date().getFullYear()} BossZap. {t("rights")}</p>
-          <p className="text-xs text-gray-700">{tFs("madeIn")}</p>
         </div>
       </div>
     </footer>
