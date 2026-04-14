@@ -32,7 +32,6 @@ import {
 import { cn } from "@/lib/utils";
 import { ParticleCanvas } from "@/components/shared/particle-canvas";
 import { PhoneCarousel } from "@/components/shared/phone-carousel";
-import { Circle3DSlider } from "@/components/shared/circle-3d-slider";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -581,76 +580,6 @@ function TestimonialsSection() {
   );
 }
 
-/* ─── Who It's For ─── */
-function WhoItsForSection() {
-  const t = useTranslations("categories");
-  const tSection = useTranslations("sectionLabels");
-  const tWho = useTranslations("whoItsFor");
-  const tLabels = useTranslations("labels");
-
-  const slides = [
-    { id: "painter", image: "/images/categories/painter.png", title: t("painter.title"), subtitle: t("painter.subtitle") },
-    { id: "electrician", image: "/images/categories/electrician.png", title: t("electrician.title"), subtitle: t("electrician.subtitle") },
-    { id: "beauty", image: "/images/categories/beauty.png", title: t("beauty.title"), subtitle: t("beauty.subtitle") },
-    { id: "gardener", image: "/images/categories/gardener.png", title: t("gardener.title"), subtitle: t("gardener.subtitle") },
-    { id: "ac-service", image: "/images/categories/ac-service.png", title: t("ac_service.title"), subtitle: t("ac_service.subtitle") },
-    { id: "cleaning", image: "/images/categories/cleaning.png", title: t("cleaning.title"), subtitle: t("cleaning.subtitle") },
-    { id: "photographer", image: "/images/categories/photographer.png", title: t("photographer.title"), subtitle: t("photographer.subtitle") },
-    { id: "chef", image: "/images/categories/chef.png", title: t("chef.title"), subtitle: t("chef.subtitle") },
-    { id: "lawyer", image: "/images/categories/lawyer.png", title: t("lawyer.title"), subtitle: t("lawyer.subtitle") },
-    { id: "accountant", image: "/images/categories/accountant.png", title: t("accountant.title"), subtitle: t("accountant.subtitle") },
-    { id: "consultant", image: "/images/categories/consultant.jpg", title: t("consultant.title"), subtitle: t("consultant.subtitle") },
-    { id: "designer", image: "/images/categories/designer.jpg", title: t("designer.title"), subtitle: t("designer.subtitle") },
-    { id: "real-estate", image: "/images/categories/real-estate.jpg", title: t("real_estate.title"), subtitle: t("real_estate.subtitle") },
-    { id: "doctor", image: "/images/categories/doctor.jpg", title: t("doctor.title"), subtitle: t("doctor.subtitle") },
-    { id: "architect", image: "/images/categories/architect.jpg", title: t("architect.title"), subtitle: t("architect.subtitle") },
-    { id: "tutor", image: "/images/categories/tutor.jpg", title: t("tutor.title"), subtitle: t("tutor.subtitle") },
-  ];
-
-  return (
-    <section className="relative py-20 md:py-28 bg-gradient-to-b from-white via-gray-50 to-white overflow-x-clip">
-      {/* Background decorative elements */}
-      <div className="pointer-events-none absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-emerald-500/[0.04] blur-[100px]" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-blue-500/[0.04] blur-[100px]" />
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-center max-w-2xl mx-auto"
-        >
-          <span className="inline-block px-4 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-full uppercase tracking-wider">
-            {tSection("forProfessionals")}
-          </span>
-          <h2 className="mt-4 text-3xl md:text-5xl font-bold text-gray-900 tracking-tight">
-            {tWho("title")}
-          </h2>
-          <p className="mt-4 text-gray-500 text-lg">
-            {tWho("subtitle")}
-          </p>
-        </motion.div>
-      </div>
-
-      {/* Slider — full width, no max-width clipping */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeUp}
-        className="mt-14 w-full"
-      >
-        <Circle3DSlider
-          items={slides}
-          rotationSpeed={6}
-          featuredLabel={tLabels("featured")}
-          showingLabel={tLabels("showing")}
-        />
-      </motion.div>
-    </section>
-  );
-}
 
 /* ─── Pricing ─── */
 function PricingSection() {
@@ -832,7 +761,6 @@ export default function LandingPage() {
         <HowItWorksSection />
         <DemoSection />
         <TestimonialsSection />
-        <WhoItsForSection />
         <PricingSection />
         <FaqSection />
         <CtaBanner />
