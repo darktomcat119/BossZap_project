@@ -88,17 +88,14 @@ export function ParticleCanvas({
 
     const initParticles = () => {
       const { w, h } = sizeRef.current;
-      particlesRef.current = Array.from(
-        { length: particleCount },
-        () => ({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          vx: (Math.random() - 0.5) * speed,
-          vy: (Math.random() - 0.5) * speed,
-          radius: Math.random() * 1.5 + 0.3,
-          opacity: Math.random() * 0.6 + 0.15,
-        }),
-      );
+      particlesRef.current = Array.from({ length: particleCount }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * speed,
+        vy: (Math.random() - 0.5) * speed,
+        radius: Math.random() * 1.5 + 0.3,
+        opacity: Math.random() * 0.6 + 0.15,
+      }));
     };
 
     const animate = () => {
@@ -113,8 +110,12 @@ export function ParticleCanvas({
         if (orb.y < -orb.radius || orb.y > h + orb.radius) orb.vy *= -1;
 
         const gradient = ctx.createRadialGradient(
-          orb.x, orb.y, 0,
-          orb.x, orb.y, orb.radius,
+          orb.x,
+          orb.y,
+          0,
+          orb.x,
+          orb.y,
+          orb.radius,
         );
         gradient.addColorStop(0, orb.color);
         gradient.addColorStop(1, "transparent");
@@ -135,7 +136,7 @@ export function ParticleCanvas({
         const dmy = p.y - my;
         const dm = Math.sqrt(dmx * dmx + dmy * dmy);
         if (dm < 100 && dm > 0) {
-          const force = (100 - dm) / 100 * 0.8;
+          const force = ((100 - dm) / 100) * 0.8;
           p.vx += (dmx / dm) * force;
           p.vy += (dmy / dm) * force;
         }
@@ -154,10 +155,22 @@ export function ParticleCanvas({
         p.x += p.vx;
         p.y += p.vy;
 
-        if (p.x < 0) { p.x = 0; p.vx *= -1; }
-        if (p.x > w) { p.x = w; p.vx *= -1; }
-        if (p.y < 0) { p.y = 0; p.vy *= -1; }
-        if (p.y > h) { p.y = h; p.vy *= -1; }
+        if (p.x < 0) {
+          p.x = 0;
+          p.vx *= -1;
+        }
+        if (p.x > w) {
+          p.x = w;
+          p.vx *= -1;
+        }
+        if (p.y < 0) {
+          p.y = 0;
+          p.vy *= -1;
+        }
+        if (p.y > h) {
+          p.y = h;
+          p.vy *= -1;
+        }
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);

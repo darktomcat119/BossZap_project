@@ -18,30 +18,22 @@ interface OutboundJobData {
 export class OutboundProcessor extends WorkerHost {
   private readonly logger = new Logger(OutboundProcessor.name);
 
-  constructor(
-    private readonly whatsapp: WhatsappService,
-  ) {
+  constructor(private readonly whatsapp: WhatsappService) {
     super();
   }
 
   async process(job: Job<OutboundJobData>): Promise<void> {
     const { type, to, subscriberId, payload } = job.data;
 
-    this.logger.log(
-      `Sending ${type} to ${to} (sub: ${subscriberId})`,
-    );
+    this.logger.log(`Sending ${type} to ${to} (sub: ${subscriberId})`);
 
     try {
       await this.whatsapp.callMetaApi(payload);
 
-      this.logger.log(
-        `Message sent to ${to}, type: ${type}`,
-      );
+      this.logger.log(`Message sent to ${to}, type: ${type}`);
     } catch (error) {
       const attempt = job.attemptsMade;
-      const msg = error instanceof Error
-        ? error.message
-        : String(error);
+      const msg = error instanceof Error ? error.message : String(error);
 
       if (msg.includes('429') || msg.includes('5')) {
         const delay = RETRY_DELAYS[attempt] || 60000;
@@ -51,9 +43,7 @@ export class OutboundProcessor extends WorkerHost {
         );
       }
 
-      this.logger.error(
-        `Failed to send ${type} to ${to}: ${msg}`,
-      );
+      this.logger.error(`Failed to send ${type} to ${to}: ${msg}`);
       throw error;
     }
   }

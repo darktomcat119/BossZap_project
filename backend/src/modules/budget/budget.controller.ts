@@ -38,10 +38,7 @@ export class BudgetController {
 
   @Post()
   @ApiOperation({ summary: 'Create a budget or service order' })
-  async create(
-    @Req() req: Request,
-    @Body() data: CreateBudgetDto,
-  ) {
+  async create(@Req() req: Request, @Body() data: CreateBudgetDto) {
     const user = req.user as AuthenticatedUser;
     return this.budgetService.create(user.id, data);
   }
@@ -86,10 +83,7 @@ export class BudgetController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a budget by ID' })
-  async findById(
-    @Req() req: Request,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  async findById(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string) {
     const user = req.user as AuthenticatedUser;
     return this.budgetService.findById(user.id, id);
   }
@@ -102,11 +96,7 @@ export class BudgetController {
     @Body() body: UpdateBudgetStatusDto,
   ) {
     const user = req.user as AuthenticatedUser;
-    return this.budgetService.updateStatus(
-      user.id,
-      id,
-      body.status,
-    );
+    return this.budgetService.updateStatus(user.id, id, body.status);
   }
 
   @Post(':id/generate-pdf')
@@ -118,10 +108,7 @@ export class BudgetController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const user = req.user as AuthenticatedUser;
-    const url = await this.budgetService.generatePdf(
-      user.id,
-      id,
-    );
+    const url = await this.budgetService.generatePdf(user.id, id);
     return { pdf_url: url };
   }
 }

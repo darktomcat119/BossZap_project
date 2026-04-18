@@ -19,14 +19,13 @@ export default function LoginPage() {
 
     try {
       // In production: call auth API, then redirect
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/v1/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        },
-      );
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+      const res = await fetch(`${apiBase}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
       if (!res.ok) {
         setError("Invalid email or password");
@@ -34,19 +33,12 @@ export default function LoginPage() {
       }
 
       const data = await res.json();
-      localStorage.setItem(
-        "access_token",
-        data.data.accessToken,
-      );
-      localStorage.setItem(
-        "refresh_token",
-        data.data.refreshToken,
-      );
+      localStorage.setItem("access_token", data.data.accessToken);
+      localStorage.setItem("refresh_token", data.data.refreshToken);
 
       // Redirect to subscriber dashboard
       window.location.href =
-        process.env.NEXT_PUBLIC_APP_URL ||
-        "http://localhost:3001";
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
     } catch {
       setError("Connection error. Please try again.");
     } finally {
@@ -54,29 +46,50 @@ export default function LoginPage() {
     }
   };
 
+  const inputClass =
+    "w-full px-4 py-3 border border-border rounded-lg " +
+    "text-sm focus:outline-none focus:ring-2 " +
+    "focus:ring-primary/20 focus:border-primary";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
+    <div
+      className={
+        "min-h-screen bg-background flex flex-col " +
+        "items-center justify-center px-4 py-8"
+      }
+    >
       <Link href="/" className="flex items-center gap-2 mb-8">
         <Zap className="w-7 h-7 text-primary" />
-        <span className="text-2xl font-bold text-text-primary">
-          BossZap
-        </span>
+        <span className="text-2xl font-bold text-text-primary">BossZap</span>
       </Link>
 
-      <div className="w-full max-w-md bg-surface rounded-2xl shadow-lg p-6 md:p-8">
+      <div
+        className={
+          "w-full max-w-md bg-surface rounded-2xl " + "shadow-lg p-6 md:p-8"
+        }
+      >
         <h1 className="text-2xl font-bold text-text-primary mb-6">
           {t("login")}
         </h1>
 
         {error && (
-          <div className="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger">
+          <div
+            className={
+              "mb-4 p-3 bg-danger/10 border " +
+              "border-danger/20 rounded-lg text-sm text-danger"
+            }
+          >
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1.5">
+            <label
+              className={
+                "block text-sm font-medium " + "text-text-secondary mb-1.5"
+              }
+            >
               {t("email")}
             </label>
             <input
@@ -84,12 +97,16 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1.5">
+            <label
+              className={
+                "block text-sm font-medium " + "text-text-secondary mb-1.5"
+              }
+            >
               {t("password")}
             </label>
             <input
@@ -97,18 +114,21 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className={inputClass}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60"
+            className={
+              "w-full flex items-center justify-center " +
+              "gap-2 px-4 py-3 bg-primary hover:bg-primary-dark " +
+              "text-white text-sm font-semibold rounded-lg " +
+              "transition-colors disabled:opacity-60"
+            }
           >
-            {loading && (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            )}
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {t("login")}
           </button>
         </form>

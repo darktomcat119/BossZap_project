@@ -12,10 +12,7 @@ export class RateLimiterService {
 
   constructor(private readonly configService: ConfigService) {
     this.redis = new Redis(
-      this.configService.get<string>(
-        'REDIS_URL',
-        'redis://localhost:6379',
-      ),
+      this.configService.get<string>('REDIS_URL', 'redis://localhost:6379'),
     );
   }
 

@@ -13,9 +13,7 @@ interface ActionResult {
 
 @Injectable()
 export class ActionExecutorService {
-  private readonly logger = new Logger(
-    ActionExecutorService.name,
-  );
+  private readonly logger = new Logger(ActionExecutorService.name);
 
   constructor(
     private readonly agenda: AgendaService,
@@ -40,29 +38,17 @@ export class ActionExecutorService {
         case 'SCHEDULE_UPDATE':
           return this.updateEvent(subscriberId, data);
         case 'SCHEDULE_QUERY':
-          return this.querySchedule(
-            subscriberId,
-            data,
-            language,
-          );
+          return this.querySchedule(subscriberId, data, language);
         case 'FINANCE_INCOME':
           return this.registerIncome(subscriberId, data);
         case 'FINANCE_EXPENSE':
           return this.registerExpense(subscriberId, data);
         case 'FINANCE_QUERY':
-          return this.queryFinances(
-            subscriberId,
-            data,
-            language,
-          );
+          return this.queryFinances(subscriberId, data, language);
         case 'BUDGET_CREATE':
           return this.createBudget(subscriberId, data);
         case 'BUDGET_QUERY':
-          return this.queryBudgets(
-            subscriberId,
-            data,
-            language,
-          );
+          return this.queryBudgets(subscriberId, data, language);
         case 'PROFILE_UPDATE':
           return this.updateProfile(subscriberId, data);
         case 'LANGUAGE_CHANGE':
@@ -71,13 +57,8 @@ export class ActionExecutorService {
           return { success: true };
       }
     } catch (error) {
-      const msg =
-        error instanceof Error
-          ? error.message
-          : String(error);
-      this.logger.error(
-        `Action ${intent} failed: ${msg}`,
-      );
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Action ${intent} failed: ${msg}`);
       return { success: false, error: msg };
     }
   }
@@ -86,17 +67,13 @@ export class ActionExecutorService {
     subscriberId: string,
     data: Record<string, unknown>,
   ): Promise<ActionResult> {
-    const event = await this.agenda.createEvent(
-      subscriberId,
-      {
-        title: (data.title as string) || 'New event',
-        event_date: data.date as string,
-        event_time: data.time as string | undefined,
-        location: data.location as string | undefined,
-        description:
-          data.description as string | undefined,
-      },
-    );
+    const event = await this.agenda.createEvent(subscriberId, {
+      title: (data.title as string) || 'New event',
+      event_date: data.date as string,
+      event_time: data.time as string | undefined,
+      location: data.location as string | undefined,
+      description: data.description as string | undefined,
+    });
     return { success: true, data: event };
   }
 
@@ -111,10 +88,7 @@ export class ActionExecutorService {
         error: 'No event ID provided',
       };
     }
-    const event = await this.agenda.cancelEvent(
-      subscriberId,
-      eventId,
-    );
+    const event = await this.agenda.cancelEvent(subscriberId, eventId);
     return { success: true, data: event };
   }
 
@@ -161,20 +135,15 @@ export class ActionExecutorService {
     subscriberId: string,
     data: Record<string, unknown>,
   ): Promise<ActionResult> {
-    const record = await this.financial.createRecord(
-      subscriberId,
-      {
-        type: 'income',
-        amount: data.amount as number,
-        description: data.description as string | undefined,
-        category: data.category as string | undefined,
-        reference_person:
-          data.reference_person as string | undefined,
-        record_date:
-          (data.date as string) ||
-          new Date().toISOString().split('T')[0],
-      },
-    );
+    const record = await this.financial.createRecord(subscriberId, {
+      type: 'income',
+      amount: data.amount as number,
+      description: data.description as string | undefined,
+      category: data.category as string | undefined,
+      reference_person: data.reference_person as string | undefined,
+      record_date:
+        (data.date as string) || new Date().toISOString().split('T')[0],
+    });
     return { success: true, data: record };
   }
 
@@ -182,20 +151,15 @@ export class ActionExecutorService {
     subscriberId: string,
     data: Record<string, unknown>,
   ): Promise<ActionResult> {
-    const record = await this.financial.createRecord(
-      subscriberId,
-      {
-        type: 'expense',
-        amount: data.amount as number,
-        description: data.description as string | undefined,
-        category: data.category as string | undefined,
-        reference_person:
-          data.reference_person as string | undefined,
-        record_date:
-          (data.date as string) ||
-          new Date().toISOString().split('T')[0],
-      },
-    );
+    const record = await this.financial.createRecord(subscriberId, {
+      type: 'expense',
+      amount: data.amount as number,
+      description: data.description as string | undefined,
+      category: data.category as string | undefined,
+      reference_person: data.reference_person as string | undefined,
+      record_date:
+        (data.date as string) || new Date().toISOString().split('T')[0],
+    });
     return { success: true, data: record };
   }
 

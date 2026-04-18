@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  Subscriber,
-  Payment,
-  UsageTracking,
-} from '../../database/entities';
+import { Subscriber, Payment, UsageTracking } from '../../database/entities';
 
 export interface OverviewResult {
   totalSubscribers: number;

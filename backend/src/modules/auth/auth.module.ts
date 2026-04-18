@@ -5,11 +5,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Subscriber } from '../../database/entities/subscriber.entity';
 import { AdminUser } from '../../database/entities/admin-user.entity';
+import { Plan } from '../../database/entities/plan.entity';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AdminAuthController } from './admin-auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { SubscribersModule } from '../subscribers/subscribers.module';
+import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
   imports: [
@@ -24,8 +26,9 @@ import { SubscribersModule } from '../subscribers/subscribers.module';
         },
       }),
     }),
-    TypeOrmModule.forFeature([Subscriber, AdminUser]),
+    TypeOrmModule.forFeature([Subscriber, AdminUser, Plan]),
     SubscribersModule,
+    PaymentsModule,
   ],
   controllers: [AuthController, AdminAuthController],
   providers: [AuthService, JwtStrategy],

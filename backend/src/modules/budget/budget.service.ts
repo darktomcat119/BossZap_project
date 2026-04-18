@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Budget } from '../../database/entities/budget.entity';
@@ -39,10 +35,7 @@ export class BudgetService {
     private readonly pdfGeneratorService: PdfGeneratorService,
   ) {}
 
-  async create(
-    subscriberId: string,
-    data: CreateBudgetDto,
-  ): Promise<Budget> {
+  async create(subscriberId: string, data: CreateBudgetDto): Promise<Budget> {
     const documentType = data.document_type ?? 'budget';
 
     const documentNumber = await this.getNextDocumentNumber(
@@ -57,10 +50,7 @@ export class BudgetService {
       total: item.quantity * item.unit_price,
     }));
 
-    const totalAmount = items.reduce(
-      (sum, item) => sum + item.total,
-      0,
-    );
+    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
 
     const budget = this.budgetRepo.create({
       subscriber_id: subscriberId,
@@ -111,13 +101,10 @@ export class BudgetService {
     }
 
     if (filters.startDate && filters.endDate) {
-      qb.andWhere(
-        'budget.created_at BETWEEN :startDate AND :endDate',
-        {
-          startDate: filters.startDate,
-          endDate: filters.endDate,
-        },
-      );
+      qb.andWhere('budget.created_at BETWEEN :startDate AND :endDate', {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      });
     } else if (filters.startDate) {
       qb.andWhere('budget.created_at >= :startDate', {
         startDate: filters.startDate,
@@ -128,9 +115,7 @@ export class BudgetService {
       });
     }
 
-    qb.orderBy('budget.created_at', 'DESC')
-      .skip(skip)
-      .take(limit);
+    qb.orderBy('budget.created_at', 'DESC').skip(skip).take(limit);
 
     const [budgets, total] = await qb.getManyAndCount();
 
@@ -143,10 +128,7 @@ export class BudgetService {
     };
   }
 
-  async findById(
-    subscriberId: string,
-    budgetId: string,
-  ): Promise<Budget> {
+  async findById(subscriberId: string, budgetId: string): Promise<Budget> {
     const budget = await this.budgetRepo.findOne({
       where: { id: budgetId, subscriber_id: subscriberId },
     });
@@ -168,10 +150,7 @@ export class BudgetService {
     return this.budgetRepo.save(budget);
   }
 
-  async generatePdf(
-    subscriberId: string,
-    budgetId: string,
-  ): Promise<string> {
+  async generatePdf(subscriberId: string, budgetId: string): Promise<string> {
     const budget = await this.findById(subscriberId, budgetId);
 
     const subscriber = await this.subscriberRepo.findOne({
@@ -182,28 +161,20 @@ export class BudgetService {
       throw new NotFoundException('Subscriber not found');
     }
 
-    const pdfBuffer =
-      await this.pdfGeneratorService.generateBudgetPdf(
-        budget,
-        subscriber,
-      );
+    const pdfBuffer = await this.pdfGeneratorService.generateBudgetPdf(
+      budget,
+      subscriber,
+    );
 
-    const docNum =
-      budget.document_number ?? budget.id.substring(0, 8);
+    const docNum = budget.document_number ?? budget.id.substring(0, 8);
     const filename = `${docNum}-${Date.now()}.pdf`;
 
-    const pdfUrl = await this.uploadPdfToS3(
-      pdfBuffer,
-      subscriberId,
-      filename,
-    );
+    const pdfUrl = await this.uploadPdfToS3(pdfBuffer, subscriberId, filename);
 
     budget.pdf_url = pdfUrl;
     await this.budgetRepo.save(budget);
 
-    this.logger.log(
-      `PDF generated for budget ${budgetId}: ${pdfUrl}`,
-    );
+    this.logger.log(`PDF generated for budget ${budgetId}: ${pdfUrl}`);
     return pdfUrl;
   }
 
@@ -211,8 +182,7 @@ export class BudgetService {
     subscriberId: string,
     documentType: string,
   ): Promise<string> {
-    const prefix =
-      documentType === 'service_order' ? 'OS' : 'BUD';
+    const prefix = documentType === 'service_order' ? 'OS' : 'BUD';
 
     const count = await this.budgetRepo.count({
       where: {
@@ -230,13 +200,10 @@ export class BudgetService {
     subscriberId: string,
     filename: string,
   ): Promise<string> {
-    const { S3Client, PutObjectCommand } = await import(
-      '@aws-sdk/client-s3'
-    );
+    const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
 
     const s3Region = process.env.AWS_REGION ?? 'sa-east-1';
-    const s3Bucket =
-      process.env.AWS_S3_BUCKET ?? 'bosszap-files';
+    const s3Bucket = process.env.AWS_S3_BUCKET ?? 'bosszap-files';
 
     const key = `subscribers/${subscriberId}/documents/${filename}`;
 

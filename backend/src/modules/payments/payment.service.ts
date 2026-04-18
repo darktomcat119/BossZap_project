@@ -55,9 +55,7 @@ export class PaymentService {
     });
 
     if (!subscriber) {
-      throw new NotFoundException(
-        `Subscriber ${subscriberId} not found`,
-      );
+      throw new NotFoundException(`Subscriber ${subscriberId} not found`);
     }
 
     const plan = await this.subscriptionRepo.manager
@@ -65,9 +63,7 @@ export class PaymentService {
       .findOne({ where: { id: planId, is_active: true } });
 
     if (!plan) {
-      throw new NotFoundException(
-        `Plan ${planId} not found or not active`,
-      );
+      throw new NotFoundException(`Plan ${planId} not found or not active`);
     }
 
     const existingActive = await this.subscriptionRepo.findOne({
@@ -83,24 +79,20 @@ export class PaymentService {
       );
     }
 
-    const priceAmountCents = Math.round(
-      Number(plan.price_monthly) * 100,
-    );
+    const priceAmountCents = Math.round(Number(plan.price_monthly) * 100);
 
-    const { sessionId, url } =
-      await this.stripeService.createCheckoutSession({
-        subscriberId,
-        planId,
-        email: subscriber.email || '',
-        priceAmountCents,
-        planName: plan.name,
-        trialDays: plan.trial_days,
-      });
+    const { sessionId, url } = await this.stripeService.createCheckoutSession({
+      subscriberId,
+      planId,
+      email: subscriber.email || '',
+      priceAmountCents,
+      planName: plan.name,
+      trialDays: plan.trial_days,
+      stripePriceId: plan.stripe_price_id,
+    });
 
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(
-      trialEndsAt.getDate() + plan.trial_days,
-    );
+    trialEndsAt.setDate(trialEndsAt.getDate() + plan.trial_days);
 
     const subscription = this.subscriptionRepo.create({
       subscriber_id: subscriberId,
@@ -165,10 +157,9 @@ export class PaymentService {
 
     const [data, total] = await this.paymentRepo
       .createQueryBuilder('payment')
-      .where(
-        'payment.subscription_id IN (:...subscriptionIds)',
-        { subscriptionIds },
-      )
+      .where('payment.subscription_id IN (:...subscriptionIds)', {
+        subscriptionIds,
+      })
       .orderBy('payment.created_at', 'DESC')
       .skip(skip)
       .take(limit)
@@ -209,9 +200,7 @@ export class PaymentService {
     });
 
     if (existingPayment) {
-      this.logger.warn(
-        `Duplicate payment event: ${gatewayPaymentId}`,
-      );
+      this.logger.warn(`Duplicate payment event: ${gatewayPaymentId}`);
       return;
     }
 
@@ -248,9 +237,7 @@ export class PaymentService {
     gatewayPaymentId: string,
     subscriptionGatewayId: string,
   ): Promise<void> {
-    this.logger.warn(
-      `Payment failed: gateway_payment_id=${gatewayPaymentId}`,
-    );
+    this.logger.warn(`Payment failed: gateway_payment_id=${gatewayPaymentId}`);
 
     const subscription = await this.findSubscriptionByGatewayId(
       subscriptionGatewayId,
@@ -268,9 +255,7 @@ export class PaymentService {
     });
 
     if (existingPayment) {
-      this.logger.warn(
-        `Duplicate failed payment event: ${gatewayPaymentId}`,
-      );
+      this.logger.warn(`Duplicate failed payment event: ${gatewayPaymentId}`);
       return;
     }
 
@@ -290,20 +275,13 @@ export class PaymentService {
     );
   }
 
-  async handleSubscriptionCancelled(
-    gatewayId: string,
-  ): Promise<void> {
-    this.logger.log(
-      `Subscription cancelled: gateway_id=${gatewayId}`,
-    );
+  async handleSubscriptionCancelled(gatewayId: string): Promise<void> {
+    this.logger.log(`Subscription cancelled: gateway_id=${gatewayId}`);
 
-    const subscription =
-      await this.findSubscriptionByGatewayId(gatewayId);
+    const subscription = await this.findSubscriptionByGatewayId(gatewayId);
 
     if (!subscription) {
-      this.logger.warn(
-        `No subscription found for gateway_id=${gatewayId}`,
-      );
+      this.logger.warn(`No subscription found for gateway_id=${gatewayId}`);
       return;
     }
 
@@ -315,9 +293,7 @@ export class PaymentService {
       { status: 'cancelled' },
     );
 
-    this.logger.log(
-      `Subscriber ${subscription.subscriber_id} cancelled`,
-    );
+    this.logger.log(`Subscriber ${subscription.subscriber_id} cancelled`);
   }
 
   async handleSubscriptionUpdated(
@@ -326,13 +302,10 @@ export class PaymentService {
     currentPeriodStart: Date | null,
     currentPeriodEnd: Date | null,
   ): Promise<void> {
-    const subscription =
-      await this.findSubscriptionByGatewayId(gatewayId);
+    const subscription = await this.findSubscriptionByGatewayId(gatewayId);
 
     if (!subscription) {
-      this.logger.warn(
-        `No subscription found for gateway_id=${gatewayId}`,
-      );
+      this.logger.warn(`No subscription found for gateway_id=${gatewayId}`);
       return;
     }
 
@@ -340,14 +313,10 @@ export class PaymentService {
       subscription.status = status;
     } else if (status === 'past_due') {
       subscription.status = 'past_due';
-      this.logger.warn(
-        `Subscription ${subscription.id} moved to past_due`,
-      );
+      this.logger.warn(`Subscription ${subscription.id} moved to past_due`);
     } else if (status === 'canceled' || status === 'unpaid') {
       subscription.status = 'cancelled';
-      this.logger.warn(
-        `Subscription ${subscription.id} moved to ${status}`,
-      );
+      this.logger.warn(`Subscription ${subscription.id} moved to ${status}`);
     }
 
     if (currentPeriodStart) {
@@ -365,19 +334,16 @@ export class PaymentService {
   }
 
   async suspendSubscriber(subscriberId: string): Promise<void> {
-    this.logger.warn(
-      `Suspending subscriber=${subscriberId}`,
-    );
+    this.logger.warn(`Suspending subscriber=${subscriberId}`);
 
     await this.subscriberRepo.update(
       { id: subscriberId },
       { status: 'suspended' },
     );
 
-    const activeSubscription =
-      await this.subscriptionRepo.findOne({
-        where: { subscriber_id: subscriberId, status: 'active' },
-      });
+    const activeSubscription = await this.subscriptionRepo.findOne({
+      where: { subscriber_id: subscriberId, status: 'active' },
+    });
 
     if (activeSubscription) {
       activeSubscription.status = 'past_due';
@@ -394,10 +360,10 @@ export class PaymentService {
       .select('SUM(payment.amount)', 'totalRevenue')
       .addSelect('COUNT(payment.id)', 'paymentCount')
       .where('payment.status = :status', { status: 'succeeded' })
-      .andWhere(
-        'payment.paid_at BETWEEN :startDate AND :endDate',
-        { startDate, endDate },
-      )
+      .andWhere('payment.paid_at BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
       .getRawOne<{
         totalRevenue: string | null;
         paymentCount: string;

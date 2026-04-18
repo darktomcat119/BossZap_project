@@ -26,13 +26,18 @@ export class AdminSubscribersController {
   constructor(private readonly service: AdminSubscribersService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all subscribers with search, filter, sort, and pagination' })
+  @ApiOperation({
+    summary: 'List all subscribers with search, filter, sort, and pagination',
+  })
   findAll(@Query() filters: AdminSubscriberFiltersDto) {
     return this.service.findAll(filters);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get full subscriber detail including usage, payments, conversations' })
+  @ApiOperation({
+    summary:
+      'Get full subscriber detail including usage, payments, conversations',
+  })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   getDetail(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getDetail(id);

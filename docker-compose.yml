@@ -37,13 +37,16 @@ services:
     container_name: bosszap-backend
     ports:
       - '3000:3000'
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql://bosszap:bosszap_dev@postgres:5432/bosszap
       REDIS_URL: redis://redis:6379
       JWT_SECRET: dev-jwt-secret-change-in-production
       JWT_EXPIRATION: 15m
       JWT_REFRESH_EXPIRATION: 7d
-      DEFAULT_LANGUAGE: es
+      DEFAULT_LANGUAGE: pt-BR
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
       NODE_ENV: development
     volumes:
       - ./backend/src:/app/src

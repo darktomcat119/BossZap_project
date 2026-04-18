@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  PendingNotification,
-} from '../../database/entities/pending-notification.entity';
+import { PendingNotification } from '../../database/entities/pending-notification.entity';
 import { WindowOptimizerService } from './window-optimizer.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
@@ -18,9 +16,7 @@ interface CreateNotificationData {
 
 @Injectable()
 export class NotificationQueueService {
-  private readonly logger = new Logger(
-    NotificationQueueService.name,
-  );
+  private readonly logger = new Logger(NotificationQueueService.name);
 
   constructor(
     @InjectRepository(PendingNotification)
@@ -49,12 +45,8 @@ export class NotificationQueueService {
     return saved;
   }
 
-  async sendPendingForSubscriber(
-    subscriberId: string,
-  ): Promise<number> {
-    const isOpen = await this.windowOptimizer.isWindowOpen(
-      subscriberId,
-    );
+  async sendPendingForSubscriber(subscriberId: string): Promise<number> {
+    const isOpen = await this.windowOptimizer.isWindowOpen(subscriberId);
 
     if (!isOpen) {
       return 0;
@@ -74,18 +66,14 @@ export class NotificationQueueService {
     let sent = 0;
 
     for (const notification of pending) {
-      const success = await this.sendNotification(
-        notification,
-        'free',
-      );
+      const success = await this.sendNotification(notification, 'free');
       if (success) {
         sent++;
       }
     }
 
     this.logger.log(
-      `Sent ${sent} pending notifications ` +
-        `for subscriber ${subscriberId}`,
+      `Sent ${sent} pending notifications ` + `for subscriber ${subscriberId}`,
     );
 
     return sent;
@@ -119,9 +107,7 @@ export class NotificationQueueService {
     costType: 'free' | 'hsm',
   ): Promise<boolean> {
     try {
-      const message = this.formatNotificationMessage(
-        notification,
-      );
+      const message = this.formatNotificationMessage(notification);
 
       await this.whatsappService.sendText({
         to: notification.subscriber_id,
@@ -154,15 +140,15 @@ export class NotificationQueueService {
     }
   }
 
-  private async sendViaHsm(
-    notification: PendingNotification,
-  ): Promise<void> {
+  private async sendViaHsm(notification: PendingNotification): Promise<void> {
     try {
       await this.whatsappService.sendTemplate({
         to: notification.subscriber_id,
         templateName: notification.type,
         language: 'en',
-        components: notification.payload?.components as Record<string, unknown>[] | undefined,
+        components: notification.payload?.components as
+          | Record<string, unknown>[]
+          | undefined,
         subscriberId: notification.subscriber_id,
       });
 
@@ -177,8 +163,7 @@ export class NotificationQueueService {
       );
     } catch (error) {
       this.logger.error(
-        `Failed to send HSM notification ` +
-          `${notification.id}`,
+        `Failed to send HSM notification ` + `${notification.id}`,
         error instanceof Error ? error.stack : String(error),
       );
 
@@ -188,25 +173,16 @@ export class NotificationQueueService {
     }
   }
 
-  private formatNotificationMessage(
-    notification: PendingNotification,
-  ): string {
-    const payload = notification.payload as Record<
-      string,
-      string
-    >;
+  private formatNotificationMessage(notification: PendingNotification): string {
+    const payload = notification.payload as Record<string, string>;
 
     switch (notification.type) {
       case 'agenda_reminder':
         return (
-          payload.message ||
-          `Reminder: ${payload.title} at ${payload.time}`
+          payload.message || `Reminder: ${payload.title} at ${payload.time}`
         );
       case 'budget_ready':
-        return (
-          payload.message ||
-          `Your budget is ready: ${payload.url}`
-        );
+        return payload.message || `Your budget is ready: ${payload.url}`;
       case 'payment_recovery':
         return payload.message || 'Payment reminder';
       default:

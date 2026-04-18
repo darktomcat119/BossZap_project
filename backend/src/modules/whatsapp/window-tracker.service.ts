@@ -1,12 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  MessageWindowTracking,
-} from '../../database/entities/message-window-tracking.entity';
-import {
-  PendingNotification,
-} from '../../database/entities/pending-notification.entity';
+import { MessageWindowTracking } from '../../database/entities/message-window-tracking.entity';
+import { PendingNotification } from '../../database/entities/pending-notification.entity';
 
 const WINDOW_DURATION_MS = 24 * 60 * 60 * 1000;
 
@@ -19,9 +15,7 @@ interface QueueNotificationInput {
 
 @Injectable()
 export class WindowTrackerService {
-  private readonly logger = new Logger(
-    WindowTrackerService.name,
-  );
+  private readonly logger = new Logger(WindowTrackerService.name);
 
   constructor(
     @InjectRepository(MessageWindowTracking)
@@ -71,9 +65,7 @@ export class WindowTrackerService {
     });
   }
 
-  async queueNotification(
-    input: QueueNotificationInput,
-  ): Promise<void> {
+  async queueNotification(input: QueueNotificationInput): Promise<void> {
     const notification = this.notificationRepo.create({
       subscriber_id: input.subscriberId,
       type: input.type,
@@ -85,8 +77,7 @@ export class WindowTrackerService {
     await this.notificationRepo.save(notification);
 
     this.logger.log(
-      `Queued ${input.priority} notification ` +
-        `for ${input.subscriberId}`,
+      `Queued ${input.priority} notification ` + `for ${input.subscriberId}`,
     );
   }
 
@@ -102,8 +93,7 @@ export class WindowTrackerService {
   async drainPendingNotifications(
     subscriberId: string,
   ): Promise<PendingNotification[]> {
-    const pending =
-      await this.getPendingNotifications(subscriberId);
+    const pending = await this.getPendingNotifications(subscriberId);
 
     if (pending.length === 0) return [];
 

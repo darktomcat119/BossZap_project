@@ -7,17 +7,8 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
-import {
-  IsOptional,
-  IsString,
-  MaxLength,
-  IsIn,
-} from 'class-validator';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength, IsIn } from 'class-validator';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -25,19 +16,28 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 class UpdateProfileDto {
-  @IsOptional() @IsString() @MaxLength(255)
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
   business_name?: string;
 
-  @IsOptional() @IsString() @MaxLength(255)
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
   owner_name?: string;
 
-  @IsOptional() @IsString() @MaxLength(255)
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
   email?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   address?: string;
 
-  @IsOptional() @IsString() @IsIn(['es', 'en', 'pt-BR'])
+  @IsOptional()
+  @IsString()
+  @IsIn(['es', 'en', 'pt-BR'])
   preferred_language?: string;
 }
 
@@ -54,16 +54,14 @@ export class AuthController {
       dto.password,
       dto.phone,
       dto.owner_name,
+      dto.plan,
     );
   }
 
   @Post('login')
   @ApiOperation({ summary: 'Subscriber login' })
   async login(@Body() dto: LoginDto) {
-    return this.authService.loginSubscriber(
-      dto.email,
-      dto.password,
-    );
+    return this.authService.loginSubscriber(dto.email, dto.password);
   }
 
   @Post('refresh')
@@ -84,13 +82,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update subscriber profile' })
-  async updateProfile(
-    @Req() req: any,
-    @Body() dto: UpdateProfileDto,
-  ) {
-    return this.authService.updateSubscriberProfile(
-      req.user.id,
-      dto,
-    );
+  async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateSubscriberProfile(req.user.id, dto);
   }
 }

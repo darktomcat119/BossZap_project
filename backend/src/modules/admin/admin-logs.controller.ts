@@ -1,9 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -25,8 +20,18 @@ export class AdminLogsController {
   @ApiOperation({ summary: 'Paginated audit logs with optional filters' })
   @ApiQuery({ name: 'subscriberId', required: false, type: String })
   @ApiQuery({ name: 'action', required: false, type: String })
-  @ApiQuery({ name: 'dateFrom', required: false, type: String, example: '2025-01-01' })
-  @ApiQuery({ name: 'dateTo', required: false, type: String, example: '2025-12-31' })
+  @ApiQuery({
+    name: 'dateFrom',
+    required: false,
+    type: String,
+    example: '2025-01-01',
+  })
+  @ApiQuery({
+    name: 'dateTo',
+    required: false,
+    type: String,
+    example: '2025-12-31',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   getAuditLogs(

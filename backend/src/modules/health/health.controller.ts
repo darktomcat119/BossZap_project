@@ -13,9 +13,7 @@ export class HealthController {
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {
-    this.redis = new Redis(
-      process.env.REDIS_URL || 'redis://localhost:6379',
-    );
+    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   }
 
   @Get()

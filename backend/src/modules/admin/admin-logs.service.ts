@@ -66,6 +66,8 @@ export class AdminLogsService {
   }
 
   async getSystemLogs(): Promise<{ message: string }> {
-    return { message: 'System log viewer - placeholder for future implementation' };
+    return {
+      message: 'System log viewer - placeholder for future implementation',
+    };
   }
 }

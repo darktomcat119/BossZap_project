@@ -28,33 +28,24 @@ export class GptService {
   private readonly model: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.apiKey = this.configService.get<string>(
-      'OPENAI_API_KEY',
-      '',
-    );
-    this.model = this.configService.get<string>(
-      'OPENAI_MODEL',
-      'gpt-4',
-    );
+    this.apiKey = this.configService.get<string>('OPENAI_API_KEY', '');
+    this.model = this.configService.get<string>('OPENAI_MODEL', 'gpt-4');
   }
 
   async chat(messages: ChatMessage[]): Promise<GptResponse> {
-    const response = await fetch(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages,
-          temperature: 0.3,
-          max_tokens: 1000,
-        }),
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({
+        model: this.model,
+        messages,
+        temperature: 0.3,
+        max_tokens: 1000,
+      }),
+    });
 
     if (!response.ok) {
       const error = await response.text();
@@ -71,9 +62,7 @@ export class GptService {
     };
   }
 
-  async chatWithRetry(
-    messages: ChatMessage[],
-  ): Promise<GptResponse> {
+  async chatWithRetry(messages: ChatMessage[]): Promise<GptResponse> {
     try {
       return await this.chat(messages);
     } catch (error) {

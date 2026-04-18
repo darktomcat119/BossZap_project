@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthModule } from './modules/auth/auth.module';
 import { SubscribersModule } from './modules/subscribers/subscribers.module';
 import { HealthModule } from './modules/health/health.module';
@@ -21,19 +24,20 @@ import { LoggerService } from './config/logger.service';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 1000, limit: 10 },
+      { name: 'medium', ttl: 60_000, limit: 100 },
+      { name: 'long', ttl: 3_600_000, limit: 1000 },
+    ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        entities: [
-          __dirname +
-            '/database/entities/**/*.entity{.ts,.js}',
-        ],
-        migrations: [
-          __dirname + '/database/migrations/*{.ts,.js}',
-        ],
+        entities: [__dirname + '/database/entities/**/*.entity{.ts,.js}'],
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
         synchronize: false,
         logging: config.get('NODE_ENV') === 'development',
       }),
@@ -62,7 +66,7 @@ import { LoggerService } from './config/logger.service';
     PaymentsModule,
     NotificationsModule,
   ],
-  providers: [LoggerService],
+  providers: [LoggerService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
   exports: [LoggerService],
 })
 export class AppModule {}

@@ -10,10 +10,7 @@ import {
 import { Subscriber } from './subscriber.entity';
 
 @Entity('pending_notifications')
-@Index('idx_notifications_subscriber_status', [
-  'subscriber_id',
-  'status',
-])
+@Index('idx_notifications_subscriber_status', ['subscriber_id', 'status'])
 export class PendingNotification {
   @PrimaryGeneratedColumn('uuid')
   id: string;

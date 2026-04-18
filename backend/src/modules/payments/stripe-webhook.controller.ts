@@ -18,9 +18,7 @@ import { PaymentService } from './payment.service';
 @ApiTags('Stripe Webhook')
 @Controller('payments/webhook')
 export class StripeWebhookController {
-  private readonly logger = new Logger(
-    StripeWebhookController.name,
-  );
+  private readonly logger = new Logger(StripeWebhookController.name);
 
   constructor(
     private readonly stripeService: StripeService,
@@ -35,9 +33,7 @@ export class StripeWebhookController {
     @Headers('stripe-signature') signature: string,
   ): Promise<{ received: boolean }> {
     if (!signature) {
-      throw new BadRequestException(
-        'Missing stripe-signature header',
-      );
+      throw new BadRequestException('Missing stripe-signature header');
     }
 
     if (!req.rawBody) {
@@ -47,28 +43,17 @@ export class StripeWebhookController {
     let event: Stripe.Event;
 
     try {
-      event = this.stripeService.constructWebhookEvent(
-        req.rawBody,
-        signature,
-      );
+      event = this.stripeService.constructWebhookEvent(req.rawBody, signature);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Webhook signature verification failed: ${message}`,
-      );
-      throw new BadRequestException(
-        'Invalid webhook signature',
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Webhook signature verification failed: ${message}`);
+      throw new BadRequestException('Invalid webhook signature');
     }
 
-    this.logger.log(
-      `Received Stripe webhook: ${event.type} id=${event.id}`,
-    );
+    this.logger.log(`Received Stripe webhook: ${event.type} id=${event.id}`);
 
     this.processEventAsync(event).catch((error) => {
-      const message =
-        error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Error processing webhook event ${event.id}: ${message}`,
       );
@@ -77,9 +62,7 @@ export class StripeWebhookController {
     return { received: true };
   }
 
-  private async processEventAsync(
-    event: Stripe.Event,
-  ): Promise<void> {
+  private async processEventAsync(event: Stripe.Event): Promise<void> {
     switch (event.type) {
       case 'checkout.session.completed':
         await this.handleCheckoutCompleted(event);
@@ -102,20 +85,14 @@ export class StripeWebhookController {
         break;
 
       default:
-        this.logger.debug(
-          `Unhandled event type: ${event.type}`,
-        );
+        this.logger.debug(`Unhandled event type: ${event.type}`);
     }
   }
 
-  private async handleCheckoutCompleted(
-    event: Stripe.Event,
-  ): Promise<void> {
-    const session = event.data
-      .object as Stripe.Checkout.Session;
+  private async handleCheckoutCompleted(event: Stripe.Event): Promise<void> {
+    const session = event.data.object as Stripe.Checkout.Session;
 
-    const subscriberId =
-      session.metadata?.subscriber_id;
+    const subscriberId = session.metadata?.subscriber_id;
     const planId = session.metadata?.plan_id;
     const stripeSubscriptionId =
       typeof session.subscription === 'string'
@@ -129,11 +106,10 @@ export class StripeWebhookController {
       return;
     }
 
-    const subscription =
-      await this.findSubscriptionByCheckoutSession(
-        session.id,
-        subscriberId,
-      );
+    const subscription = await this.findSubscriptionByCheckoutSession(
+      session.id,
+      subscriberId,
+    );
 
     if (subscription) {
       await this.paymentService.updateSubscriptionGatewayId(
@@ -159,9 +135,7 @@ export class StripeWebhookController {
         : invoice.subscription?.id;
 
     if (!subscriptionId) {
-      this.logger.warn(
-        'Invoice payment succeeded but no subscription ID',
-      );
+      this.logger.warn('Invoice payment succeeded but no subscription ID');
       return;
     }
 
@@ -174,9 +148,7 @@ export class StripeWebhookController {
     );
   }
 
-  private async handleInvoicePaymentFailed(
-    event: Stripe.Event,
-  ): Promise<void> {
+  private async handleInvoicePaymentFailed(event: Stripe.Event): Promise<void> {
     const invoice = event.data.object as Stripe.Invoice;
 
     const subscriptionId =
@@ -185,34 +157,21 @@ export class StripeWebhookController {
         : invoice.subscription?.id;
 
     if (!subscriptionId) {
-      this.logger.warn(
-        'Invoice payment failed but no subscription ID',
-      );
+      this.logger.warn('Invoice payment failed but no subscription ID');
       return;
     }
 
-    await this.paymentService.handlePaymentFailed(
-      invoice.id,
-      subscriptionId,
-    );
+    await this.paymentService.handlePaymentFailed(invoice.id, subscriptionId);
   }
 
-  private async handleSubscriptionDeleted(
-    event: Stripe.Event,
-  ): Promise<void> {
-    const subscription = event.data
-      .object as Stripe.Subscription;
+  private async handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {
+    const subscription = event.data.object as Stripe.Subscription;
 
-    await this.paymentService.handleSubscriptionCancelled(
-      subscription.id,
-    );
+    await this.paymentService.handleSubscriptionCancelled(subscription.id);
   }
 
-  private async handleSubscriptionUpdated(
-    event: Stripe.Event,
-  ): Promise<void> {
-    const subscription = event.data
-      .object as Stripe.Subscription;
+  private async handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
+    const subscription = event.data.object as Stripe.Subscription;
 
     const currentPeriodStart = subscription.current_period_start
       ? new Date(subscription.current_period_start * 1000)

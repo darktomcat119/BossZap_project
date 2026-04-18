@@ -264,7 +264,8 @@ export class FinancialService {
 
     if (data.type !== undefined) record.type = data.type;
     if (data.amount !== undefined) record.amount = data.amount;
-    if (data.description !== undefined) record.description = data.description ?? null;
+    if (data.description !== undefined)
+      record.description = data.description ?? null;
     if (data.category !== undefined) record.category = data.category ?? null;
     if (data.reference_person !== undefined)
       record.reference_person = data.reference_person ?? null;
@@ -273,10 +274,7 @@ export class FinancialService {
     return this.financialRepo.save(record);
   }
 
-  async deleteRecord(
-    subscriberId: string,
-    recordId: string,
-  ): Promise<void> {
+  async deleteRecord(subscriberId: string, recordId: string): Promise<void> {
     const record = await this.financialRepo.findOne({
       where: { id: recordId, subscriber_id: subscriberId },
     });

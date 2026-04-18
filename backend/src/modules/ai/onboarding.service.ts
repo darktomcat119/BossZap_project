@@ -32,11 +32,9 @@ export class OnboardingService {
     text: string,
     contactName?: string,
   ): Promise<OnboardingResult> {
-    const subscriber =
-      await this.subscribers.findById(subscriberId);
-    const language = subscriber.preferred_language || 'es';
-    const context =
-      await this.conversation.getContext(subscriberId);
+    const subscriber = await this.subscribers.findById(subscriberId);
+    const language = subscriber.preferred_language || 'pt-BR';
+    const context = await this.conversation.getContext(subscriberId);
 
     await this.conversation.saveMessage(
       subscriberId,
@@ -66,20 +64,12 @@ export class OnboardingService {
 
     const response = await this.gpt.chatWithRetry(messages);
 
-    const parsed = this.parseOnboardingResponse(
-      response.content,
-    );
+    const parsed = this.parseOnboardingResponse(response.content);
 
     if (parsed.is_complete) {
-      await this.completeOnboarding(
-        subscriberId,
-        parsed.collected_data,
-      );
+      await this.completeOnboarding(subscriberId, parsed.collected_data);
     } else {
-      await this.updatePartialData(
-        subscriberId,
-        parsed.collected_data,
-      );
+      await this.updatePartialData(subscriberId, parsed.collected_data);
     }
 
     await this.conversation.saveMessage(
@@ -108,9 +98,7 @@ export class OnboardingService {
       onboarding_completed_at: new Date(),
     });
 
-    this.logger.log(
-      `Onboarding completed for ${subscriberId}`,
-    );
+    this.logger.log(`Onboarding completed for ${subscriberId}`);
   }
 
   private async updatePartialData(
@@ -140,9 +128,7 @@ export class OnboardingService {
     }
   }
 
-  private parseOnboardingResponse(
-    raw: string,
-  ): OnboardingGptResponse {
+  private parseOnboardingResponse(raw: string): OnboardingGptResponse {
     try {
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {

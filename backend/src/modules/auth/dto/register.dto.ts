@@ -1,6 +1,8 @@
 import {
   IsEmail,
   IsString,
+  IsOptional,
+  IsIn,
   MinLength,
   MaxLength,
   Matches,
@@ -30,4 +32,10 @@ export class RegisterDto {
   @MinLength(2)
   @MaxLength(255)
   owner_name: string;
+
+  @ApiProperty({ example: 'pro', required: false })
+  @IsOptional()
+  @IsString()
+  @IsIn(['starter', 'pro', 'business'])
+  plan?: string;
 }

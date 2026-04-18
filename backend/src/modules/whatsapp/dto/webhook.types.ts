@@ -75,9 +75,7 @@ export interface WebhookMessage {
   contactName?: string;
 }
 
-export function parseWebhookPayload(
-  payload: WebhookPayload,
-): WebhookMessage[] {
+export function parseWebhookPayload(payload: WebhookPayload): WebhookMessage[] {
   const messages: WebhookMessage[] = [];
 
   if (payload.object !== 'whatsapp_business_account') {
@@ -93,9 +91,7 @@ export function parseWebhookPayload(
       const contacts = value.contacts || [];
 
       for (const msg of rawMessages) {
-        const contact = contacts.find(
-          (c) => c.wa_id === msg.from,
-        );
+        const contact = contacts.find((c) => c.wa_id === msg.from);
 
         const parsed: WebhookMessage = {
           messageId: msg.id,

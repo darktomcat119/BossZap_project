@@ -27,26 +27,43 @@ export class InboundProcessor extends WorkerHost {
 
   async process(job: Job<WebhookMessage>): Promise<void> {
     const message = job.data;
-    this.logger.log(
-      `Processing ${message.type} from ${message.from}`,
-    );
+    this.logger.log(`Processing ${message.type} from ${message.from}`);
 
     try {
-      const subscriberId = await this.resolveSubscriberId(
-        message.from,
-      );
+      const subscriberId = await this.resolveSubscriberId(message.from);
 
       await this.windowTracker.updateWindow(subscriberId);
 
       let textContent = message.text || '';
 
       if (message.type === 'audio' && message.mediaId) {
-        textContent =
-          await this.media.transcribeAudio(message.mediaId);
+        textContent = await this.media.transcribeAudio(message.mediaId);
       }
 
-      if (!textContent && message.type === 'image') {
-        textContent = '[Image received]';
+      if (message.type === 'image' && message.mediaId) {
+        const subscriber = await this.subscribers.findById(subscriberId);
+        if (subscriber.status === 'onboarding') {
+          try {
+            const logoUrl = await this.media.processAndStoreImage(
+              message.mediaId,
+              subscriberId,
+              'logo',
+            );
+            await this.subscribers.update(subscriberId, {
+              logo_url: logoUrl,
+            });
+            textContent = '[Logo received and stored successfully]';
+          } catch (err) {
+            this.logger.warn(
+              `Logo upload failed for ${subscriberId}: ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+            );
+            textContent = '[Image received but could not be stored]';
+          }
+        } else if (!textContent) {
+          textContent = '[Image received]';
+        }
       }
 
       if (!textContent && message.type === 'location') {
@@ -67,7 +84,14 @@ export class InboundProcessor extends WorkerHost {
         contactName: message.contactName,
       });
 
-      if (response.responseText) {
+      if (response.mediaUrl) {
+        await this.whatsapp.sendImage({
+          to: message.from,
+          imageUrl: response.mediaUrl,
+          caption: response.responseText,
+          subscriberId,
+        });
+      } else if (response.responseText) {
         await this.whatsapp.sendText({
           to: message.from,
           text: response.responseText,
@@ -77,23 +101,17 @@ export class InboundProcessor extends WorkerHost {
       }
 
       const pending =
-        await this.windowTracker.drainPendingNotifications(
-          subscriberId,
-        );
+        await this.windowTracker.drainPendingNotifications(subscriberId);
       const sentIds: string[] = [];
 
       for (const notification of pending) {
-        const payload =
-          notification.payload as Record<string, string>;
+        const payload = notification.payload as Record<string, string>;
         if (payload.text) {
           await this.whatsapp.sendText({
             to: message.from,
             text: payload.text,
             subscriberId,
-            priority: notification.priority as
-              | 'P1'
-              | 'P2'
-              | 'P3',
+            priority: notification.priority as 'P1' | 'P2' | 'P3',
           });
         }
         sentIds.push(notification.id);
@@ -114,11 +132,8 @@ export class InboundProcessor extends WorkerHost {
     }
   }
 
-  private async resolveSubscriberId(
-    phone: string,
-  ): Promise<string> {
-    const subscriber =
-      await this.subscribers.findByPhone(phone);
+  private async resolveSubscriberId(phone: string): Promise<string> {
+    const subscriber = await this.subscribers.findByPhone(phone);
     if (subscriber) return subscriber.id;
 
     const newSubscriber = await this.subscribers.create({

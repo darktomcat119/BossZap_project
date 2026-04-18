@@ -28,6 +28,13 @@ interface SendDocumentOptions {
   subscriberId: string;
 }
 
+interface SendImageOptions {
+  to: string;
+  imageUrl: string;
+  caption?: string;
+  subscriberId: string;
+}
+
 interface MetaApiResponse {
   messaging_product: string;
   contacts: Array<{ wa_id: string }>;
@@ -51,19 +58,14 @@ export class WhatsappService {
       'WABA_PHONE_NUMBER_ID',
       '',
     );
-    this.accessToken = this.configService.get<string>(
-      'WABA_ACCESS_TOKEN',
-      '',
-    );
+    this.accessToken = this.configService.get<string>('WABA_ACCESS_TOKEN', '');
     this.apiUrl =
-      `https://graph.facebook.com/v18.0/` +
-      `${this.phoneNumberId}/messages`;
+      `https://graph.facebook.com/v18.0/` + `${this.phoneNumberId}/messages`;
   }
 
   async sendText(options: SendTextOptions): Promise<void> {
     const { to, text, subscriberId, priority = 'P2' } = options;
-    const windowOpen =
-      await this.windowTracker.isWindowOpen(subscriberId);
+    const windowOpen = await this.windowTracker.isWindowOpen(subscriberId);
 
     if (!windowOpen && priority !== 'P1') {
       await this.windowTracker.queueNotification({
@@ -73,8 +75,7 @@ export class WhatsappService {
         payload: { to, text },
       });
       this.logger.log(
-        `Window closed for ${subscriberId}, ` +
-          `queued ${priority} message`,
+        `Window closed for ${subscriberId}, ` + `queued ${priority} message`,
       );
       return;
     }
@@ -102,11 +103,8 @@ export class WhatsappService {
     });
   }
 
-  async sendTemplate(
-    options: SendTemplateOptions,
-  ): Promise<void> {
-    const { to, templateName, language, components, subscriberId } =
-      options;
+  async sendTemplate(options: SendTemplateOptions): Promise<void> {
+    const { to, templateName, language, components, subscriberId } = options;
 
     await this.enqueueOutbound({
       type: 'template',
@@ -126,18 +124,40 @@ export class WhatsappService {
     });
   }
 
-  async sendDocument(
-    options: SendDocumentOptions,
-  ): Promise<void> {
-    const {
+  async sendImage(options: SendImageOptions): Promise<void> {
+    const { to, imageUrl, caption, subscriberId } = options;
+    const windowOpen = await this.windowTracker.isWindowOpen(subscriberId);
+
+    if (!windowOpen) {
+      await this.windowTracker.queueNotification({
+        subscriberId,
+        type: 'image',
+        priority: 'P2',
+        payload: { to, imageUrl, caption },
+      });
+      return;
+    }
+
+    await this.enqueueOutbound({
+      type: 'image',
       to,
-      documentUrl,
-      filename,
-      caption,
       subscriberId,
-    } = options;
-    const windowOpen =
-      await this.windowTracker.isWindowOpen(subscriberId);
+      payload: {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'image',
+        image: {
+          link: imageUrl,
+          caption: caption || '',
+        },
+      },
+      windowOpen,
+    });
+  }
+
+  async sendDocument(options: SendDocumentOptions): Promise<void> {
+    const { to, documentUrl, filename, caption, subscriberId } = options;
+    const windowOpen = await this.windowTracker.isWindowOpen(subscriberId);
 
     if (!windowOpen) {
       await this.windowTracker.queueNotification({
@@ -181,9 +201,7 @@ export class WhatsappService {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(
-        `Meta API error ${response.status}: ${error}`,
-      );
+      throw new Error(`Meta API error ${response.status}: ${error}`);
     }
 
     return response.json() as Promise<MetaApiResponse>;
@@ -200,9 +218,7 @@ export class WhatsappService {
     );
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to get media URL: ${response.status}`,
-      );
+      throw new Error(`Failed to get media URL: ${response.status}`);
     }
 
     const data = (await response.json()) as { url: string };
@@ -217,9 +233,7 @@ export class WhatsappService {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to download media: ${response.status}`,
-      );
+      throw new Error(`Failed to download media: ${response.status}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -235,7 +249,7 @@ export class WhatsappService {
   }): Promise<void> {
     await this.outboundQueue.add('send-message', data, {
       attempts: 4,
-      backoff: { type: 'custom' },
+      backoff: { type: 'exponential', delay: 1000 },
       removeOnComplete: 100,
       removeOnFail: 500,
     });

@@ -36,23 +36,55 @@
   },
   "pricing": {
     "title": "Inversión en tu negocio",
-    "plan": {
-      "name": "Profesional",
-      "price": "$29.90",
-      "period": "/mes",
-      "features": [
-        "Hasta 500 mensajes por mes",
-        "Hasta 50 presupuestos PDF por mes",
-        "300 consultas IA por mes",
-        "Dashboard completo con gráficos",
-        "Calendario y agenda integrados",
-        "Control financiero (ingresos y gastos)",
-        "Exportación de reportes CSV",
-        "Soporte prioritario por WhatsApp"
-      ],
-      "cta": "Empezar prueba gratis"
-    },
-    "trial": "7 días gratis. Cancela cuando quieras. Sin tarjeta al inicio."
+    "subtitle": "Elige el plan ideal para el tamaño de tu negocio.",
+    "cta": "Empezar prueba gratis",
+    "trial": "7 días gratis. Cancela cuando quieras. Sin tarjeta al inicio.",
+    "period": "/mes",
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "price": "R$ 39,90",
+        "tagline": "Ideal para quienes están empezando.",
+        "features": [
+          "Hasta 200 mensajes por mes",
+          "Hasta 20 presupuestos PDF por mes",
+          "100 consultas IA por mes",
+          "Agenda y calendario integrados",
+          "Control financiero básico",
+          "Soporte por WhatsApp"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "R$ 59,90",
+        "tagline": "Para negocios en crecimiento.",
+        "features": [
+          "Hasta 500 mensajes por mes",
+          "Hasta 50 presupuestos PDF por mes",
+          "300 consultas IA por mes",
+          "Dashboard completo con gráficos",
+          "Agenda y calendario integrados",
+          "Control financiero (ingresos y gastos)",
+          "Exportación de reportes CSV",
+          "Soporte prioritario por WhatsApp"
+        ]
+      },
+      "business": {
+        "name": "Business",
+        "price": "R$ 79,90",
+        "tagline": "Todo ilimitado, para equipos serios.",
+        "features": [
+          "Mensajes ilimitados",
+          "Presupuestos PDF ilimitados",
+          "IA conversacional ilimitada",
+          "Dashboard completo con gráficos",
+          "Agenda y calendario integrados",
+          "Control financiero avanzado",
+          "Reportes detallados y exportación CSV",
+          "Soporte prioritario 24/7"
+        ]
+      }
+    }
   },
   "footer": {
     "rights": "Todos los derechos reservados",
@@ -170,7 +202,8 @@
     "forProfessionals": "Para Profesionales"
   },
   "featuresSection": {
-    "subtitle": "Todo gestionado a través de WhatsApp — la app que tus clientes ya usan.",
+    "title": "Todo lo que necesitas en un solo lugar",
+    "subtitle": "Gestiona cada aspecto de tu negocio sin salir de WhatsApp. Simple, rápido e inteligente.",
     "whatsappAi": "WhatsApp IA",
     "dashboard": "Dashboard",
     "dashboardDesc": "Gráficos, reportes y análisis desde cualquier dispositivo.",
@@ -179,7 +212,17 @@
     "reportsCsv": "Reportes y CSV",
     "reportsCsvDesc": "Exporta tus datos financieros cuando quieras.",
     "clientTracking": "Gestión de Clientes",
-    "clientTrackingDesc": "Nunca pierdas de vista un cliente o trabajo."
+    "clientTrackingDesc": "Nunca pierdas de vista un cliente o trabajo.",
+    "grid": {
+      "products": { "title": "Productos", "desc": "Registra y gestiona tu catálogo de productos y servicios directamente por WhatsApp." },
+      "pdfQuotes": { "title": "Presupuestos en PDF", "desc": "Genera presupuestos profesionales en PDF y envíalos a tus clientes en segundos." },
+      "serviceOrders": { "title": "Orden de Servicio", "desc": "Crea y sigue órdenes de servicio con estado en tiempo real." },
+      "finance": { "title": "Finanzas", "desc": "Controla ingresos, gastos y flujo de caja sin planillas complicadas." },
+      "reminders": { "title": "Recordatorios", "desc": "Recibe recordatorios automáticos de cobros, plazos y tareas pendientes." },
+      "reports": { "title": "Reportes", "desc": "Reportes detallados de ventas, finanzas y desempeño del negocio." },
+      "dashboard": { "title": "Dashboard", "desc": "Panel visual completo con métricas e indicadores de tu negocio." },
+      "aiChat": { "title": "IA Conversacional", "desc": "Inteligencia artificial que entiende tus comandos y ejecuta tareas por ti." }
+    }
   },
   "demoSection": {
     "badge": "Míralo en acción",

@@ -27,7 +27,10 @@ export class CreateEventDto {
   })
   event_date: string;
 
-  @ApiPropertyOptional({ example: '14:30', description: 'Time in HH:mm format' })
+  @ApiPropertyOptional({
+    example: '14:30',
+    description: 'Time in HH:mm format',
+  })
   @IsOptional()
   @IsString()
   @Matches(/^\d{2}:\d{2}$/, {

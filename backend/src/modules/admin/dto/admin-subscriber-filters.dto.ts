@@ -3,12 +3,16 @@ import { IsOptional, IsString, IsInt, Min, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AdminSubscriberFiltersDto {
-  @ApiPropertyOptional({ description: 'Search by business name, owner name, phone, or email' })
+  @ApiPropertyOptional({
+    description: 'Search by business name, owner name, phone, or email',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['onboarding', 'active', 'suspended', 'cancelled'] })
+  @ApiPropertyOptional({
+    enum: ['onboarding', 'active', 'suspended', 'cancelled'],
+  })
   @IsOptional()
   @IsString()
   @IsIn(['onboarding', 'active', 'suspended', 'cancelled'])

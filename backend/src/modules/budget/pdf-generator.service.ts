@@ -103,8 +103,8 @@ export class PdfGeneratorService {
     budget: Budget,
     subscriber: Subscriber,
   ): Promise<Buffer> {
-    const lang = subscriber.preferred_language ?? 'es';
-    const labels = TRANSLATIONS[lang] ?? TRANSLATIONS['es'];
+    const lang = subscriber.preferred_language ?? 'pt-BR';
+    const labels = TRANSLATIONS[lang] ?? TRANSLATIONS['pt-BR'];
 
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({
@@ -131,10 +131,7 @@ export class PdfGeneratorService {
     });
   }
 
-  private getDocTitle(
-    budget: Budget,
-    labels: LabelSet,
-  ): string {
+  private getDocTitle(budget: Budget, labels: LabelSet): string {
     return budget.document_type === 'service_order'
       ? labels.serviceOrder
       : labels.budget;
@@ -152,12 +149,9 @@ export class PdfGeneratorService {
       .fontSize(20)
       .fillColor(COLOR_PRIMARY)
       .font('Helvetica-Bold')
-      .text(
-        subscriber.business_name ?? '',
-        PAGE_MARGIN,
-        startY,
-        { width: TABLE_WIDTH },
-      );
+      .text(subscriber.business_name ?? '', PAGE_MARGIN, startY, {
+        width: TABLE_WIDTH,
+      });
 
     let y = doc.y + 4;
 
@@ -173,14 +167,10 @@ export class PdfGeneratorService {
 
     const contactParts: string[] = [];
     if (subscriber.phone) {
-      contactParts.push(
-        `${labels.phone}: ${subscriber.phone}`,
-      );
+      contactParts.push(`${labels.phone}: ${subscriber.phone}`);
     }
     if (subscriber.email) {
-      contactParts.push(
-        `${labels.email}: ${subscriber.email}`,
-      );
+      contactParts.push(`${labels.email}: ${subscriber.email}`);
     }
     if (contactParts.length > 0) {
       doc.text(contactParts.join('  |  '), PAGE_MARGIN, y, {
@@ -218,22 +208,11 @@ export class PdfGeneratorService {
     const infoY = doc.y + 6;
     doc.fontSize(10).fillColor('#444444').font('Helvetica');
 
-    const docNumber =
-      budget.document_number ?? budget.id.substring(0, 8);
-    doc.text(
-      `${labels.documentNumber}: ${docNumber}`,
-      PAGE_MARGIN,
-      infoY,
-    );
+    const docNumber = budget.document_number ?? budget.id.substring(0, 8);
+    doc.text(`${labels.documentNumber}: ${docNumber}`, PAGE_MARGIN, infoY);
 
-    const dateStr = new Date(budget.created_at)
-      .toISOString()
-      .split('T')[0];
-    doc.text(
-      `${labels.date}: ${dateStr}`,
-      PAGE_MARGIN,
-      doc.y + 2,
-    );
+    const dateStr = new Date(budget.created_at).toISOString().split('T')[0];
+    doc.text(`${labels.date}: ${dateStr}`, PAGE_MARGIN, doc.y + 2);
 
     doc.y += 12;
   }
@@ -243,11 +222,7 @@ export class PdfGeneratorService {
     budget: Budget,
     labels: LabelSet,
   ): void {
-    if (
-      !budget.client_name &&
-      !budget.client_phone &&
-      !budget.client_email
-    ) {
+    if (!budget.client_name && !budget.client_phone && !budget.client_email) {
       return;
     }
 
@@ -259,10 +234,7 @@ export class PdfGeneratorService {
       .font('Helvetica-Bold')
       .text(labels.client, PAGE_MARGIN, y);
 
-    doc
-      .fontSize(10)
-      .fillColor('#444444')
-      .font('Helvetica');
+    doc.fontSize(10).fillColor('#444444').font('Helvetica');
 
     if (budget.client_name) {
       doc.text(budget.client_name, PAGE_MARGIN, doc.y + 2);
@@ -294,20 +266,10 @@ export class PdfGeneratorService {
     let y = doc.y;
 
     // Table header
-    doc
-      .rect(
-        PAGE_MARGIN,
-        y,
-        TABLE_WIDTH,
-        ROW_HEIGHT + 4,
-      )
-      .fill(COLOR_HEADER_BG);
+    doc.rect(PAGE_MARGIN, y, TABLE_WIDTH, ROW_HEIGHT + 4).fill(COLOR_HEADER_BG);
 
     const headerY = y + 6;
-    doc
-      .fontSize(9)
-      .fillColor(COLOR_HEADER_TEXT)
-      .font('Helvetica-Bold');
+    doc.fontSize(9).fillColor(COLOR_HEADER_TEXT).font('Helvetica-Bold');
 
     doc.text(labels.description, COL_DESC_X + 6, headerY, {
       width: COL_QTY_X - COL_DESC_X - 12,
@@ -335,35 +297,26 @@ export class PdfGeneratorService {
       const isAlt = i % 2 === 1;
       const bgColor = isAlt ? COLOR_ROW_ALT : COLOR_ROW_NORMAL;
 
-      doc
-        .rect(PAGE_MARGIN, y, TABLE_WIDTH, ROW_HEIGHT)
-        .fill(bgColor);
+      doc.rect(PAGE_MARGIN, y, TABLE_WIDTH, ROW_HEIGHT).fill(bgColor);
 
       const rowY = y + 6;
       doc.fillColor('#333333');
 
-      doc.text(
-        item.description ?? '',
-        COL_DESC_X + 6,
-        rowY,
-        { width: COL_QTY_X - COL_DESC_X - 12 },
-      );
+      doc.text(item.description ?? '', COL_DESC_X + 6, rowY, {
+        width: COL_QTY_X - COL_DESC_X - 12,
+      });
       doc.text(String(item.quantity), COL_QTY_X, rowY, {
         width: 60,
         align: 'right',
       });
-      doc.text(
-        this.formatCurrency(item.unit_price),
-        COL_UNIT_X,
-        rowY,
-        { width: 80, align: 'right' },
-      );
-      doc.text(
-        this.formatCurrency(item.total),
-        COL_TOTAL_X,
-        rowY,
-        { width: 60, align: 'right' },
-      );
+      doc.text(this.formatCurrency(item.unit_price), COL_UNIT_X, rowY, {
+        width: 80,
+        align: 'right',
+      });
+      doc.text(this.formatCurrency(item.total), COL_TOTAL_X, rowY, {
+        width: 60,
+        align: 'right',
+      });
 
       y += ROW_HEIGHT;
     }
@@ -384,10 +337,7 @@ export class PdfGeneratorService {
       .fill(COLOR_GRAND_TOTAL_BG);
 
     const totalY = y + 7;
-    doc
-      .fontSize(11)
-      .fillColor(COLOR_GRAND_TOTAL_TEXT)
-      .font('Helvetica-Bold');
+    doc.fontSize(11).fillColor(COLOR_GRAND_TOTAL_TEXT).font('Helvetica-Bold');
 
     doc.text(labels.grandTotal, COL_DESC_X + 6, totalY, {
       width: COL_TOTAL_X - COL_DESC_X - 12,

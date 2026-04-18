@@ -6,9 +6,7 @@ export { Event } from './event.entity';
 export { FinancialRecord } from './financial-record.entity';
 export { Budget } from './budget.entity';
 export { ConversationHistory } from './conversation-history.entity';
-export {
-  MessageWindowTracking,
-} from './message-window-tracking.entity';
+export { MessageWindowTracking } from './message-window-tracking.entity';
 export { PendingNotification } from './pending-notification.entity';
 export { UsageTracking } from './usage-tracking.entity';
 export { AdminUser } from './admin-user.entity';

@@ -9,6 +9,7 @@ interface CheckoutSessionParams {
   priceAmountCents: number;
   planName: string;
   trialDays: number;
+  stripePriceId?: string | null;
 }
 
 interface CheckoutSessionResult {
@@ -29,10 +30,7 @@ export class StripeService {
   private readonly cancelUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    const secretKey = this.configService.get<string>(
-      'STRIPE_SECRET_KEY',
-      '',
-    );
+    const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY', '');
     this.webhookSecret = this.configService.get<string>(
       'STRIPE_WEBHOOK_SECRET',
       '',
@@ -62,6 +60,7 @@ export class StripeService {
       priceAmountCents,
       planName,
       trialDays,
+      stripePriceId,
     } = params;
 
     this.logger.log(
@@ -69,24 +68,29 @@ export class StripeService {
         `plan=${planId}`,
     );
 
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
+      stripePriceId
+        ? [{ price: stripePriceId, quantity: 1 }]
+        : [
+            {
+              price_data: {
+                currency: 'brl',
+                product_data: {
+                  name: `BossZap - ${planName}`,
+                  description: `Assinatura mensal BossZap ${planName}`,
+                },
+                unit_amount: priceAmountCents,
+                recurring: { interval: 'month' },
+              },
+              quantity: 1,
+            },
+          ];
+
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       customer_email: email,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `BossZap - ${planName}`,
-              description: `Monthly subscription to BossZap ${planName} plan`,
-            },
-            unit_amount: priceAmountCents,
-            recurring: { interval: 'month' },
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       subscription_data: {
         trial_period_days: trialDays,
         metadata: {
@@ -112,35 +116,25 @@ export class StripeService {
     };
   }
 
-  async createPortalSession(
-    customerId: string,
-  ): Promise<PortalSessionResult> {
-    this.logger.log(
-      `Creating portal session for customer=${customerId}`,
-    );
+  async createPortalSession(customerId: string): Promise<PortalSessionResult> {
+    this.logger.log(`Creating portal session for customer=${customerId}`);
 
     const returnUrl = this.configService.get<string>(
       'STRIPE_PORTAL_RETURN_URL',
       'https://app.bosszap.com.br/dashboard',
     );
 
-    const session =
-      await this.stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: returnUrl,
-      });
+    const session = await this.stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+    });
 
     return { url: session.url };
   }
 
-  constructWebhookEvent(
-    body: Buffer,
-    signature: string,
-  ): Stripe.Event {
+  constructWebhookEvent(body: Buffer, signature: string): Stripe.Event {
     if (!this.webhookSecret) {
-      throw new Error(
-        'STRIPE_WEBHOOK_SECRET is not configured',
-      );
+      throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
     }
 
     return this.stripe.webhooks.constructEvent(
@@ -150,15 +144,11 @@ export class StripeService {
     );
   }
 
-  async getSubscription(
-    subscriptionId: string,
-  ): Promise<Stripe.Subscription> {
+  async getSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     return this.stripe.subscriptions.retrieve(subscriptionId);
   }
 
-  async getCustomerByEmail(
-    email: string,
-  ): Promise<Stripe.Customer | null> {
+  async getCustomerByEmail(email: string): Promise<Stripe.Customer | null> {
     const customers = await this.stripe.customers.list({
       email,
       limit: 1,

@@ -145,28 +145,53 @@ export function Circle3DSlider({
                   />
 
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/10" />
+                  <div
+                    className={
+                      "absolute inset-0 bg-gradient-to-t " +
+                      "from-black/95 via-black/40 to-black/10"
+                    }
+                  />
 
-                  {/* Glow accent on active */}
                   {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 via-transparent to-transparent" />
+                    <div
+                      className={
+                        "absolute inset-0 bg-gradient-to-t " +
+                        "from-emerald-500/20 via-transparent " +
+                        "to-transparent"
+                      }
+                    />
                   )}
 
-                  {/* Content */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <h3 className="text-base font-bold text-white drop-shadow-lg leading-tight">
+                  <div className={"absolute bottom-0 left-0 right-0 p-3"}>
+                    <h3
+                      className={
+                        "text-base font-bold text-white " +
+                        "drop-shadow-lg leading-tight"
+                      }
+                    >
                       {item.title}
                     </h3>
                     {item.subtitle && (
-                      <p className="mt-0.5 text-[10px] text-white/80 leading-snug">
+                      <p
+                        className={
+                          "mt-0.5 text-[10px] text-white/80 " + "leading-snug"
+                        }
+                      >
                         {item.subtitle}
                       </p>
                     )}
                   </div>
 
-                  {/* Featured badge */}
                   {isActive && (
-                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider shadow-xl shadow-emerald-500/40 animate-pulse">
+                    <div
+                      className={
+                        "absolute top-2 right-2 px-2 py-0.5 " +
+                        "rounded-full bg-emerald-500 text-white " +
+                        "text-[9px] font-bold uppercase " +
+                        "tracking-wider shadow-xl " +
+                        "shadow-emerald-500/40 animate-pulse"
+                      }
+                    >
                       {featuredLabel}
                     </div>
                   )}
@@ -178,8 +203,16 @@ export function Circle3DSlider({
                   style={{
                     top: "201px",
                     height: "80px",
-                    WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 30%, transparent 80%)",
-                    maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 30%, transparent 80%)",
+                    WebkitMaskImage:
+                      "linear-gradient(to bottom, " +
+                      "rgba(0,0,0,0.15) 0%, " +
+                      "rgba(0,0,0,0.05) 30%, " +
+                      "transparent 80%)",
+                    maskImage:
+                      "linear-gradient(to bottom, " +
+                      "rgba(0,0,0,0.15) 0%, " +
+                      "rgba(0,0,0,0.05) 30%, " +
+                      "transparent 80%)",
                   }}
                 >
                   <div
@@ -206,10 +239,15 @@ export function Circle3DSlider({
 
         {/* Floor reflection / shadow */}
         <div
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-12 w-[600px] h-[80px] rounded-[50%]"
+          className={
+            "pointer-events-none absolute left-1/2 " +
+            "-translate-x-1/2 bottom-12 w-[600px] h-[80px] " +
+            "rounded-[50%]"
+          }
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(0,212,170,0.15) 0%, transparent 70%)",
+              "radial-gradient(ellipse at center, " +
+              "rgba(0,212,170,0.15) 0%, transparent 70%)",
             filter: "blur(20px)",
           }}
         />
@@ -224,8 +262,10 @@ export function Circle3DSlider({
           className={cn(
             "h-12 w-12 rounded-full flex items-center justify-center",
             "bg-white border border-gray-200 shadow-lg",
-            "text-gray-600 hover:text-emerald-600 hover:border-emerald-300",
-            "hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200",
+            "text-gray-600 hover:text-emerald-600 " +
+              "hover:border-emerald-300",
+            "hover:shadow-xl hover:-translate-y-0.5 " +
+              "transition-all duration-200",
           )}
         >
           <ChevronLeft className="h-5 w-5" />
@@ -236,7 +276,8 @@ export function Circle3DSlider({
           onClick={() => setDirection((d) => (d === 1 ? -1 : 1))}
           aria-label="Reverse direction"
           className={cn(
-            "px-4 h-10 rounded-full flex items-center justify-center text-xs font-medium",
+            "px-4 h-10 rounded-full flex items-center " +
+              "justify-center text-xs font-medium",
             "bg-emerald-50 border border-emerald-200",
             "text-emerald-700 hover:bg-emerald-100",
             "transition-all duration-200",
@@ -252,8 +293,10 @@ export function Circle3DSlider({
           className={cn(
             "h-12 w-12 rounded-full flex items-center justify-center",
             "bg-white border border-gray-200 shadow-lg",
-            "text-gray-600 hover:text-emerald-600 hover:border-emerald-300",
-            "hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200",
+            "text-gray-600 hover:text-emerald-600 " +
+              "hover:border-emerald-300",
+            "hover:shadow-xl hover:-translate-y-0.5 " +
+              "transition-all duration-200",
           )}
         >
           <ChevronRight className="h-5 w-5" />

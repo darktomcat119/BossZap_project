@@ -7,9 +7,7 @@ import { IntentClassifierService, Intent } from './intent-classifier.service';
 import { OnboardingService } from './onboarding.service';
 import { ActionExecutorService } from './action-executor.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
-import {
-  UsageTracking,
-} from '../../database/entities/usage-tracking.entity';
+import { UsageTracking } from '../../database/entities/usage-tracking.entity';
 import { getSystemPrompt } from './prompts/system-prompt';
 
 interface ProcessMessageInput {
@@ -26,6 +24,7 @@ interface ProcessMessageResult {
   responseText: string;
   extractedData: Record<string, unknown>;
   actionTaken: string;
+  mediaUrl?: string;
 }
 
 interface GptActionResponse {
@@ -39,7 +38,8 @@ interface GptActionResponse {
 const SUSPENDED_MESSAGES: Record<string, string> = {
   es: 'Tu cuenta está suspendida. Por favor actualiza tu pago para continuar usando BossZap.',
   en: 'Your account is suspended. Please update your payment to continue using BossZap.',
-  'pt-BR': 'Sua conta está suspensa. Por favor atualize seu pagamento para continuar usando o BossZap.',
+  'pt-BR':
+    'Sua conta está suspensa. Por favor atualize seu pagamento para continuar usando o BossZap.',
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -50,9 +50,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 @Injectable()
 export class OrchestratorService {
-  private readonly logger = new Logger(
-    OrchestratorService.name,
-  );
+  private readonly logger = new Logger(OrchestratorService.name);
 
   constructor(
     private readonly gpt: GptService,
@@ -71,29 +69,25 @@ export class OrchestratorService {
     const { subscriberId, phone, text, contactName } = input;
 
     try {
-      const subscriber =
-        await this.subscribers.findById(subscriberId);
-      const language = subscriber.preferred_language || 'es';
+      const subscriber = await this.subscribers.findById(subscriberId);
+      const language = subscriber.preferred_language || 'pt-BR';
 
       if (subscriber.status === 'suspended') {
         return {
           intent: 'GENERAL_QUERY',
-          responseText:
-            SUSPENDED_MESSAGES[language] ||
-            SUSPENDED_MESSAGES.es,
+          responseText: SUSPENDED_MESSAGES[language] || SUSPENDED_MESSAGES.es,
           extractedData: {},
           actionTaken: 'none',
         };
       }
 
       if (subscriber.status === 'onboarding') {
-        const result =
-          await this.onboarding.processOnboarding(
-            subscriberId,
-            phone,
-            text,
-            contactName,
-          );
+        const result = await this.onboarding.processOnboarding(
+          subscriberId,
+          phone,
+          text,
+          contactName,
+        );
         return {
           intent: 'ONBOARDING',
           responseText: result.responseText,
@@ -104,20 +98,14 @@ export class OrchestratorService {
         };
       }
 
-      const withinLimits =
-        await this.checkUsageLimits(subscriberId);
+      const withinLimits = await this.checkUsageLimits(subscriberId);
       if (!withinLimits) {
         return this.limitReachedResponse(language);
       }
 
-      const context =
-        await this.conversation.getContext(subscriberId);
+      const context = await this.conversation.getContext(subscriberId);
 
-      await this.conversation.saveMessage(
-        subscriberId,
-        'user',
-        text,
-      );
+      await this.conversation.saveMessage(subscriberId, 'user', text);
 
       const systemPrompt = getSystemPrompt(
         language,
@@ -137,8 +125,7 @@ export class OrchestratorService {
         { role: 'user' as const, content: text },
       ];
 
-      const response =
-        await this.gpt.chatWithRetry(messages);
+      const response = await this.gpt.chatWithRetry(messages);
       const parsed = this.parseResponse(response.content);
 
       if (parsed.action_required && parsed.action_type !== 'none') {
@@ -151,9 +138,29 @@ export class OrchestratorService {
 
         if (!actionResult.success) {
           this.logger.warn(
-            `Action ${parsed.intent} failed: ` +
-              `${actionResult.error}`,
+            `Action ${parsed.intent} failed: ` + `${actionResult.error}`,
           );
+        } else if (parsed.intent === 'PROFILE_QUERY') {
+          const field = (
+            parsed.extracted_data as Record<string, unknown> | undefined
+          )?.field as string | undefined;
+          if (field === 'logo' && subscriber.logo_url) {
+            (parsed as GptActionResponse & { media_url?: string }).media_url =
+              subscriber.logo_url;
+          }
+        } else if (parsed.intent === 'LANGUAGE_CHANGE') {
+          const newLang = (
+            parsed.extracted_data as Record<string, unknown> | undefined
+          )?.language as string | undefined;
+          if (newLang && ['en', 'es', 'pt-BR'].includes(newLang)) {
+            const confirmations: Record<string, string> = {
+              en: "Done! I'll chat with you in English from now on.",
+              es: '¡Listo! A partir de ahora hablaré contigo en español.',
+              'pt-BR':
+                'Pronto! A partir de agora vou falar com você em português.',
+            };
+            parsed.response_text = confirmations[newLang];
+          }
         }
       }
 
@@ -171,6 +178,8 @@ export class OrchestratorService {
         responseText: parsed.response_text,
         extractedData: parsed.extracted_data || {},
         actionTaken: parsed.action_type || 'none',
+        mediaUrl: (parsed as GptActionResponse & { media_url?: string })
+          .media_url,
       };
     } catch (error) {
       this.logger.error(
@@ -181,13 +190,11 @@ export class OrchestratorService {
       const subscriber = await this.subscribers
         .findById(subscriberId)
         .catch(() => null);
-      const lang =
-        subscriber?.preferred_language || 'es';
+      const lang = subscriber?.preferred_language || 'pt-BR';
 
       return {
         intent: 'UNKNOWN',
-        responseText:
-          ERROR_MESSAGES[lang] || ERROR_MESSAGES.es,
+        responseText: ERROR_MESSAGES[lang] || ERROR_MESSAGES.es,
         extractedData: {},
         actionTaken: 'error',
       };
@@ -206,9 +213,7 @@ export class OrchestratorService {
           action_type: 'none',
         };
       }
-      return JSON.parse(
-        jsonMatch[0],
-      ) as GptActionResponse;
+      return JSON.parse(jsonMatch[0]) as GptActionResponse;
     } catch {
       return {
         intent: 'GENERAL_QUERY',
@@ -220,15 +225,9 @@ export class OrchestratorService {
     }
   }
 
-  private async checkUsageLimits(
-    subscriberId: string,
-  ): Promise<boolean> {
+  private async checkUsageLimits(subscriberId: string): Promise<boolean> {
     const now = new Date();
-    const monthStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1,
-    );
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthStr = monthStart.toISOString().split('T')[0];
 
     const usage = await this.usageRepo.findOne({
@@ -240,8 +239,7 @@ export class OrchestratorService {
 
     if (!usage) return true;
 
-    const subscriber =
-      await this.subscribers.findById(subscriberId);
+    const subscriber = await this.subscribers.findById(subscriberId);
     if (!subscriber.plan) return true;
 
     const plan = subscriber.plan;
@@ -255,37 +253,28 @@ export class OrchestratorService {
     return true;
   }
 
-  private async incrementUsage(
-    subscriberId: string,
-  ): Promise<void> {
+  private async incrementUsage(subscriberId: string): Promise<void> {
     const now = new Date();
-    const monthStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1,
-    );
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthStr = monthStart.toISOString().split('T')[0];
 
-    await this.usageRepo.upsert(
-      {
-        subscriber_id: subscriberId,
-        month: monthStr,
-        messages_count: () => 'messages_count + 1',
-        ai_calls_count: () => 'ai_calls_count + 1',
-      } as any,
-      {
-        conflictPaths: ['subscriber_id', 'month'],
-      },
+    await this.usageRepo.query(
+      `INSERT INTO usage_tracking (subscriber_id, month, messages_count, ai_calls_count)
+       VALUES ($1, $2, 1, 1)
+       ON CONFLICT (subscriber_id, month)
+       DO UPDATE SET messages_count = usage_tracking.messages_count + 1,
+                     ai_calls_count = usage_tracking.ai_calls_count + 1,
+                     updated_at = now()`,
+      [subscriberId, monthStr],
     );
   }
 
-  private limitReachedResponse(
-    language: string,
-  ): ProcessMessageResult {
+  private limitReachedResponse(language: string): ProcessMessageResult {
     const messages: Record<string, string> = {
       es: 'Has alcanzado el límite de tu plan este mes. Actualiza tu plan para seguir usando BossZap sin interrupciones.',
       en: "You've reached your plan limit this month. Upgrade your plan to keep using BossZap without interruption.",
-      'pt-BR': 'Você atingiu o limite do seu plano este mês. Atualize seu plano para continuar usando o BossZap sem interrupções.',
+      'pt-BR':
+        'Você atingiu o limite do seu plano este mês. Atualize seu plano para continuar usando o BossZap sem interrupções.',
     };
 
     return {

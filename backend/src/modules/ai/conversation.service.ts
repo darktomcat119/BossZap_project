@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
-import {
-  ConversationHistory,
-} from '../../database/entities/conversation-history.entity';
+import { ConversationHistory } from '../../database/entities/conversation-history.entity';
 
 const MAX_CONTEXT_MESSAGES = 20;
 const CONTEXT_TIMEOUT_MS = 30 * 60 * 1000;
@@ -20,12 +18,8 @@ export class ConversationService {
     private readonly historyRepo: Repository<ConversationHistory>,
   ) {}
 
-  async getContext(
-    subscriberId: string,
-  ): Promise<ContextMessage[]> {
-    const cutoff = new Date(
-      Date.now() - CONTEXT_TIMEOUT_MS,
-    );
+  async getContext(subscriberId: string): Promise<ContextMessage[]> {
+    const cutoff = new Date(Date.now() - CONTEXT_TIMEOUT_MS);
 
     const messages = await this.historyRepo.find({
       where: {

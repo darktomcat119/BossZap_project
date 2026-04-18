@@ -28,17 +28,12 @@ export class SubscribersService {
     return this.subscriberRepo.findOne({ where: { email } });
   }
 
-  async create(
-    data: Partial<Subscriber>,
-  ): Promise<Subscriber> {
+  async create(data: Partial<Subscriber>): Promise<Subscriber> {
     const subscriber = this.subscriberRepo.create(data);
     return this.subscriberRepo.save(subscriber);
   }
 
-  async update(
-    id: string,
-    data: Partial<Subscriber>,
-  ): Promise<Subscriber> {
+  async update(id: string, data: Partial<Subscriber>): Promise<Subscriber> {
     await this.subscriberRepo.update(id, data);
     return this.findById(id);
   }

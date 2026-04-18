@@ -13,29 +13,67 @@ async function seed() {
   await dataSource.initialize();
   console.log('Database connected for seeding...');
 
-  // --- 1. Default Plan ---
+  // --- 1. Plans (Starter / Pro / Business) ---
   const planRepo = dataSource.getRepository('plans');
-  const existingPlan = await planRepo.findOne({
-    where: { name: 'Profesional' },
-  });
 
-  let planId: string;
-
-  if (!existingPlan) {
-    const plan = await planRepo.save({
-      name: 'Profesional',
-      price_monthly: 29.90,
+  const planDefs = [
+    {
+      name: 'Starter',
+      price_monthly: 39.9,
+      max_budgets_per_month: 20,
+      max_messages_per_month: 200,
+      max_ai_calls_per_month: 100,
+      trial_days: 7,
+      is_active: true,
+    },
+    {
+      name: 'Pro',
+      price_monthly: 59.9,
       max_budgets_per_month: 50,
       max_messages_per_month: 500,
       max_ai_calls_per_month: 300,
       trial_days: 7,
       is_active: true,
+    },
+    {
+      name: 'Business',
+      price_monthly: 79.9,
+      max_budgets_per_month: -1,
+      max_messages_per_month: -1,
+      max_ai_calls_per_month: -1,
+      trial_days: 7,
+      is_active: true,
+    },
+  ];
+
+  let planId: string | undefined;
+
+  for (const def of planDefs) {
+    const existing = await planRepo.findOne({
+      where: { name: def.name },
     });
-    planId = plan.id;
-    console.log('Default plan created: Profesional ($29.90/mo)');
-  } else {
-    planId = existingPlan.id;
-    console.log('Default plan already exists, skipping.');
+    if (!existing) {
+      const plan = await planRepo.save(def);
+      console.log(`Plan created: ${def.name} (R$ ${def.price_monthly}/mo)`);
+      if (def.name === 'Pro') planId = plan.id;
+    } else {
+      console.log(`Plan ${def.name} already exists, skipping.`);
+      if (def.name === 'Pro') planId = existing.id;
+    }
+  }
+
+  // Deactivate legacy plan if present
+  const legacyPlan = await planRepo.findOne({
+    where: { name: 'Profesional' },
+  });
+  if (legacyPlan) {
+    await planRepo.update(legacyPlan.id, { is_active: false });
+    console.log('Deactivated legacy Profesional plan.');
+  }
+
+  if (!planId) {
+    const fallback = await planRepo.findOne({ where: { name: 'Pro' } });
+    planId = fallback?.id;
   }
 
   // --- 2. Admin User ---
@@ -55,9 +93,7 @@ async function seed() {
       preferred_language: 'es',
     });
     console.log('Admin user created: dev@bosszap.com.br');
-    console.log(
-      `  Password: ${password} (change this immediately!)`,
-    );
+    console.log(`  Password: ${password} (change this immediately!)`);
   } else {
     console.log('Admin user already exists, skipping.');
   }
@@ -141,8 +177,7 @@ async function seed() {
         language: 'en',
         category: 'reminder',
         body_text:
-          'Reminder: you have "{{1}}" scheduled for ' +
-          '{{2}} at {{3}}.',
+          'Reminder: you have "{{1}}" scheduled for ' + '{{2}} at {{3}}.',
         meta_status: 'pending',
       },
       {
@@ -150,8 +185,7 @@ async function seed() {
         language: 'pt_BR',
         category: 'reminder',
         body_text:
-          'Lembrete: voce tem "{{1}}" agendado para ' +
-          '{{2}} as {{3}}.',
+          'Lembrete: voce tem "{{1}}" agendado para ' + '{{2}} as {{3}}.',
         meta_status: 'pending',
       },
 
@@ -161,25 +195,21 @@ async function seed() {
         language: 'es',
         category: 'notification',
         body_text:
-          'Tu presupuesto {{1}} esta listo. ' +
-          'Descargalo aqui: {{2}}',
+          'Tu presupuesto {{1}} esta listo. ' + 'Descargalo aqui: {{2}}',
         meta_status: 'pending',
       },
       {
         template_name: 'budget_ready',
         language: 'en',
         category: 'notification',
-        body_text:
-          'Your quote {{1}} is ready. Download it here: {{2}}',
+        body_text: 'Your quote {{1}} is ready. Download it here: {{2}}',
         meta_status: 'pending',
       },
       {
         template_name: 'budget_ready',
         language: 'pt_BR',
         category: 'notification',
-        body_text:
-          'Seu orcamento {{1}} esta pronto. ' +
-          'Baixe aqui: {{2}}',
+        body_text: 'Seu orcamento {{1}} esta pronto. ' + 'Baixe aqui: {{2}}',
         meta_status: 'pending',
       },
     ];

@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class InitialSchema1711100000000
-  implements MigrationInterface
-{
+export class InitialSchema1711100000000 implements MigrationInterface {
   name = 'InitialSchema1711100000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -269,19 +267,11 @@ export class InitialSchema1711100000000
     await queryRunner.query('DROP TABLE IF EXISTS hsm_templates');
     await queryRunner.query('DROP TABLE IF EXISTS admin_users');
     await queryRunner.query('DROP TABLE IF EXISTS usage_tracking');
-    await queryRunner.query(
-      'DROP TABLE IF EXISTS pending_notifications',
-    );
-    await queryRunner.query(
-      'DROP TABLE IF EXISTS message_window_tracking',
-    );
-    await queryRunner.query(
-      'DROP TABLE IF EXISTS conversation_history',
-    );
+    await queryRunner.query('DROP TABLE IF EXISTS pending_notifications');
+    await queryRunner.query('DROP TABLE IF EXISTS message_window_tracking');
+    await queryRunner.query('DROP TABLE IF EXISTS conversation_history');
     await queryRunner.query('DROP TABLE IF EXISTS budgets');
-    await queryRunner.query(
-      'DROP TABLE IF EXISTS financial_records',
-    );
+    await queryRunner.query('DROP TABLE IF EXISTS financial_records');
     await queryRunner.query('DROP TABLE IF EXISTS events');
     await queryRunner.query('DROP TABLE IF EXISTS payments');
     await queryRunner.query('DROP TABLE IF EXISTS subscriptions');

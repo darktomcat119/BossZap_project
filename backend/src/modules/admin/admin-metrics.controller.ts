@@ -1,9 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -22,7 +17,10 @@ export class AdminMetricsController {
   constructor(private readonly service: AdminMetricsService) {}
 
   @Get('overview')
-  @ApiOperation({ summary: 'Total subscribers, active count, revenue this month, system stats' })
+  @ApiOperation({
+    summary:
+      'Total subscribers, active count, revenue this month, system stats',
+  })
   getOverview() {
     return this.service.getOverview();
   }
@@ -44,7 +42,10 @@ export class AdminMetricsController {
   }
 
   @Get('usage')
-  @ApiOperation({ summary: 'Global usage stats: total messages, AI calls, budgets, top 10 subscribers' })
+  @ApiOperation({
+    summary:
+      'Global usage stats: total messages, AI calls, budgets, top 10 subscribers',
+  })
   getUsage() {
     return this.service.getUsageStats();
   }

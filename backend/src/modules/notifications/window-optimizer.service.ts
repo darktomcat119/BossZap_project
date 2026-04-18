@@ -1,17 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import {
-  MessageWindowTracking,
-} from '../../database/entities/message-window-tracking.entity';
+import { MessageWindowTracking } from '../../database/entities/message-window-tracking.entity';
 
 const WINDOW_DURATION_HOURS = 24;
 
 @Injectable()
 export class WindowOptimizerService {
-  private readonly logger = new Logger(
-    WindowOptimizerService.name,
-  );
+  private readonly logger = new Logger(WindowOptimizerService.name);
 
   constructor(
     @InjectRepository(MessageWindowTracking)
@@ -61,9 +57,7 @@ export class WindowOptimizerService {
     return new Date() < tracking.window_expires_at;
   }
 
-  async getWindowExpiry(
-    subscriberId: string,
-  ): Promise<Date | null> {
+  async getWindowExpiry(subscriberId: string): Promise<Date | null> {
     const tracking = await this.windowRepo.findOne({
       where: { subscriber_id: subscriberId },
     });

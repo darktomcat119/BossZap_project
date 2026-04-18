@@ -27,20 +27,11 @@ export class AnalyticsService {
   ): Promise<QueryResult> {
     switch (intent) {
       case 'SCHEDULE_QUERY':
-        return this.querySchedule(
-          subscriberId,
-          extractedData,
-        );
+        return this.querySchedule(subscriberId, extractedData);
       case 'FINANCE_QUERY':
-        return this.queryFinances(
-          subscriberId,
-          extractedData,
-        );
+        return this.queryFinances(subscriberId, extractedData);
       case 'BUDGET_QUERY':
-        return this.queryBudgets(
-          subscriberId,
-          extractedData,
-        );
+        return this.queryBudgets(subscriberId, extractedData);
       default:
         return this.queryGeneral(subscriberId);
     }
@@ -53,10 +44,7 @@ export class AnalyticsService {
     const date = data.date as string | undefined;
 
     if (date) {
-      const events = await this.agenda.findByDate(
-        subscriberId,
-        date,
-      );
+      const events = await this.agenda.findByDate(subscriberId, date);
       return {
         type: 'schedule',
         data: events,
@@ -64,10 +52,7 @@ export class AnalyticsService {
       };
     }
 
-    const upcoming = await this.agenda.findUpcoming(
-      subscriberId,
-      5,
-    );
+    const upcoming = await this.agenda.findUpcoming(subscriberId, 5);
     return {
       type: 'schedule',
       data: upcoming,
@@ -86,23 +71,19 @@ export class AnalyticsService {
         .toISOString()
         .split('T')[0];
     const endDate =
-      (data.end_date as string) ||
-      now.toISOString().split('T')[0];
+      (data.end_date as string) || now.toISOString().split('T')[0];
 
     const category = data.category as string | undefined;
 
     if (category) {
-      const breakdown =
-        await this.financial.getCategoryBreakdown(
-          subscriberId,
-          startDate,
-          endDate,
-          (data.type as 'income' | 'expense') || 'expense',
-        );
+      const breakdown = await this.financial.getCategoryBreakdown(
+        subscriberId,
+        startDate,
+        endDate,
+        (data.type as 'income' | 'expense') || 'expense',
+      );
       const match = breakdown.find(
-        (b) =>
-          b.category.toLowerCase() ===
-          category.toLowerCase(),
+        (b) => b.category.toLowerCase() === category.toLowerCase(),
       );
       return {
         type: 'finance_category',
@@ -145,32 +126,21 @@ export class AnalyticsService {
     };
   }
 
-  private async queryGeneral(
-    subscriberId: string,
-  ): Promise<QueryResult> {
+  private async queryGeneral(subscriberId: string): Promise<QueryResult> {
     const now = new Date();
-    const monthStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1,
-    )
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
       .toISOString()
       .split('T')[0];
     const today = now.toISOString().split('T')[0];
 
-    const [financials, upcoming, budgets] =
-      await Promise.all([
-        this.financial.getSummary(
-          subscriberId,
-          monthStart,
-          today,
-        ),
-        this.agenda.findUpcoming(subscriberId, 3),
-        this.budget.findAll(subscriberId, {
-          page: 1,
-          limit: 1,
-        }),
-      ]);
+    const [financials, upcoming, budgets] = await Promise.all([
+      this.financial.getSummary(subscriberId, monthStart, today),
+      this.agenda.findUpcoming(subscriberId, 3),
+      this.budget.findAll(subscriberId, {
+        page: 1,
+        limit: 1,
+      }),
+    ]);
 
     return {
       type: 'general',

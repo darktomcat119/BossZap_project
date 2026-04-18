@@ -36,7 +36,9 @@ export class FinancialController {
   constructor(private readonly financialService: FinancialService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List financial records with filters and pagination' })
+  @ApiOperation({
+    summary: 'List financial records with filters and pagination',
+  })
   @ApiQuery({ name: 'type', required: false, enum: ['income', 'expense'] })
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'startDate', required: false, type: String })
@@ -114,7 +116,12 @@ export class FinancialController {
 
   @Get('trend')
   @ApiOperation({ summary: 'Get monthly income/expense trend' })
-  @ApiQuery({ name: 'months', required: false, type: Number, description: 'Number of months (default 6)' })
+  @ApiQuery({
+    name: 'months',
+    required: false,
+    type: Number,
+    description: 'Number of months (default 6)',
+  })
   async getMonthlyTrend(
     @Req() req: AuthenticatedRequest,
     @Query('months') months?: string,

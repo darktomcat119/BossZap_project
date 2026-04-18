@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Payment } from '../../database/entities/payment.entity';
 import { Subscription } from '../../database/entities/subscription.entity';
 import { Subscriber } from '../../database/entities/subscriber.entity';
@@ -30,67 +31,76 @@ const RECOVERY_MESSAGES: Record<
 > = {
   es: {
     day0: {
-      text: 'Hola, {{name}}. Notamos que hubo un problema al procesar tu pago de BossZap. '
-        + 'No te preocupes, esto puede pasar por varias razones. '
-        + 'Puedes actualizar tu metodo de pago aqui: {{link}} '
-        + 'Si necesitas ayuda, estamos para ti.',
+      text:
+        'Hola, {{name}}. Notamos que hubo un problema al procesar tu pago de BossZap. ' +
+        'No te preocupes, esto puede pasar por varias razones. ' +
+        'Puedes actualizar tu metodo de pago aqui: {{link}} ' +
+        'Si necesitas ayuda, estamos para ti.',
       templateName: 'payment_recovery_day0_es',
     },
     day2: {
-      text: 'Hola, {{name}}. Queremos recordarte que tu pago de BossZap aun esta pendiente. '
-        + 'Para seguir disfrutando de todos los beneficios, por favor actualiza tu pago: {{link}} '
-        + 'Estamos aqui para ayudarte con cualquier duda.',
+      text:
+        'Hola, {{name}}. Queremos recordarte que tu pago de BossZap aun esta pendiente. ' +
+        'Para seguir disfrutando de todos los beneficios, por favor actualiza tu pago: {{link}} ' +
+        'Estamos aqui para ayudarte con cualquier duda.',
       templateName: 'payment_recovery_day2_es',
     },
     day3: {
-      text: 'Hola, {{name}}. Lamentablemente, no hemos podido procesar tu pago de BossZap. '
-        + 'Tu acceso sera pausado temporalmente hoy. '
-        + 'Puedes reactivar tu cuenta en cualquier momento actualizando tu pago: {{link}} '
-        + 'Esperamos verte de vuelta pronto.',
+      text:
+        'Hola, {{name}}. Lamentablemente, no hemos podido procesar tu pago de BossZap. ' +
+        'Tu acceso sera pausado temporalmente hoy. ' +
+        'Puedes reactivar tu cuenta en cualquier momento actualizando tu pago: {{link}} ' +
+        'Esperamos verte de vuelta pronto.',
       templateName: 'payment_recovery_day3_es',
     },
   },
   en: {
     day0: {
-      text: 'Hi {{name}}, we noticed there was an issue processing your BossZap payment. '
-        + "Don't worry, this can happen for various reasons. "
-        + 'You can update your payment method here: {{link}} '
-        + "If you need help, we're here for you.",
+      text:
+        'Hi {{name}}, we noticed there was an issue processing your BossZap payment. ' +
+        "Don't worry, this can happen for various reasons. " +
+        'You can update your payment method here: {{link}} ' +
+        "If you need help, we're here for you.",
       templateName: 'payment_recovery_day0_en',
     },
     day2: {
-      text: 'Hi {{name}}, just a friendly reminder that your BossZap payment is still pending. '
-        + 'To keep enjoying all features, please update your payment: {{link}} '
-        + "We're happy to help with any questions.",
+      text:
+        'Hi {{name}}, just a friendly reminder that your BossZap payment is still pending. ' +
+        'To keep enjoying all features, please update your payment: {{link}} ' +
+        "We're happy to help with any questions.",
       templateName: 'payment_recovery_day2_en',
     },
     day3: {
-      text: 'Hi {{name}}, unfortunately we were unable to process your BossZap payment. '
-        + 'Your access will be temporarily paused today. '
-        + 'You can reactivate your account anytime by updating your payment: {{link}} '
-        + 'We hope to see you back soon.',
+      text:
+        'Hi {{name}}, unfortunately we were unable to process your BossZap payment. ' +
+        'Your access will be temporarily paused today. ' +
+        'You can reactivate your account anytime by updating your payment: {{link}} ' +
+        'We hope to see you back soon.',
       templateName: 'payment_recovery_day3_en',
     },
   },
   'pt-BR': {
     day0: {
-      text: 'Oi {{name}}, notamos que houve um problema ao processar seu pagamento do BossZap. '
-        + 'Nao se preocupe, isso pode acontecer por varios motivos. '
-        + 'Voce pode atualizar seu metodo de pagamento aqui: {{link}} '
-        + 'Se precisar de ajuda, estamos aqui para voce.',
+      text:
+        'Oi {{name}}, notamos que houve um problema ao processar seu pagamento do BossZap. ' +
+        'Nao se preocupe, isso pode acontecer por varios motivos. ' +
+        'Voce pode atualizar seu metodo de pagamento aqui: {{link}} ' +
+        'Se precisar de ajuda, estamos aqui para voce.',
       templateName: 'payment_recovery_day0_pt',
     },
     day2: {
-      text: 'Oi {{name}}, queremos lembrar que seu pagamento do BossZap ainda esta pendente. '
-        + 'Para continuar aproveitando todos os recursos, atualize seu pagamento: {{link}} '
-        + 'Estamos a disposicao para qualquer duvida.',
+      text:
+        'Oi {{name}}, queremos lembrar que seu pagamento do BossZap ainda esta pendente. ' +
+        'Para continuar aproveitando todos os recursos, atualize seu pagamento: {{link}} ' +
+        'Estamos a disposicao para qualquer duvida.',
       templateName: 'payment_recovery_day2_pt',
     },
     day3: {
-      text: 'Oi {{name}}, infelizmente nao conseguimos processar seu pagamento do BossZap. '
-        + 'Seu acesso sera pausado temporariamente hoje. '
-        + 'Voce pode reativar sua conta a qualquer momento atualizando seu pagamento: {{link}} '
-        + 'Esperamos te ver de volta em breve.',
+      text:
+        'Oi {{name}}, infelizmente nao conseguimos processar seu pagamento do BossZap. ' +
+        'Seu acesso sera pausado temporariamente hoje. ' +
+        'Voce pode reativar sua conta a qualquer momento atualizando seu pagamento: {{link}} ' +
+        'Esperamos te ver de volta em breve.',
       templateName: 'payment_recovery_day3_pt',
     },
   },
@@ -119,6 +129,7 @@ export class RecoveryService {
     );
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_10AM, { name: 'payment-recovery' })
   async checkAndSendRecovery(): Promise<void> {
     this.logger.log('Starting payment recovery check...');
 
@@ -128,8 +139,7 @@ export class RecoveryService {
       try {
         await this.processRecoveryForPayment(failedPayment);
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : String(error);
+        const message = error instanceof Error ? error.message : String(error);
         this.logger.error(
           `Recovery failed for payment=${failedPayment.id}: ${message}`,
         );
@@ -141,9 +151,7 @@ export class RecoveryService {
     );
   }
 
-  async getRecoveryStatus(
-    subscriberId: string,
-  ): Promise<RecoveryStatus> {
+  async getRecoveryStatus(subscriberId: string): Promise<RecoveryStatus> {
     const subscriber = await this.subscriberRepo.findOne({
       where: { id: subscriberId },
     });
@@ -158,9 +166,7 @@ export class RecoveryService {
       };
     }
 
-    const lastFailedPayment = await this.getLastFailedPayment(
-      subscriberId,
-    );
+    const lastFailedPayment = await this.getLastFailedPayment(subscriberId);
 
     if (!lastFailedPayment) {
       return {
@@ -226,9 +232,7 @@ export class RecoveryService {
       return;
     }
 
-    const daysSinceFailure = this.getDaysSinceDate(
-      failedPayment.created_at,
-    );
+    const daysSinceFailure = this.getDaysSinceDate(failedPayment.created_at);
 
     if (daysSinceFailure >= 3 && subscriber.status !== 'suspended') {
       await this.sendRecoveryMessage(subscriber, 'day3');
@@ -253,9 +257,7 @@ export class RecoveryService {
     subscriber: Subscriber,
     day: 'day0' | 'day2' | 'day3',
   ): Promise<void> {
-    const language = this.resolveLanguage(
-      subscriber.preferred_language,
-    );
+    const language = this.resolveLanguage(subscriber.preferred_language);
     const messageTemplate = RECOVERY_MESSAGES[language][day];
     const name = subscriber.owner_name || subscriber.business_name || '';
     const link = `${this.paymentLink}?sid=${subscriber.id}`;
@@ -264,9 +266,7 @@ export class RecoveryService {
       .replace(/\{\{name\}\}/g, name)
       .replace(/\{\{link\}\}/g, link);
 
-    const windowOpen = await this.windowTracker.isWindowOpen(
-      subscriber.id,
-    );
+    const windowOpen = await this.windowTracker.isWindowOpen(subscriber.id);
 
     if (windowOpen) {
       await this.whatsappService.sendText({
@@ -281,8 +281,7 @@ export class RecoveryService {
           `to subscriber=${subscriber.id}`,
       );
     } else {
-      const templateLangCode =
-        language === 'pt-BR' ? 'pt_BR' : language;
+      const templateLangCode = language === 'pt-BR' ? 'pt_BR' : language;
 
       await this.whatsappService.sendTemplate({
         to: subscriber.phone,
@@ -337,10 +336,9 @@ export class RecoveryService {
 
     return this.paymentRepo
       .createQueryBuilder('payment')
-      .where(
-        'payment.subscription_id IN (:...subscriptionIds)',
-        { subscriptionIds },
-      )
+      .where('payment.subscription_id IN (:...subscriptionIds)', {
+        subscriptionIds,
+      })
       .andWhere('payment.status = :status', { status: 'failed' })
       .orderBy('payment.created_at', 'DESC')
       .getOne();
@@ -374,6 +372,6 @@ export class RecoveryService {
     if (lang.startsWith('pt')) {
       return 'pt-BR';
     }
-    return 'es';
+    return 'pt-BR';
   }
 }

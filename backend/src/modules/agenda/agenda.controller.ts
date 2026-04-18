@@ -38,12 +38,38 @@ export class AgendaController {
 
   @Get()
   @ApiOperation({ summary: 'List events with optional filters and pagination' })
-  @ApiQuery({ name: 'date', required: false, description: 'Filter by date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'startDate', required: false, description: 'Range start (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: false, description: 'Range end (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default 20)' })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    description: 'Filter by date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Range start (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Range end (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default 20)',
+  })
   async list(
     @Req() req: AuthenticatedRequest,
     @Query('date') date?: string,
@@ -65,7 +91,12 @@ export class AgendaController {
 
   @Get('upcoming')
   @ApiOperation({ summary: 'Get next upcoming scheduled events' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of events (default 5)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of events (default 5)',
+  })
   async upcoming(
     @Req() req: AuthenticatedRequest,
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit?: number,

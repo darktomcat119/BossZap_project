@@ -13,6 +13,7 @@ export type Intent =
   | 'BUDGET_QUERY'
   | 'SERVICE_ORDER_CREATE'
   | 'PROFILE_UPDATE'
+  | 'PROFILE_QUERY'
   | 'LANGUAGE_CHANGE'
   | 'GENERAL_QUERY'
   | 'ONBOARDING'
@@ -55,9 +56,7 @@ Respond in JSON format:
 
 @Injectable()
 export class IntentClassifierService {
-  private readonly logger = new Logger(
-    IntentClassifierService.name,
-  );
+  private readonly logger = new Logger(IntentClassifierService.name);
 
   constructor(private readonly gpt: GptService) {}
 
@@ -80,8 +79,7 @@ export class IntentClassifierService {
 
       const parsed = this.parseClassification(response.content);
       this.logger.log(
-        `Classified: ${parsed.intent} ` +
-          `(${parsed.confidence})`,
+        `Classified: ${parsed.intent} ` + `(${parsed.confidence})`,
       );
       return parsed;
     } catch (error) {
@@ -98,9 +96,7 @@ export class IntentClassifierService {
     }
   }
 
-  private parseClassification(
-    raw: string,
-  ): ClassifiedIntent {
+  private parseClassification(raw: string): ClassifiedIntent {
     try {
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
@@ -125,7 +121,7 @@ export class IntentClassifierService {
         confidence: parsed.confidence || 0,
         extractedData: parsed.extracted_data || {},
         responseText: parsed.needs_clarification
-          ? (parsed.clarification_question || '')
+          ? parsed.clarification_question || ''
           : '',
       };
     } catch {

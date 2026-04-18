@@ -36,23 +36,55 @@
   },
   "pricing": {
     "title": "Invest in your business",
-    "plan": {
-      "name": "Professional",
-      "price": "$29.90",
-      "period": "/month",
-      "features": [
-        "Up to 500 messages per month",
-        "Up to 50 PDF quotes per month",
-        "300 AI queries per month",
-        "Full dashboard with charts",
-        "Integrated calendar and scheduling",
-        "Financial tracking (income & expenses)",
-        "CSV report export",
-        "Priority WhatsApp support"
-      ],
-      "cta": "Start free trial"
-    },
-    "trial": "7 days free. Cancel anytime. No credit card upfront."
+    "subtitle": "Pick the plan that fits your business size.",
+    "cta": "Start free trial",
+    "trial": "7 days free. Cancel anytime. No credit card upfront.",
+    "period": "/month",
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "price": "R$ 39.90",
+        "tagline": "Great for solo pros just getting started.",
+        "features": [
+          "Up to 200 messages per month",
+          "Up to 20 PDF quotes per month",
+          "100 AI queries per month",
+          "Integrated calendar and scheduling",
+          "Basic financial tracking",
+          "WhatsApp support"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "R$ 59.90",
+        "tagline": "For growing businesses.",
+        "features": [
+          "Up to 500 messages per month",
+          "Up to 50 PDF quotes per month",
+          "300 AI queries per month",
+          "Full dashboard with charts",
+          "Integrated calendar and scheduling",
+          "Financial tracking (income & expenses)",
+          "CSV report export",
+          "Priority WhatsApp support"
+        ]
+      },
+      "business": {
+        "name": "Business",
+        "price": "R$ 79.90",
+        "tagline": "Unlimited everything, for serious teams.",
+        "features": [
+          "Unlimited messages",
+          "Unlimited PDF quotes",
+          "Unlimited AI conversations",
+          "Full dashboard with charts",
+          "Integrated calendar and scheduling",
+          "Advanced financial tracking",
+          "Detailed reports and CSV export",
+          "24/7 priority support"
+        ]
+      }
+    }
   },
   "footer": {
     "rights": "All rights reserved",
@@ -170,7 +202,8 @@
     "forProfessionals": "For Professionals"
   },
   "featuresSection": {
-    "subtitle": "Everything managed through WhatsApp — the app your clients already use.",
+    "title": "Everything you need in one place",
+    "subtitle": "Manage every aspect of your business without leaving WhatsApp. Simple, fast and intelligent.",
     "whatsappAi": "WhatsApp AI",
     "dashboard": "Dashboard",
     "dashboardDesc": "Charts, reports, and analytics from any device.",
@@ -179,7 +212,17 @@
     "reportsCsv": "Reports & CSV",
     "reportsCsvDesc": "Export your financial data anytime.",
     "clientTracking": "Client Tracking",
-    "clientTrackingDesc": "Never lose track of a client or job."
+    "clientTrackingDesc": "Never lose track of a client or job.",
+    "grid": {
+      "products": { "title": "Products", "desc": "Register and manage your product and service catalog directly through WhatsApp." },
+      "pdfQuotes": { "title": "PDF Quotes", "desc": "Generate professional PDF quotes and send them to your clients in seconds." },
+      "serviceOrders": { "title": "Service Orders", "desc": "Create and track service orders with real-time status updates." },
+      "finance": { "title": "Finance", "desc": "Control revenue, expenses and cash flow without complicated spreadsheets." },
+      "reminders": { "title": "Reminders", "desc": "Receive automatic reminders for payments, deadlines and pending tasks." },
+      "reports": { "title": "Reports", "desc": "Detailed sales, financial and business performance reports." },
+      "dashboard": { "title": "Dashboard", "desc": "Complete visual panel with metrics and key indicators of your business." },
+      "aiChat": { "title": "Conversational AI", "desc": "Artificial intelligence that understands your commands and executes tasks for you." }
+    }
   },
   "demoSection": {
     "badge": "See it in action",

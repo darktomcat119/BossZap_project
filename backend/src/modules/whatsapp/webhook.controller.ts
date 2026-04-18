@@ -43,10 +43,7 @@ export class WebhookController {
       'WABA_VERIFY_TOKEN',
       'bosszap-verify-token',
     );
-    this.appSecret = this.configService.get<string>(
-      'WABA_APP_SECRET',
-      '',
-    );
+    this.appSecret = this.configService.get<string>('WABA_APP_SECRET', '');
   }
 
   @Get()
@@ -109,23 +106,16 @@ export class WebhookController {
     );
   }
 
-  private async enqueueMessage(
-    message: WebhookMessage,
-  ): Promise<void> {
-    await this.inboundQueue.add(
-      'process-message',
-      message,
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000 },
-        removeOnComplete: 100,
-        removeOnFail: 500,
-      },
-    );
+  private async enqueueMessage(message: WebhookMessage): Promise<void> {
+    await this.inboundQueue.add('process-message', message, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000 },
+      removeOnComplete: 100,
+      removeOnFail: 500,
+    });
 
     this.logger.log(
-      `Enqueued message from ${message.from} ` +
-        `type=${message.type}`,
+      `Enqueued message from ${message.from} ` + `type=${message.type}`,
     );
   }
 }

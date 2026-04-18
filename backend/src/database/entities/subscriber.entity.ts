@@ -34,7 +34,7 @@ export class Subscriber {
   @Column({ type: 'varchar', length: 500, nullable: true })
   logo_url: string | null;
 
-  @Column({ type: 'varchar', length: 5, default: 'es' })
+  @Column({ type: 'varchar', length: 5, default: 'pt-BR' })
   preferred_language: string;
 
   @Column({ type: 'varchar', length: 20, default: 'onboarding' })

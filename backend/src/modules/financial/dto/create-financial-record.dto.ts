@@ -22,7 +22,10 @@ export class CreateFinancialRecordDto {
   @IsPositive()
   amount: number;
 
-  @ApiPropertyOptional({ example: 'Monthly subscription payment', maxLength: 500 })
+  @ApiPropertyOptional({
+    example: 'Monthly subscription payment',
+    maxLength: 500,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)
@@ -40,7 +43,10 @@ export class CreateFinancialRecordDto {
   @MaxLength(255)
   reference_person?: string;
 
-  @ApiProperty({ example: '2026-03-23', description: 'ISO date string (YYYY-MM-DD)' })
+  @ApiProperty({
+    example: '2026-03-23',
+    description: 'ISO date string (YYYY-MM-DD)',
+  })
   @IsNotEmpty()
   @IsDateString()
   record_date: string;

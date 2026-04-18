@@ -14,7 +14,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "BossZap - Tu negocio, bajo control total",
   description:
-    "El asistente virtual con IA que administra tu agenda, finanzas y presupuestos por WhatsApp",
+    "El asistente virtual con IA que administra tu agenda, " +
+    "finanzas y presupuestos por WhatsApp",
 };
 
 type Props = {

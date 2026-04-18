@@ -43,10 +43,7 @@ export class AdminPlansController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a plan' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdatePlanDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePlanDto) {
     return this.service.update(id, dto);
   }
 

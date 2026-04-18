@@ -38,10 +38,7 @@ export class AgendaService {
     return this.eventRepo.save(event);
   }
 
-  async findById(
-    subscriberId: string,
-    eventId: string,
-  ): Promise<Event> {
+  async findById(subscriberId: string, eventId: string): Promise<Event> {
     const event = await this.eventRepo.findOne({
       where: { id: eventId, subscriber_id: subscriberId },
     });
@@ -51,20 +48,14 @@ export class AgendaService {
     return event;
   }
 
-  async findByDate(
-    subscriberId: string,
-    date: string,
-  ): Promise<Event[]> {
+  async findByDate(subscriberId: string, date: string): Promise<Event[]> {
     return this.eventRepo.find({
       where: { subscriber_id: subscriberId, event_date: date },
       order: { event_time: 'ASC' },
     });
   }
 
-  async findUpcoming(
-    subscriberId: string,
-    limit = 5,
-  ): Promise<Event[]> {
+  async findUpcoming(subscriberId: string, limit = 5): Promise<Event[]> {
     const today = new Date().toISOString().split('T')[0];
 
     return this.eventRepo.find({
@@ -159,19 +150,13 @@ export class AgendaService {
     return this.eventRepo.save(event);
   }
 
-  async cancelEvent(
-    subscriberId: string,
-    eventId: string,
-  ): Promise<Event> {
+  async cancelEvent(subscriberId: string, eventId: string): Promise<Event> {
     const event = await this.findById(subscriberId, eventId);
     event.status = 'cancelled';
     return this.eventRepo.save(event);
   }
 
-  async completeEvent(
-    subscriberId: string,
-    eventId: string,
-  ): Promise<Event> {
+  async completeEvent(subscriberId: string, eventId: string): Promise<Event> {
     const event = await this.findById(subscriberId, eventId);
     event.status = 'completed';
     return this.eventRepo.save(event);

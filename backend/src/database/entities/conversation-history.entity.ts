@@ -10,10 +10,7 @@ import {
 import { Subscriber } from './subscriber.entity';
 
 @Entity('conversation_history')
-@Index('idx_conversation_subscriber_created', [
-  'subscriber_id',
-  'created_at',
-])
+@Index('idx_conversation_subscriber_created', ['subscriber_id', 'created_at'])
 export class ConversationHistory {
   @PrimaryGeneratedColumn('uuid')
   id: string;

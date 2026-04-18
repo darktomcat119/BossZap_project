@@ -25,9 +25,7 @@ function tsAgo(n: number): string {
 }
 
 function randomBetween(min: number, max: number): number {
-  return Math.round(
-    (Math.random() * (max - min) + min) * 100,
-  ) / 100;
+  return Math.round((Math.random() * (max - min) + min) * 100) / 100;
 }
 
 function pick<T>(arr: T[]): T {
@@ -46,21 +44,40 @@ async function seedDemo() {
   console.log('Database connected for demo seeding...\n');
 
   // === 1. Get Plan ===
-  let [plan] = await ds.query(
-    `SELECT id FROM plans WHERE name = 'Profesional' LIMIT 1`,
-  );
-  if (!plan) {
-    [plan] = await ds.query(
-      `INSERT INTO plans (name, price_monthly,
-        max_budgets_per_month, max_messages_per_month,
-        max_ai_calls_per_month, trial_days)
-       VALUES ('Profesional', 29.90, 50, 500, 300, 7)
-       RETURNING id`,
+  // Ensure 3 plans exist
+  const planDefs = [
+    { name: 'Starter', price: 39.9, budgets: 20, msgs: 200, ai: 100 },
+    { name: 'Pro', price: 59.9, budgets: 50, msgs: 500, ai: 300 },
+    { name: 'Business', price: 79.9, budgets: -1, msgs: -1, ai: -1 },
+  ];
+
+  for (const p of planDefs) {
+    const [existing] = await ds.query(
+      `SELECT id FROM plans WHERE name = $1 LIMIT 1`,
+      [p.name],
     );
-    console.log('Plan created: Profesional');
-  } else {
-    console.log('Plan exists, using it');
+    if (!existing) {
+      await ds.query(
+        `INSERT INTO plans (name, price_monthly,
+          max_budgets_per_month, max_messages_per_month,
+          max_ai_calls_per_month, trial_days)
+         VALUES ($1, $2, $3, $4, $5, 7)`,
+        [p.name, p.price, p.budgets, p.msgs, p.ai],
+      );
+      console.log(`Plan created: ${p.name}`);
+    } else {
+      console.log(`Plan ${p.name} exists, using it`);
+    }
   }
+
+  // Deactivate legacy plan
+  await ds.query(
+    `UPDATE plans SET is_active = false WHERE name = 'Profesional'`,
+  );
+
+  const [plan] = await ds.query(
+    `SELECT id FROM plans WHERE name = 'Pro' LIMIT 1`,
+  );
   const planId = plan.id;
 
   // === 2. Admin User ===
@@ -106,9 +123,7 @@ async function seedDemo() {
         tsAgo(45),
       ],
     );
-    console.log(
-      'Subscriber: carlos@demo.bosszap.com.br / Demo2024!',
-    );
+    console.log('Subscriber: carlos@demo.bosszap.com.br / Demo2024!');
   }
   const subId = sub.id;
 
@@ -156,8 +171,12 @@ async function seedDemo() {
       { desc: 'Ayudante del dia', cat: 'labor' },
     ];
     const persons = [
-      'Sr. Rodriguez', 'Sra. Garcia', 'Sr. Lopez',
-      'Empresa ABC', 'Condominio Sol', 'Sr. Martinez',
+      'Sr. Rodriguez',
+      'Sra. Garcia',
+      'Sr. Lopez',
+      'Empresa ABC',
+      'Condominio Sol',
+      'Sr. Martinez',
     ];
 
     let total = 0;
@@ -175,8 +194,7 @@ async function seedDemo() {
       const incCount = 5 + Math.floor(Math.random() * 4);
       for (let i = 0; i < incCount; i++) {
         const day = 1 + Math.floor(Math.random() * (maxDay - 1));
-        const dateStr =
-          `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         await ds.query(
           `INSERT INTO financial_records
             (subscriber_id, type, amount, description,
@@ -196,21 +214,14 @@ async function seedDemo() {
       const expCount = 6 + Math.floor(Math.random() * 5);
       for (let i = 0; i < expCount; i++) {
         const day = 1 + Math.floor(Math.random() * (maxDay - 1));
-        const dateStr =
-          `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const exp = pick(expenseItems);
         await ds.query(
           `INSERT INTO financial_records
             (subscriber_id, type, amount, description,
              category, record_date)
            VALUES ($1,'expense',$2,$3,$4,$5)`,
-          [
-            subId,
-            randomBetween(30, 400),
-            exp.desc,
-            exp.cat,
-            dateStr,
-          ],
+          [subId, randomBetween(30, 400), exp.desc, exp.cat, dateStr],
         );
         total++;
       }
@@ -302,67 +313,154 @@ async function seedDemo() {
   if (parseInt(budCount.c) === 0) {
     const budgets = [
       {
-        type: 'budget', client: 'Sra. Perez',
+        type: 'budget',
+        client: 'Sra. Perez',
         phone: '+5511988880001',
         desc: 'Pintura completa sala y comedor',
         items: [
-          { description: 'Pintura latex premium (20L)', quantity: 3, unit_price: 85, total: 255 },
-          { description: 'Mano de obra (2 dias)', quantity: 2, unit_price: 350, total: 700 },
-          { description: 'Materiales auxiliares', quantity: 1, unit_price: 60, total: 60 },
+          {
+            description: 'Pintura latex premium (20L)',
+            quantity: 3,
+            unit_price: 85,
+            total: 255,
+          },
+          {
+            description: 'Mano de obra (2 dias)',
+            quantity: 2,
+            unit_price: 350,
+            total: 700,
+          },
+          {
+            description: 'Materiales auxiliares',
+            quantity: 1,
+            unit_price: 60,
+            total: 60,
+          },
         ],
-        total: 1015, status: 'accepted',
+        total: 1015,
+        status: 'accepted',
       },
       {
-        type: 'budget', client: 'Sr. Santos',
+        type: 'budget',
+        client: 'Sr. Santos',
         phone: '+5511988880002',
         desc: 'Textura decorativa pared acento',
         items: [
-          { description: 'Textura especial (5L)', quantity: 2, unit_price: 120, total: 240 },
-          { description: 'Mano de obra especializada', quantity: 1, unit_price: 500, total: 500 },
+          {
+            description: 'Textura especial (5L)',
+            quantity: 2,
+            unit_price: 120,
+            total: 240,
+          },
+          {
+            description: 'Mano de obra especializada',
+            quantity: 1,
+            unit_price: 500,
+            total: 500,
+          },
         ],
-        total: 740, status: 'sent',
+        total: 740,
+        status: 'sent',
       },
       {
-        type: 'budget', client: 'Sr. Almeida',
+        type: 'budget',
+        client: 'Sr. Almeida',
         phone: '+5511988880003',
         desc: 'Pintura exterior casa completa',
         items: [
-          { description: 'Pintura exterior (20L)', quantity: 5, unit_price: 95, total: 475 },
-          { description: 'Impermeabilizante', quantity: 2, unit_price: 110, total: 220 },
-          { description: 'Andamio alquiler (3 dias)', quantity: 3, unit_price: 80, total: 240 },
-          { description: 'Mano de obra (4 dias)', quantity: 4, unit_price: 350, total: 1400 },
+          {
+            description: 'Pintura exterior (20L)',
+            quantity: 5,
+            unit_price: 95,
+            total: 475,
+          },
+          {
+            description: 'Impermeabilizante',
+            quantity: 2,
+            unit_price: 110,
+            total: 220,
+          },
+          {
+            description: 'Andamio alquiler (3 dias)',
+            quantity: 3,
+            unit_price: 80,
+            total: 240,
+          },
+          {
+            description: 'Mano de obra (4 dias)',
+            quantity: 4,
+            unit_price: 350,
+            total: 1400,
+          },
         ],
-        total: 2335, status: 'accepted',
+        total: 2335,
+        status: 'accepted',
       },
       {
-        type: 'budget', client: 'Empresa XYZ',
+        type: 'budget',
+        client: 'Empresa XYZ',
         phone: '+5511988880004',
         desc: 'Pintura oficinas planta baja',
         items: [
-          { description: 'Pintura acrilica (20L)', quantity: 8, unit_price: 90, total: 720 },
-          { description: 'Mano de obra (5 dias)', quantity: 5, unit_price: 400, total: 2000 },
+          {
+            description: 'Pintura acrilica (20L)',
+            quantity: 8,
+            unit_price: 90,
+            total: 720,
+          },
+          {
+            description: 'Mano de obra (5 dias)',
+            quantity: 5,
+            unit_price: 400,
+            total: 2000,
+          },
         ],
-        total: 2720, status: 'draft',
+        total: 2720,
+        status: 'draft',
       },
       {
-        type: 'budget', client: 'Sra. Oliveira',
+        type: 'budget',
+        client: 'Sra. Oliveira',
         phone: '+5511988880005',
         desc: 'Pintura dormitorio matrimonial',
         items: [
-          { description: 'Pintura premium (4L)', quantity: 2, unit_price: 65, total: 130 },
-          { description: 'Mano de obra (1 dia)', quantity: 1, unit_price: 300, total: 300 },
+          {
+            description: 'Pintura premium (4L)',
+            quantity: 2,
+            unit_price: 65,
+            total: 130,
+          },
+          {
+            description: 'Mano de obra (1 dia)',
+            quantity: 1,
+            unit_price: 300,
+            total: 300,
+          },
         ],
-        total: 430, status: 'rejected',
+        total: 430,
+        status: 'rejected',
       },
       {
-        type: 'service_order', client: 'Condominio Sol',
+        type: 'service_order',
+        client: 'Condominio Sol',
         phone: '+5511988880006',
         desc: 'Pintura area comun - hall y escaleras',
         items: [
-          { description: 'Pintura latex (20L)', quantity: 6, unit_price: 85, total: 510 },
-          { description: 'Mano de obra (3 dias)', quantity: 6, unit_price: 300, total: 1800 },
+          {
+            description: 'Pintura latex (20L)',
+            quantity: 6,
+            unit_price: 85,
+            total: 510,
+          },
+          {
+            description: 'Mano de obra (3 dias)',
+            quantity: 6,
+            unit_price: 300,
+            total: 1800,
+          },
         ],
-        total: 2310, status: 'accepted',
+        total: 2310,
+        status: 'accepted',
       },
     ];
 
@@ -415,14 +513,62 @@ async function seedDemo() {
 
   // === 9. More Subscribers (admin dashboard) ===
   const demoSubs = [
-    { phone: '+5511999990002', biz: 'Eletrica Silva', name: 'Roberto Silva', email: 'roberto@demo.bosszap.com.br', st: 'active' },
-    { phone: '+5511999990003', biz: 'Maria Beleza', name: 'Maria Fernandez', email: 'maria@demo.bosszap.com.br', st: 'active' },
-    { phone: '+5511999990004', biz: 'Pedro Encanamentos', name: 'Pedro Costa', email: 'pedro@demo.bosszap.com.br', st: 'active' },
-    { phone: '+5511999990005', biz: 'Ana Limpieza Pro', name: 'Ana Souza', email: 'ana@demo.bosszap.com.br', st: 'suspended' },
-    { phone: '+5511999990006', biz: 'Jorge Carpinteria', name: 'Jorge Ramirez', email: 'jorge@demo.bosszap.com.br', st: 'active' },
-    { phone: '+5511999990007', biz: 'Lucia Jardineria', name: 'Lucia Torres', email: 'lucia@demo.bosszap.com.br', st: 'cancelled' },
-    { phone: '+5511999990008', biz: 'Fernando AC Service', name: 'Fernando Lima', email: 'fernando@demo.bosszap.com.br', st: 'active' },
-    { phone: '+5511999990009', biz: 'Marcos Construccion', name: 'Marcos Vidal', email: 'marcos@demo.bosszap.com.br', st: 'trialing' },
+    {
+      phone: '+5511999990002',
+      biz: 'Eletrica Silva',
+      name: 'Roberto Silva',
+      email: 'roberto@demo.bosszap.com.br',
+      st: 'active',
+    },
+    {
+      phone: '+5511999990003',
+      biz: 'Maria Beleza',
+      name: 'Maria Fernandez',
+      email: 'maria@demo.bosszap.com.br',
+      st: 'active',
+    },
+    {
+      phone: '+5511999990004',
+      biz: 'Pedro Encanamentos',
+      name: 'Pedro Costa',
+      email: 'pedro@demo.bosszap.com.br',
+      st: 'active',
+    },
+    {
+      phone: '+5511999990005',
+      biz: 'Ana Limpieza Pro',
+      name: 'Ana Souza',
+      email: 'ana@demo.bosszap.com.br',
+      st: 'suspended',
+    },
+    {
+      phone: '+5511999990006',
+      biz: 'Jorge Carpinteria',
+      name: 'Jorge Ramirez',
+      email: 'jorge@demo.bosszap.com.br',
+      st: 'active',
+    },
+    {
+      phone: '+5511999990007',
+      biz: 'Lucia Jardineria',
+      name: 'Lucia Torres',
+      email: 'lucia@demo.bosszap.com.br',
+      st: 'cancelled',
+    },
+    {
+      phone: '+5511999990008',
+      biz: 'Fernando AC Service',
+      name: 'Fernando Lima',
+      email: 'fernando@demo.bosszap.com.br',
+      st: 'active',
+    },
+    {
+      phone: '+5511999990009',
+      biz: 'Marcos Construccion',
+      name: 'Marcos Vidal',
+      email: 'marcos@demo.bosszap.com.br',
+      st: 'trialing',
+    },
   ];
 
   for (const s of demoSubs) {
@@ -431,9 +577,8 @@ async function seedDemo() {
       [s.phone],
     );
     if (!exists) {
-      const onboarded = s.st !== 'trialing'
-        ? tsAgo(Math.floor(Math.random() * 60) + 5)
-        : null;
+      const onboarded =
+        s.st !== 'trialing' ? tsAgo(Math.floor(Math.random() * 60) + 5) : null;
 
       const [created] = await ds.query(
         `INSERT INTO subscribers
@@ -445,9 +590,14 @@ async function seedDemo() {
         [s.phone, s.biz, s.name, s.email, s.st, planId, onboarded],
       );
 
-      const subSt = s.st === 'suspended' ? 'past_due'
-        : s.st === 'cancelled' ? 'cancelled'
-        : s.st === 'trialing' ? 'trialing' : 'active';
+      const subSt =
+        s.st === 'suspended'
+          ? 'past_due'
+          : s.st === 'cancelled'
+            ? 'cancelled'
+            : s.st === 'trialing'
+              ? 'trialing'
+              : 'active';
 
       const [subsc] = await ds.query(
         `INSERT INTO subscriptions
@@ -457,9 +607,12 @@ async function seedDemo() {
          VALUES ($1,$2,$3,$4,$5,$6)
          RETURNING id`,
         [
-          created.id, planId, subSt,
+          created.id,
+          planId,
+          subSt,
           subSt === 'trialing' ? daysFromNow(5) : null,
-          daysAgo(15), daysFromNow(15),
+          daysAgo(15),
+          daysFromNow(15),
         ],
       );
 
@@ -474,12 +627,9 @@ async function seedDemo() {
              VALUES ($1, 29.90, $2, $3, $4)`,
             [
               subsc.id,
-              subSt === 'past_due' && i === 0
-                ? 'failed' : 'succeeded',
-              Math.random() > 0.5
-                ? 'credit_card' : 'pix',
-              subSt === 'past_due' && i === 0
-                ? null : tsAgo(i * 30),
+              subSt === 'past_due' && i === 0 ? 'failed' : 'succeeded',
+              Math.random() > 0.5 ? 'credit_card' : 'pix',
+              subSt === 'past_due' && i === 0 ? null : tsAgo(i * 30),
             ],
           );
         }
@@ -492,7 +642,8 @@ async function seedDemo() {
            budgets_count, ai_calls_count)
          VALUES ($1,$2,$3,$4,$5)`,
         [
-          created.id, monthStr,
+          created.id,
+          monthStr,
           Math.floor(Math.random() * 300) + 20,
           Math.floor(Math.random() * 20),
           Math.floor(Math.random() * 150) + 10,

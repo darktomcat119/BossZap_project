@@ -52,6 +52,21 @@ export class AdminSubscribersService {
 
     const qb: SelectQueryBuilder<Subscriber> = this.subscriberRepo
       .createQueryBuilder('s')
+      .select([
+        's.id',
+        's.phone',
+        's.business_name',
+        's.owner_name',
+        's.email',
+        's.address',
+        's.logo_url',
+        's.preferred_language',
+        's.status',
+        's.plan_id',
+        's.onboarding_completed_at',
+        's.created_at',
+        's.updated_at',
+      ])
       .leftJoinAndSelect('s.plan', 'plan');
 
     if (search) {
@@ -93,6 +108,21 @@ export class AdminSubscribersService {
     const subscriber = await this.subscriberRepo.findOne({
       where: { id },
       relations: ['plan'],
+      select: {
+        id: true,
+        phone: true,
+        business_name: true,
+        owner_name: true,
+        email: true,
+        address: true,
+        logo_url: true,
+        preferred_language: true,
+        status: true,
+        plan_id: true,
+        onboarding_completed_at: true,
+        created_at: true,
+        updated_at: true,
+      },
     });
 
     if (!subscriber) {

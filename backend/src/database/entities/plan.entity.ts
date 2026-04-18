@@ -28,6 +28,9 @@ export class Plan {
   @Column({ type: 'int', default: 7 })
   trial_days: number;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  stripe_price_id: string | null;
+
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
