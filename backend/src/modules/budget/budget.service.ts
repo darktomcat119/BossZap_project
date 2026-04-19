@@ -200,7 +200,10 @@ export class BudgetService {
     subscriberId: string,
     filename: string,
   ): Promise<string> {
-    const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+    const { S3Client, PutObjectCommand, GetObjectCommand } = await import(
+      '@aws-sdk/client-s3'
+    );
+    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
 
     const s3Region = process.env.AWS_REGION ?? 'sa-east-1';
     const s3Bucket = process.env.AWS_S3_BUCKET ?? 'bosszap-files';
@@ -218,6 +221,9 @@ export class BudgetService {
       }),
     );
 
-    return `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/${key}`;
+    // Pre-signed URL valid for 7 days (max allowed for sigv4)
+    return getSignedUrl(s3, new GetObjectCommand({ Bucket: s3Bucket, Key: key }), {
+      expiresIn: 7 * 24 * 3600,
+    });
   }
 }
