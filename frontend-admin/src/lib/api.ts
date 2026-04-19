@@ -31,12 +31,34 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message ?? 'Request failed');
+  const payload = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    data?: unknown;
+    error?: { message?: string };
+    message?: string;
+  };
+
+  if (res.status === 401 && typeof window !== 'undefined') {
+    localStorage.removeItem('admin_access_token');
+    localStorage.removeItem('admin_refresh_token');
+    // Preserve the locale prefix currently in the URL so the redirect
+    // doesn't bounce across languages.
+    const localeMatch = window.location.pathname.match(/^\/(pt-BR|es|en)(\/|$)/);
+    const locale = localeMatch ? localeMatch[1] : 'pt-BR';
+    window.location.href = `/${locale}/login`;
+    // Prevent callers from using `undefined` between the assignment above
+    // and the actual navigation.
+    throw new Error('Unauthorized');
   }
 
-  return res.json() as Promise<T>;
+  if (!res.ok) {
+    throw new Error(
+      payload.error?.message ?? payload.message ?? 'Request failed',
+    );
+  }
+
+  // Unwrap the standard {success, data} envelope so callers receive just data.
+  return (payload.data !== undefined ? payload.data : payload) as T;
 }
 
 // ── Subscribers ──
