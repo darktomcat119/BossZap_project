@@ -104,14 +104,14 @@ export class AgendaController {
     return this.agendaService.findUpcoming(req.user.id, limit);
   }
 
-  @Get('calendar/:year/:month')
+  @Get('calendar')
   @ApiOperation({ summary: 'Get all events for a specific month' })
-  @ApiParam({ name: 'year', type: Number, example: 2026 })
-  @ApiParam({ name: 'month', type: Number, example: 4 })
+  @ApiQuery({ name: 'year', required: true, type: Number, example: 2026 })
+  @ApiQuery({ name: 'month', required: true, type: Number, example: 4 })
   async monthlyCalendar(
     @Req() req: AuthenticatedRequest,
-    @Param('year', ParseIntPipe) year: number,
-    @Param('month', ParseIntPipe) month: number,
+    @Query('year', ParseIntPipe) year: number,
+    @Query('month', ParseIntPipe) month: number,
   ): Promise<Event[]> {
     return this.agendaService.getMonthlyCalendar(req.user.id, year, month);
   }

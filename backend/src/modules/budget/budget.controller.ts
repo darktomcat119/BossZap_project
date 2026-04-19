@@ -99,7 +99,7 @@ export class BudgetController {
     return this.budgetService.updateStatus(user.id, id, body.status);
   }
 
-  @Post(':id/generate-pdf')
+  @Post(':id/pdf')
   @ApiOperation({
     summary: 'Generate PDF and return download URL',
   })

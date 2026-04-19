@@ -70,6 +70,12 @@ export class AuthController {
     return this.authService.refreshToken(dto.refresh_token);
   }
 
+  @Post('logout')
+  @ApiOperation({ summary: 'Client-side logout (no server state to clear)' })
+  logout() {
+    return { success: true };
+  }
+
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
