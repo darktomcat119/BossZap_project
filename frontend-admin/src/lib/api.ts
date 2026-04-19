@@ -4,7 +4,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('admin_token');
+  return localStorage.getItem('admin_access_token');
 }
 
 type RequestOptions = {
