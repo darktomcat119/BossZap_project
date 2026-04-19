@@ -158,6 +158,7 @@
     "back": "Voltar",
     "createAccount": "Criar conta",
     "alreadyHaveAccount": "Já tem uma conta?",
+    "dontHaveAccount": "Ainda não tem conta?",
     "login": "Entrar",
     "redirectingToPayment": "Criando sua conta...",
     "trialInfo": "7 dias grátis, cancele quando quiser"

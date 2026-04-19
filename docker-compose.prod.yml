@@ -68,6 +68,9 @@ services:
       context: ./frontend-subscriber
       dockerfile: Dockerfile
       target: production
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN:-bosszap.com}
+        NEXT_PUBLIC_WS_URL: https://api.${DOMAIN:-bosszap.com}
     container_name: bosszap-app
     restart: always
     ports:
@@ -86,6 +89,9 @@ services:
       context: ./frontend-admin
       dockerfile: Dockerfile
       target: production
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN:-bosszap.com}
+        NEXT_PUBLIC_WS_URL: https://api.${DOMAIN:-bosszap.com}
     container_name: bosszap-admin
     restart: always
     ports:
@@ -104,6 +110,9 @@ services:
       context: ./landing-page
       dockerfile: Dockerfile
       target: production
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN:-bosszap.com}
+        NEXT_PUBLIC_APP_URL: https://app.${DOMAIN:-bosszap.com}
     container_name: bosszap-landing
     restart: always
     ports:

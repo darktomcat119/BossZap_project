@@ -24,6 +24,8 @@ RUN npm install --omit=dev
 
 # --- Builder ---
 FROM base AS builder
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
 
 COPY package.json package-lock.json* ./
 RUN npm install
@@ -31,6 +33,8 @@ RUN npm install
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL}
 RUN npm run build
 
 # --- Production ---
