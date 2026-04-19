@@ -114,7 +114,7 @@ export class FinancialController {
     );
   }
 
-  @Get('trend')
+  @Get('monthly')
   @ApiOperation({ summary: 'Get monthly income/expense trend' })
   @ApiQuery({
     name: 'months',
