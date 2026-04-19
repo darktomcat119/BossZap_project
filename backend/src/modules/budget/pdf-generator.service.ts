@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import PDFDocument from 'pdfkit';
 import { Budget } from '../../database/entities/budget.entity';
 import { Subscriber } from '../../database/entities/subscriber.entity';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PDFDocument = require('pdfkit') as typeof import('pdfkit');
 
 interface BudgetItem {
   description: string;
