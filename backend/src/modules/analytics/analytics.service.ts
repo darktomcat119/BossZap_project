@@ -104,9 +104,9 @@ export class AnalyticsService {
       type: 'finance_summary',
       data: summary,
       summary:
-        `Income: ${summary.totalIncome}, ` +
-        `Expenses: ${summary.totalExpenses}, ` +
-        `Profit: ${summary.profit}`,
+        `Income: ${summary.total_income}, ` +
+        `Expenses: ${summary.total_expense}, ` +
+        `Profit: ${summary.net}`,
     };
   }
 
@@ -146,8 +146,8 @@ export class AnalyticsService {
       type: 'general',
       data: { financials, upcoming, budgets: budgets.total },
       summary:
-        `This month: income ${financials.totalIncome}, ` +
-        `expenses ${financials.totalExpenses}. ` +
+        `This month: income ${financials.total_income}, ` +
+        `expenses ${financials.total_expense}. ` +
         `${upcoming.length} upcoming events. ` +
         `${budgets.total} budgets.`,
     };

@@ -16,9 +16,10 @@ export interface FinancialFilters {
 }
 
 export interface FinancialSummary {
-  totalIncome: number;
-  totalExpenses: number;
-  profit: number;
+  total_income: number;
+  total_expense: number;
+  net: number;
+  count: number;
 }
 
 export interface CategoryBreakdown {
@@ -121,24 +122,27 @@ export class FinancialService {
       .createQueryBuilder('fr')
       .select(
         `COALESCE(SUM(CASE WHEN fr.type = 'income' THEN fr.amount ELSE 0 END), 0)`,
-        'totalIncome',
+        'total_income',
       )
       .addSelect(
         `COALESCE(SUM(CASE WHEN fr.type = 'expense' THEN fr.amount ELSE 0 END), 0)`,
-        'totalExpenses',
+        'total_expense',
       )
+      .addSelect('COUNT(fr.id)', 'count')
       .where('fr.subscriber_id = :subscriberId', { subscriberId })
       .andWhere('fr.record_date >= :startDate', { startDate })
       .andWhere('fr.record_date <= :endDate', { endDate })
       .getRawOne();
 
-    const totalIncome = parseFloat(result.totalIncome) || 0;
-    const totalExpenses = parseFloat(result.totalExpenses) || 0;
+    const total_income = parseFloat(result.total_income) || 0;
+    const total_expense = parseFloat(result.total_expense) || 0;
+    const count = parseInt(result.count, 10) || 0;
 
     return {
-      totalIncome,
-      totalExpenses,
-      profit: totalIncome - totalExpenses,
+      total_income,
+      total_expense,
+      net: total_income - total_expense,
+      count,
     };
   }
 
