@@ -20,6 +20,8 @@ import { AdminLogsController } from './admin-logs.controller';
 import { AdminLogsService } from './admin-logs.service';
 import { AdminHsmController } from './admin-hsm.controller';
 import { AdminHsmService } from './admin-hsm.service';
+import { AdminPaymentsController } from './admin-payments.controller';
+import { AdminPaymentsService } from './admin-payments.service';
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import { AdminHsmService } from './admin-hsm.service';
     AdminMetricsController,
     AdminLogsController,
     AdminHsmController,
+    AdminPaymentsController,
   ],
   providers: [
     AdminSubscribersService,
@@ -47,6 +50,7 @@ import { AdminHsmService } from './admin-hsm.service';
     AdminMetricsService,
     AdminLogsService,
     AdminHsmService,
+    AdminPaymentsService,
   ],
   exports: [
     AdminSubscribersService,
@@ -54,6 +58,7 @@ import { AdminHsmService } from './admin-hsm.service';
     AdminMetricsService,
     AdminLogsService,
     AdminHsmService,
+    AdminPaymentsService,
   ],
 })
 export class AdminModule {}

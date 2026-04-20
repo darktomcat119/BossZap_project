@@ -36,7 +36,11 @@
     "refresh": "Actualizar",
     "total": "Total",
     "yes": "Si",
-    "no": "No"
+    "no": "No",
+    "retry": "Reintentar",
+    "onboarding": "Incorporación",
+    "cancelled": "Cancelado",
+    "trialing": "Prueba"
   },
   "nav": {
     "overview": "Resumen",

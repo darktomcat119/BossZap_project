@@ -36,7 +36,11 @@
     "refresh": "Refresh",
     "total": "Total",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "retry": "Retry",
+    "onboarding": "Onboarding",
+    "cancelled": "Cancelled",
+    "trialing": "Trial"
   },
   "nav": {
     "overview": "Overview",

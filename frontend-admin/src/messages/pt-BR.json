@@ -36,7 +36,11 @@
     "refresh": "Atualizar",
     "total": "Total",
     "yes": "Sim",
-    "no": "Nao"
+    "no": "Nao",
+    "retry": "Tentar novamente",
+    "onboarding": "Onboarding",
+    "cancelled": "Cancelado",
+    "trialing": "Avaliação"
   },
   "nav": {
     "overview": "Visao Geral",
