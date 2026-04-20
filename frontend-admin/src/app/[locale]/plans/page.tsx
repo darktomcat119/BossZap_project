@@ -11,11 +11,13 @@ const extract = (res: any) => res?.data ?? res;
 
 const emptyForm: PlanFormData = {
   name: '',
-  price: 0,
-  max_budgets: 0,
-  max_messages: 0,
-  max_ai_calls: 0,
-  trial_days: 0,
+  price_monthly: 0,
+  max_budgets_per_month: 0,
+  max_messages_per_month: 0,
+  max_ai_calls_per_month: 0,
+  trial_days: 7,
+  stripe_price_id: '',
+  is_active: true,
 };
 
 function PlanSkeleton() {
@@ -71,11 +73,13 @@ export default function PlansPage() {
     setEditingId(plan.id);
     setForm({
       name: plan.name,
-      price: plan.price,
-      max_budgets: plan.max_budgets,
-      max_messages: plan.max_messages,
-      max_ai_calls: plan.max_ai_calls,
+      price_monthly: Number(plan.price_monthly),
+      max_budgets_per_month: plan.max_budgets_per_month,
+      max_messages_per_month: plan.max_messages_per_month,
+      max_ai_calls_per_month: plan.max_ai_calls_per_month,
       trial_days: plan.trial_days,
+      stripe_price_id: plan.stripe_price_id ?? '',
+      is_active: plan.is_active,
     });
     setModalOpen(true);
   };
@@ -84,10 +88,18 @@ export default function PlansPage() {
     setSaving(true);
     setError(null);
     try {
+      // Send null when the input is blank so DB stores NULL not "".
+      const payload = {
+        ...form,
+        stripe_price_id:
+          form.stripe_price_id.trim() === ''
+            ? null
+            : form.stripe_price_id.trim(),
+      };
       if (editingId) {
-        await plansApi.update(editingId, form);
+        await plansApi.update(editingId, payload);
       } else {
-        await plansApi.create(form);
+        await plansApi.create(payload);
       }
       setModalOpen(false);
       await fetchData();
@@ -107,7 +119,10 @@ export default function PlansPage() {
     }
   };
 
-  const updateField = (field: keyof PlanFormData, value: string | number) => {
+  const updateField = (
+    field: keyof PlanFormData,
+    value: string | number | boolean,
+  ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -159,8 +174,18 @@ export default function PlansPage() {
                     <div>
                       <h3 className="text-h4 font-semibold text-text-primary">{plan.name}</h3>
                       <p className="text-h3 font-bold text-primary">
-                        ${plan.price}<span className="text-body font-normal text-text-secondary">{t('perMonth')}</span>
+                        R$ {Number(plan.price_monthly).toFixed(2).replace('.', ',')}
+                        <span className="text-body font-normal text-text-secondary">{t('perMonth')}</span>
                       </p>
+                      {plan.stripe_price_id ? (
+                        <p className="text-caption text-text-secondary mt-xs font-mono truncate max-w-[220px]">
+                          {plan.stripe_price_id}
+                        </p>
+                      ) : (
+                        <p className="text-caption text-amber-600 mt-xs">
+                          No Stripe price ID
+                        </p>
+                      )}
                     </div>
                     <span
                       className={cn(
@@ -175,15 +200,21 @@ export default function PlansPage() {
                   <div className="space-y-xs text-body text-text-secondary">
                     <div className="flex justify-between">
                       <span>{t('maxBudgets')}</span>
-                      <span className="font-medium text-text-primary">{plan.max_budgets}</span>
+                      <span className="font-medium text-text-primary">
+                        {plan.max_budgets_per_month === -1 ? '∞' : plan.max_budgets_per_month}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>{t('maxMessages')}</span>
-                      <span className="font-medium text-text-primary">{plan.max_messages.toLocaleString()}</span>
+                      <span className="font-medium text-text-primary">
+                        {plan.max_messages_per_month === -1 ? '∞' : plan.max_messages_per_month.toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>{t('maxAiCalls')}</span>
-                      <span className="font-medium text-text-primary">{plan.max_ai_calls.toLocaleString()}</span>
+                      <span className="font-medium text-text-primary">
+                        {plan.max_ai_calls_per_month === -1 ? '∞' : plan.max_ai_calls_per_month.toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>{t('trialDays')}</span>
@@ -252,41 +283,66 @@ export default function PlansPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-caption font-medium text-text-secondary mb-xs">{t('price')} (USD)</label>
+                  <label className="block text-caption font-medium text-text-secondary mb-xs">{t('price')} (BRL)</label>
                   <input
                     type="number"
-                    value={form.price}
-                    onChange={(e) => updateField('price', Number(e.target.value))}
+                    step="0.01"
+                    value={form.price_monthly}
+                    onChange={(e) => updateField('price_monthly', Number(e.target.value))}
                     className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
+                <div>
+                  <label className="block text-caption font-medium text-text-secondary mb-xs">
+                    Stripe Price ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="price_1ABcXYZ..."
+                    value={form.stripe_price_id}
+                    onChange={(e) => updateField('stripe_price_id', e.target.value)}
+                    className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <p className="text-caption text-text-secondary mt-xs">
+                    Copy from Stripe Dashboard → Products → [plan] → Pricing
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 gap-md">
                   <div>
-                    <label className="block text-caption font-medium text-text-secondary mb-xs">{t('maxBudgets')}</label>
+                    <label className="block text-caption font-medium text-text-secondary mb-xs">
+                      {t('maxBudgets')}{' '}
+                      <span className="text-caption text-text-secondary">(-1 = unlimited)</span>
+                    </label>
                     <input
                       type="number"
-                      value={form.max_budgets}
-                      onChange={(e) => updateField('max_budgets', Number(e.target.value))}
+                      value={form.max_budgets_per_month}
+                      onChange={(e) => updateField('max_budgets_per_month', Number(e.target.value))}
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
                   <div>
-                    <label className="block text-caption font-medium text-text-secondary mb-xs">{t('maxMessages')}</label>
+                    <label className="block text-caption font-medium text-text-secondary mb-xs">
+                      {t('maxMessages')}{' '}
+                      <span className="text-caption text-text-secondary">(-1 = unlimited)</span>
+                    </label>
                     <input
                       type="number"
-                      value={form.max_messages}
-                      onChange={(e) => updateField('max_messages', Number(e.target.value))}
+                      value={form.max_messages_per_month}
+                      onChange={(e) => updateField('max_messages_per_month', Number(e.target.value))}
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-md">
                   <div>
-                    <label className="block text-caption font-medium text-text-secondary mb-xs">{t('maxAiCalls')}</label>
+                    <label className="block text-caption font-medium text-text-secondary mb-xs">
+                      {t('maxAiCalls')}{' '}
+                      <span className="text-caption text-text-secondary">(-1 = unlimited)</span>
+                    </label>
                     <input
                       type="number"
-                      value={form.max_ai_calls}
-                      onChange={(e) => updateField('max_ai_calls', Number(e.target.value))}
+                      value={form.max_ai_calls_per_month}
+                      onChange={(e) => updateField('max_ai_calls_per_month', Number(e.target.value))}
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
@@ -299,6 +355,17 @@ export default function PlansPage() {
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
+                </div>
+                <div className="flex items-center gap-sm">
+                  <input
+                    id="plan-is-active"
+                    type="checkbox"
+                    checked={form.is_active}
+                    onChange={(e) => updateField('is_active', e.target.checked)}
+                  />
+                  <label htmlFor="plan-is-active" className="text-body text-text-primary">
+                    {tc('active')}
+                  </label>
                 </div>
               </div>
               <div className="flex justify-end gap-sm p-md border-t border-border">

@@ -37,22 +37,25 @@ export interface Subscription {
 export interface Plan {
   id: string;
   name: string;
-  price: number;
-  max_budgets: number;
-  max_messages: number;
-  max_ai_calls: number;
+  price_monthly: number | string;
+  max_budgets_per_month: number;
+  max_messages_per_month: number;
+  max_ai_calls_per_month: number;
   trial_days: number;
+  stripe_price_id: string | null;
   is_active: boolean;
   subscriber_count?: number;
 }
 
 export interface PlanFormData {
   name: string;
-  price: number;
-  max_budgets: number;
-  max_messages: number;
-  max_ai_calls: number;
+  price_monthly: number;
+  max_budgets_per_month: number;
+  max_messages_per_month: number;
+  max_ai_calls_per_month: number;
   trial_days: number;
+  stripe_price_id: string;
+  is_active: boolean;
 }
 
 // ── Payment ──
