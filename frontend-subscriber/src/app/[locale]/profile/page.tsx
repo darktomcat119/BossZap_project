@@ -160,7 +160,7 @@ export default function ProfilePage() {
     setPortalLoading(true);
     try {
       const res = await paymentsService.createPortalSession();
-      const url = res?.data?.url;
+      const url = res?.data?.portal_url;
       if (url) {
         window.location.href = url;
       } else {

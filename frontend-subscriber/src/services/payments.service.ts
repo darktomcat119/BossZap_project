@@ -57,7 +57,7 @@ export const paymentsService = {
   },
 
   /** Create a Stripe Customer Portal session and return the URL to redirect to. */
-  async createPortalSession(): Promise<ApiResponse<{ url: string }>> {
-    return api.post<{ url: string }>('/payments/portal', {});
+  async createPortalSession(): Promise<ApiResponse<{ portal_url: string }>> {
+    return api.post<{ portal_url: string }>('/payments/portal', {});
   },
 };
