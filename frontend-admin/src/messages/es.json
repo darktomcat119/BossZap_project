@@ -40,7 +40,8 @@
     "retry": "Reintentar",
     "onboarding": "Incorporación",
     "cancelled": "Cancelado",
-    "trialing": "Prueba"
+    "trialing": "Prueba",
+    "saved": "Guardado"
   },
   "nav": {
     "overview": "Resumen",
@@ -91,7 +92,8 @@
     "lastActive": "Ultima Actividad",
     "activateConfirm": "Esta seguro de que desea activar este suscriptor?",
     "suspendConfirm": "Esta seguro de que desea suspender este suscriptor?",
-    "deactivateConfirm": "Esta seguro de que desea desactivar este suscriptor?"
+    "deactivateConfirm": "Esta seguro de que desea desactivar este suscriptor?",
+    "confirmAction": "¿Seguro que quieres realizar esta acción?"
   },
   "payments": {
     "title": "Pagos",

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, Pencil, X, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { templatesApi } from '@/lib/api';
 import type { HsmTemplate, TemplateFormData, TemplateStatus } from '@/lib/types';
@@ -103,8 +104,9 @@ export default function TemplatesPage() {
       }
       setModalOpen(false);
       await fetchData();
+      toast.success(tc('saved') ?? 'Saved');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Save failed');
+      toast.error(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSaving(false);
     }

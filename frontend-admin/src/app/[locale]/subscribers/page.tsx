@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Search, X, ChevronLeft, ChevronRight, RefreshCw, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { subscribersApi } from '@/lib/api';
 import type { Subscriber, PaginatedResponse } from '@/lib/types';
@@ -118,8 +119,9 @@ export default function SubscribersPage() {
       setConfirm(null);
       await fetchData();
       setSelectedId(null);
+      toast.success(tc(confirm.action));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Action failed');
+      toast.error(err instanceof Error ? err.message : 'Action failed');
     } finally {
       setActionLoading(false);
     }

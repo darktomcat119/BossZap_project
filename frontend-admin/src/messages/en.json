@@ -40,7 +40,8 @@
     "retry": "Retry",
     "onboarding": "Onboarding",
     "cancelled": "Cancelled",
-    "trialing": "Trial"
+    "trialing": "Trial",
+    "saved": "Saved"
   },
   "nav": {
     "overview": "Overview",
@@ -91,7 +92,8 @@
     "lastActive": "Last Active",
     "activateConfirm": "Are you sure you want to activate this subscriber?",
     "suspendConfirm": "Are you sure you want to suspend this subscriber?",
-    "deactivateConfirm": "Are you sure you want to deactivate this subscriber?"
+    "deactivateConfirm": "Are you sure you want to deactivate this subscriber?",
+    "confirmAction": "Are you sure you want to perform this action?"
   },
   "payments": {
     "title": "Payments",

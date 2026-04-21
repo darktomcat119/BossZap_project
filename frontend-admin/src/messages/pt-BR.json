@@ -40,7 +40,8 @@
     "retry": "Tentar novamente",
     "onboarding": "Onboarding",
     "cancelled": "Cancelado",
-    "trialing": "Avaliação"
+    "trialing": "Avaliação",
+    "saved": "Salvo"
   },
   "nav": {
     "overview": "Visao Geral",
@@ -91,7 +92,8 @@
     "lastActive": "Ultima Atividade",
     "activateConfirm": "Tem certeza de que deseja ativar este assinante?",
     "suspendConfirm": "Tem certeza de que deseja suspender este assinante?",
-    "deactivateConfirm": "Tem certeza de que deseja desativar este assinante?"
+    "deactivateConfirm": "Tem certeza de que deseja desativar este assinante?",
+    "confirmAction": "Tem certeza de que deseja executar esta ação?"
   },
   "payments": {
     "title": "Pagamentos",
