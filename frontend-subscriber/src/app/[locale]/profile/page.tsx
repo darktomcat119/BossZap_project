@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { profileService } from '@/services/profile.service';
@@ -121,6 +122,51 @@ export default function ProfilePage() {
   const [subData, setSubData] = useState<SubscriptionWithPlan | null>(null);
   const [history, setHistory] = useState<PaginatedPayments | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+
+  // Logo upload
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [localLogoUrl, setLocalLogoUrl] = useState<string | null>(null);
+
+  const onUploadClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const onFilePicked = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset the input so the same file can be picked again later
+      e.target.value = '';
+      if (!file) return;
+
+      const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+      if (!allowed.includes(file.type)) {
+        toast.error('PNG, JPG ou WEBP');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Max 2MB');
+        return;
+      }
+
+      setUploadingLogo(true);
+      try {
+        const res = await profileService.uploadLogo(file);
+        const url = res?.data?.logo_url;
+        if (url) {
+          setLocalLogoUrl(url);
+          toast.success(t('saved'));
+        } else {
+          toast.error('Upload failed');
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Upload failed');
+      } finally {
+        setUploadingLogo(false);
+      }
+    },
+    [t],
+  );
 
   // Hydrate form when user loads
   useEffect(() => {
@@ -337,13 +383,21 @@ export default function ProfilePage() {
               <h2 className="text-lg font-semibold text-text-primary">
                 {t('logo')}
               </h2>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={onFilePicked}
+              />
               <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
-                {user?.logo_url ? (
+                {(localLogoUrl ?? user?.logo_url) ? (
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border-2 border-border">
                     <Image
-                      src={user.logo_url}
+                      src={(localLogoUrl ?? user?.logo_url) as string}
                       alt={businessName}
                       fill
+                      unoptimized
                       className="object-cover"
                     />
                   </div>
@@ -358,10 +412,18 @@ export default function ProfilePage() {
                   </p>
                   <button
                     type="button"
-                    className="mt-2 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface"
+                    onClick={onUploadClick}
+                    disabled={uploadingLogo}
+                    className="mt-2 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface disabled:opacity-60"
                   >
-                    <Upload className="h-4 w-4" />
-                    {user?.logo_url ? t('changeLogo') : t('uploadLogo')}
+                    {uploadingLogo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {(localLogoUrl ?? user?.logo_url)
+                      ? t('changeLogo')
+                      : t('uploadLogo')}
                   </button>
                 </div>
               </div>

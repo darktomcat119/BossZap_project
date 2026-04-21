@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { Toaster } from "sonner";
 import { routing } from "@/i18n/routing";
 import { AuthProvider } from "@/hooks/use-auth";
 import "../globals.css";
@@ -34,6 +35,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             {children}
+            <Toaster position="top-right" richColors closeButton />
           </AuthProvider>
         </NextIntlClientProvider>
       </body>
