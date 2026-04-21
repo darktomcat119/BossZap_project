@@ -6,8 +6,16 @@ import {
   Body,
   UseGuards,
   Req,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength, IsIn } from 'class-validator';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -90,5 +98,31 @@ export class AuthController {
   @ApiOperation({ summary: 'Update subscriber profile' })
   async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
     return this.authService.updateSubscriberProfile(req.user.id, dto);
+  }
+
+  @Post('profile/logo')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary:
+      'Upload business logo (PNG/JPG/WEBP, max 2MB). Returns signed URL.',
+  })
+  @UseInterceptors(
+    FileInterceptor('logo', {
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  async uploadLogo(
+    @Req() req: any,
+    @UploadedFile()
+    file: {
+      buffer: Buffer;
+      mimetype: string;
+      originalname: string;
+      size: number;
+    },
+  ) {
+    return this.authService.uploadSubscriberLogo(req.user.id, file);
   }
 }

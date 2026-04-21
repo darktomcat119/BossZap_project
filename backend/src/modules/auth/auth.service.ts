@@ -189,6 +189,54 @@ export class AuthService {
     return this.getSubscriberProfile(subscriberId);
   }
 
+  async uploadSubscriberLogo(
+    subscriberId: string,
+    file: { buffer: Buffer; mimetype: string; originalname: string; size: number },
+  ): Promise<{ logo_url: string }> {
+    if (!file || !file.buffer) {
+      throw new UnauthorizedException('Missing file');
+    }
+    const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) {
+      throw new UnauthorizedException(
+        'Unsupported file type. Use PNG, JPG or WEBP',
+      );
+    }
+    const maxBytes = 2 * 1024 * 1024; // 2 MB
+    if (file.size > maxBytes) {
+      throw new UnauthorizedException('File too large (max 2 MB)');
+    }
+
+    const { S3Client, PutObjectCommand, GetObjectCommand } = await import(
+      '@aws-sdk/client-s3'
+    );
+    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+
+    const region = process.env.AWS_REGION ?? 'sa-east-1';
+    const bucket = process.env.AWS_S3_BUCKET ?? 'bosszap-files';
+    const ext = (file.originalname.match(/\.(png|jpe?g|webp)$/i)?.[1] ||
+      file.mimetype.split('/')[1]).toLowerCase();
+    const key = `subscribers/${subscriberId}/logo/${Date.now()}.${ext}`;
+
+    const s3 = new S3Client({ region });
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }),
+    );
+    const url = await getSignedUrl(
+      s3,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: 7 * 24 * 3600 },
+    );
+
+    await this.subscriberRepo.update(subscriberId, { logo_url: url });
+    return { logo_url: url };
+  }
+
   private generateTokens(payload: TokenPayload): AuthTokens {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
