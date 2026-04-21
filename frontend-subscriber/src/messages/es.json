@@ -169,7 +169,8 @@
       "oct": "Oct",
       "nov": "Nov",
       "dec": "Dic"
-    }
+    },
+    "pending": "Pendiente"
   },
   "documents": {
     "title": "Documentos",
@@ -226,6 +227,10 @@
     "active": "Activo",
     "inactive": "Inactivo",
     "trial": "Prueba",
-    "noPlan": "Sin plan"
+    "noPlan": "Sin plan",
+    "onboarding": "Incorporación",
+    "trialing": "En prueba",
+    "suspended": "Suspendida",
+    "cancelled": "Cancelada"
   }
 }

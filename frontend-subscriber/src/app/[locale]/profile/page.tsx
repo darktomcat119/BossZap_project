@@ -25,8 +25,11 @@ const LANGUAGES = [
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-success/10 text-success',
-  inactive: 'bg-danger/10 text-danger',
-  trial: 'bg-warning/10 text-warning',
+  trialing: 'bg-warning/10 text-warning',
+  onboarding: 'bg-info/10 text-info',
+  suspended: 'bg-danger/10 text-danger',
+  cancelled: 'bg-border text-text-secondary',
+  inactive: 'bg-border text-text-secondary',
 };
 
 const INPUT_CLASS =
@@ -360,7 +363,7 @@ export default function ProfilePage() {
                       statusStyle,
                     )}
                   >
-                    {t(subStatus as 'active' | 'inactive' | 'trial')}
+                    {t(subStatus as never)}
                   </span>
                 </div>
 
