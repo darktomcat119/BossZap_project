@@ -86,14 +86,28 @@ async function refreshToken(): Promise<boolean> {
 
 // ─── Core fetch wrapper ──────────────────────────────────────────────────────
 
+function redirectToLogin(): void {
+  if (typeof window === 'undefined') return;
+  // Preserve the current locale prefix so users don't bounce through
+  // the middleware an extra time and lose context.
+  const match = window.location.pathname.match(/^\/(pt-BR|es|en)(\/|$)/);
+  const locale = match ? match[1] : 'pt-BR';
+  window.location.href = `/${locale}/login`;
+}
+
 async function apiFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<ApiResponse<T>> {
   const token = getAccessToken();
 
+  // Never force a Content-Type when the caller passes a FormData body —
+  // fetch sets the correct multipart/form-data boundary automatically.
+  const isFormData =
+    typeof FormData !== 'undefined' && options?.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...((options?.headers as Record<string, string>) || {}),
   };
 
@@ -112,13 +126,25 @@ async function apiFetch<T>(
       return apiFetch<T>(path, options);
     }
     clearTokens();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
+    redirectToLogin();
     throw new Error('Unauthorized');
   }
 
-  const body: ApiResponse<T> = await response.json();
+  // Some error responses aren't JSON — guard so we don't throw on parse.
+  let body: ApiResponse<T>;
+  try {
+    body = (await response.json()) as ApiResponse<T>;
+  } catch {
+    body = {
+      success: false,
+      data: null as unknown as T,
+      error: {
+        code: 'PARSE_ERROR',
+        message: `Non-JSON response from ${path} (status ${response.status})`,
+        details: [],
+      },
+    };
+  }
 
   if (!response.ok && !body.error) {
     throw new Error(`API request failed with status ${response.status}`);
