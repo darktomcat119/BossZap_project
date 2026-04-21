@@ -80,6 +80,19 @@ export default function RegisterPage() {
     setStep(4);
     setApiError("");
 
+    // Normalize phone to E.164: keep leading +, strip everything else
+    // that isn't a digit. Ensure Brazilian numbers have +55 prefix.
+    const digits = form.phone.replace(/[^\d]/g, "");
+    let normalizedPhone = digits;
+    if (form.phone.trim().startsWith("+")) {
+      normalizedPhone = "+" + digits;
+    } else if (digits.length === 10 || digits.length === 11) {
+      // Brazilian local format (10/11 digits) — prepend country code.
+      normalizedPhone = "+55" + digits;
+    } else if (digits.length > 0) {
+      normalizedPhone = "+" + digits;
+    }
+
     try {
       const res = await fetch(`${API_URL}/api/v1/auth/register`, {
         method: "POST",
@@ -87,7 +100,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           email: form.email,
           password: form.password,
-          phone: form.phone,
+          phone: normalizedPhone,
           owner_name: form.name,
           plan: selectedPlan,
         }),
@@ -271,7 +284,7 @@ export default function RegisterPage() {
                     type="tel"
                     value={form.phone}
                     onChange={(e) => update("phone", e.target.value)}
-                    placeholder="+55 11 99999-9999"
+                    placeholder="11999999999"
                     className={inputCls(!!errors.phone)}
                   />
                 </div>
