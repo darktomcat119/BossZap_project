@@ -16,6 +16,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'BossZap Admin',
   description: 'BossZap Administration Dashboard',
+  icons: {
+    icon: [{ url: '/favicon.png', type: 'image/png' }],
+    apple: [{ url: '/favicon.png' }],
+  },
 };
 
 type Props = {

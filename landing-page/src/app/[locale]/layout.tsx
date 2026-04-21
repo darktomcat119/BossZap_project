@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   description:
     "El asistente virtual con IA que administra tu agenda, " +
     "finanzas y presupuestos por WhatsApp",
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    apple: [{ url: "/favicon.png" }],
+  },
 };
 
 type Props = {
