@@ -46,14 +46,24 @@ export default function LoginPage() {
       }
 
       const tokens = data?.data || data;
+      // Keep a copy on the landing origin too (harmless; helps if user
+      // comes back here). Real auth lives on the app subdomain though.
       if (tokens.access_token) {
         localStorage.setItem("access_token", tokens.access_token);
         localStorage.setItem("refresh_token", tokens.refresh_token);
       }
 
+      // localStorage is per-origin. Hand the tokens to the app
+      // subdomain via a URL fragment (never sent to the server) which
+      // /auth-bridge reads and persists before bouncing to /dashboard.
       const appUrl =
         process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
-      window.location.href = `${appUrl}/pt-BR/dashboard`;
+      const hash = new URLSearchParams({
+        access_token: tokens.access_token ?? "",
+        refresh_token: tokens.refresh_token ?? "",
+        next: "/pt-BR/dashboard",
+      }).toString();
+      window.location.href = `${appUrl}/pt-BR/auth-bridge#${hash}`;
     } catch {
       setError("Connection error. Please try again.");
     } finally {

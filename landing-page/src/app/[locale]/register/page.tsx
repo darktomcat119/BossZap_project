@@ -123,13 +123,20 @@ export default function RegisterPage() {
         localStorage.setItem("refresh_token", tokens.refresh_token);
       }
 
-      // Redirect to Stripe checkout if URL provided, otherwise dashboard
+      // Redirect to Stripe checkout if URL provided, otherwise bridge
+      // tokens to the app subdomain (different origin → separate
+      // localStorage, so we hand tokens over via URL fragment).
       if (tokens.checkout_url) {
         window.location.href = tokens.checkout_url;
       } else {
         const appUrl =
           process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
-        window.location.href = `${appUrl}/pt-BR/dashboard`;
+        const hash = new URLSearchParams({
+          access_token: tokens.access_token ?? "",
+          refresh_token: tokens.refresh_token ?? "",
+          next: "/pt-BR/dashboard",
+        }).toString();
+        window.location.href = `${appUrl}/pt-BR/auth-bridge#${hash}`;
       }
     } catch {
       setApiError("Connection error. Please try again.");
