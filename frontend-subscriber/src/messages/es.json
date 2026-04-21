@@ -231,6 +231,8 @@
     "onboarding": "Incorporación",
     "trialing": "En prueba",
     "suspended": "Suspendida",
-    "cancelled": "Cancelada"
+    "cancelled": "Cancelada",
+    "manageSubscription": "Gestionar suscripción",
+    "noPayments": "Aún no hay pagos."
   }
 }

@@ -231,6 +231,8 @@
     "onboarding": "Onboarding",
     "trialing": "Trial",
     "suspended": "Suspended",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "manageSubscription": "Manage subscription",
+    "noPayments": "No payments yet."
   }
 }

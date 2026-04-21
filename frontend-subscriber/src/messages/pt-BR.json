@@ -231,6 +231,8 @@
     "onboarding": "Configuração",
     "trialing": "Em avaliação",
     "suspended": "Suspensa",
-    "cancelled": "Cancelada"
+    "cancelled": "Cancelada",
+    "manageSubscription": "Gerenciar assinatura",
+    "noPayments": "Ainda não há pagamentos."
   }
 }

@@ -10,10 +10,17 @@ import {
   CreditCard,
   CheckCircle,
   User,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { profileService } from '@/services/profile.service';
+import {
+  paymentsService,
+  type PaginatedPayments,
+  type SubscriptionWithPlan,
+} from '@/services/payments.service';
 import type { ProfileUpdate } from '@/lib/types';
 
 // ── Constants ───────────────────────────────────────────────
@@ -110,6 +117,11 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Subscription + payment history
+  const [subData, setSubData] = useState<SubscriptionWithPlan | null>(null);
+  const [history, setHistory] = useState<PaginatedPayments | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
   // Hydrate form when user loads
   useEffect(() => {
     if (!user) return;
@@ -120,6 +132,48 @@ export default function ProfilePage() {
     setAddress(user.address ?? '');
     setLanguage(user.preferred_language ?? 'pt-BR');
   }, [user]);
+
+  // Fetch subscription + history once authenticated
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [subRes, histRes] = await Promise.all([
+          paymentsService.getSubscription(),
+          paymentsService.getHistory(1, 10),
+        ]);
+        if (cancelled) return;
+        if (subRes.success && subRes.data) setSubData(subRes.data);
+        if (histRes.success && histRes.data) setHistory(histRes.data);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[ProfilePage] payments fetch error:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const openBillingPortal = useCallback(async () => {
+    setPortalLoading(true);
+    try {
+      const res = await paymentsService.createPortalSession();
+      const url = res?.data?.url;
+      if (url) {
+        window.location.href = url;
+      } else {
+        // eslint-disable-next-line no-console
+        console.error('[ProfilePage] no portal URL in response', res);
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ProfilePage] portal error:', err);
+    } finally {
+      setPortalLoading(false);
+    }
+  }, []);
 
   // Cleanup timer
   useEffect(() => {
@@ -159,10 +213,37 @@ export default function ProfilePage() {
     return <ProfileSkeleton />;
   }
 
-  // Derive subscription info from user
-  const planName = user?.plan?.name ?? t('noPlan');
-  const subStatus = user?.status ?? 'inactive';
+  // Prefer the dedicated subscription record; fall back to user.plan/status
+  const planName = subData?.plan?.name ?? user?.plan?.name ?? t('noPlan');
+  const subStatus = subData?.subscription?.status ?? user?.status ?? 'inactive';
   const statusStyle = STATUS_STYLES[subStatus] ?? STATUS_STYLES.inactive;
+  const nextBillingISO =
+    subData?.subscription?.current_period_end ??
+    subData?.subscription?.trial_ends_at ??
+    null;
+  const nextBilling = nextBillingISO
+    ? new Date(nextBillingISO).toLocaleDateString(language, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : '--';
+  const showManageButton =
+    subStatus === 'active' ||
+    subStatus === 'trialing' ||
+    subStatus === 'past_due';
+  const formatAmount = (v: unknown) => {
+    const n = typeof v === 'string' ? parseFloat(v) : Number(v);
+    return 'R$ ' + (isFinite(n) ? n.toFixed(2).replace('.', ',') : '0,00');
+  };
+  const formatDate = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleDateString(language, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        })
+      : '--';
 
   return (
     <>
@@ -367,14 +448,78 @@ export default function ProfilePage() {
                   </span>
                 </div>
 
-                {/* Next billing — placeholder until billing API exists */}
+                {/* Next billing */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-text-secondary">
                     {t('nextBilling')}
                   </span>
-                  <span className="text-sm text-text-primary">--</span>
+                  <span className="text-sm text-text-primary">
+                    {nextBilling}
+                  </span>
                 </div>
               </div>
+
+              {showManageButton && (
+                <button
+                  type="button"
+                  onClick={openBillingPortal}
+                  disabled={portalLoading}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:opacity-60"
+                >
+                  {portalLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="h-4 w-4" />
+                  )}
+                  {t('manageSubscription')}
+                </button>
+              )}
+            </div>
+
+            {/* Payment history */}
+            <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-text-primary">
+                  {t('paymentHistory')}
+                </h2>
+              </div>
+
+              {history && history.data.length > 0 ? (
+                <ul className="mt-4 divide-y divide-border">
+                  {history.data.map((p) => (
+                    <li
+                      key={p.id}
+                      className="flex items-center justify-between py-3"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm text-text-primary">
+                          {formatAmount(p.amount)}
+                        </span>
+                        <span className="text-xs text-text-secondary">
+                          {formatDate(p.paid_at ?? p.created_at)}
+                        </span>
+                      </div>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-xs font-medium',
+                          p.status === 'succeeded'
+                            ? 'bg-success/10 text-success'
+                            : p.status === 'failed'
+                              ? 'bg-danger/10 text-danger'
+                              : 'bg-warning/10 text-warning',
+                        )}
+                      >
+                        {p.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 text-sm text-text-secondary">
+                  {t('noPayments')}
+                </p>
+              )}
             </div>
           </div>
         </div>
