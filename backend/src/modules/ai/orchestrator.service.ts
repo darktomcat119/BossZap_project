@@ -140,13 +140,27 @@ export class OrchestratorService {
           this.logger.warn(
             `Action ${parsed.intent} failed: ` + `${actionResult.error}`,
           );
-        } else if (parsed.intent === 'PROFILE_QUERY') {
-          const field = (
-            parsed.extracted_data as Record<string, unknown> | undefined
-          )?.field as string | undefined;
-          if (field === 'logo' && subscriber.logo_url) {
-            (parsed as GptActionResponse & { media_url?: string }).media_url =
-              subscriber.logo_url;
+          parsed.response_text =
+            ERROR_MESSAGES[language] || ERROR_MESSAGES.es;
+        } else if (this.isQueryIntent(parsed.intent) && actionResult.data) {
+          // Feed tool result back to the model so it turns the raw data
+          // into a natural WhatsApp-style reply instead of the original
+          // "I'll fetch that" placeholder.
+          parsed.response_text = await this.summarizeQueryResult(
+            text,
+            parsed.intent,
+            actionResult.data,
+            language,
+          );
+
+          if (parsed.intent === 'PROFILE_QUERY') {
+            const field = (
+              parsed.extracted_data as Record<string, unknown> | undefined
+            )?.field as string | undefined;
+            if (field === 'logo' && subscriber.logo_url) {
+              (parsed as GptActionResponse & { media_url?: string }).media_url =
+                subscriber.logo_url;
+            }
           }
         } else if (parsed.intent === 'LANGUAGE_CHANGE') {
           const newLang = (
@@ -199,6 +213,65 @@ export class OrchestratorService {
         actionTaken: 'error',
       };
     }
+  }
+
+  private isQueryIntent(intent: string): boolean {
+    return (
+      intent === 'SCHEDULE_QUERY' ||
+      intent === 'FINANCE_QUERY' ||
+      intent === 'BUDGET_QUERY' ||
+      intent === 'PROFILE_QUERY'
+    );
+  }
+
+  /**
+   * Second LLM turn: given the user's question and the tool result,
+   * generate a concise natural-language WhatsApp reply in the right
+   * language. Falls back to a simple summary if the LLM call fails.
+   */
+  private async summarizeQueryResult(
+    userMessage: string,
+    intent: string,
+    data: unknown,
+    language: string,
+  ): Promise<string> {
+    const langName =
+      language === 'pt-BR'
+        ? 'Brazilian Portuguese'
+        : language === 'es'
+          ? 'Spanish'
+          : 'English';
+
+    const systemPrompt =
+      `You are BossZap, a WhatsApp business assistant. ` +
+      `The user asked a question and you have the answer data below. ` +
+      `Write ONE concise, natural WhatsApp reply in ${langName}. ` +
+      `No greetings, no "here is" preambles, no markdown, no JSON. ` +
+      `Use numbered lists with emojis only when listing multiple items. ` +
+      `Money amounts must use R$ format (e.g. R$ 1.234,56 for pt-BR).`;
+
+    const userPrompt =
+      `Intent: ${intent}\n` +
+      `User asked: ${userMessage}\n` +
+      `Data:\n${JSON.stringify(data, null, 2)}\n\n` +
+      `Write the reply.`;
+
+    try {
+      const res = await this.gpt.chatWithRetry([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ]);
+      const text = res.content.trim();
+      if (text) return text;
+    } catch (err) {
+      this.logger.warn(
+        `summarizeQueryResult failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+    // Fallback: stringify the data compactly
+    return typeof data === 'string' ? data : JSON.stringify(data);
   }
 
   private parseResponse(raw: string): GptActionResponse {

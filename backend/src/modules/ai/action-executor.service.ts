@@ -49,6 +49,8 @@ export class ActionExecutorService {
           return this.createBudget(subscriberId, data);
         case 'BUDGET_QUERY':
           return this.queryBudgets(subscriberId, data, language);
+        case 'PROFILE_QUERY':
+          return this.queryProfile(subscriberId, data);
         case 'PROFILE_UPDATE':
           return this.updateProfile(subscriberId, data);
         case 'LANGUAGE_CHANGE':
@@ -212,6 +214,42 @@ export class ActionExecutorService {
       language,
     );
     return { success: true, data: result };
+  }
+
+  private async queryProfile(
+    subscriberId: string,
+    data: Record<string, unknown>,
+  ): Promise<ActionResult> {
+    const subscriber = await this.subscribers.findById(subscriberId);
+    if (!subscriber) {
+      return { success: false, error: 'Subscriber not found' };
+    }
+    const field = (data.field as string | undefined)?.toLowerCase();
+
+    const allFields = {
+      business_name: subscriber.business_name,
+      owner_name: subscriber.owner_name,
+      email: subscriber.email,
+      phone: subscriber.phone,
+      address: subscriber.address,
+      preferred_language: subscriber.preferred_language,
+      status: subscriber.status,
+      logo_url: subscriber.logo_url,
+      plan: subscriber.plan?.name ?? null,
+    };
+
+    // If a specific field is requested, return just that.
+    if (field && field in allFields) {
+      return {
+        success: true,
+        data: {
+          field,
+          value: (allFields as Record<string, unknown>)[field],
+        },
+      };
+    }
+
+    return { success: true, data: allFields };
   }
 
   private async updateProfile(
