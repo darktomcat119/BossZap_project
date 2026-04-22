@@ -65,14 +65,54 @@ export class ActionExecutorService {
     }
   }
 
+  /**
+   * Normalize a loose time string ("7 pm", "7:30pm", "19h", "19:00")
+   * to strict HH:MM that Postgres + the create-event DTO accept.
+   * Returns undefined if the input is empty or unparseable.
+   */
+  private parseTime(raw: unknown): string | undefined {
+    if (!raw) return undefined;
+    const s = String(raw).trim().toLowerCase();
+    if (!s) return undefined;
+
+    // Already HH:MM or HH:MM:SS
+    const hhmm = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (hhmm) {
+      const h = Math.min(23, parseInt(hhmm[1], 10));
+      const m = Math.min(59, parseInt(hhmm[2], 10));
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    // "7", "7 pm", "7:30 pm", "7h30", "19h"
+    const m = s.match(/^(\d{1,2})(?:[:h](\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?$/);
+    if (!m) return undefined;
+    let h = parseInt(m[1], 10);
+    const min = m[2] ? parseInt(m[2], 10) : 0;
+    const meridiem = m[3]?.replace(/\./g, '');
+    if (meridiem === 'pm' && h < 12) h += 12;
+    if (meridiem === 'am' && h === 12) h = 0;
+    if (h > 23 || min > 59) return undefined;
+    return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  }
+
+  /** Normalize "2026/4/25" or "2026-4-25" to "2026-04-25". */
+  private parseDate(raw: unknown): string | undefined {
+    if (!raw) return undefined;
+    const s = String(raw).trim();
+    const m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (!m) return s; // let Postgres / DTO decide
+    const [, y, mo, d] = m;
+    return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
   private async createEvent(
     subscriberId: string,
     data: Record<string, unknown>,
   ): Promise<ActionResult> {
     const event = await this.agenda.createEvent(subscriberId, {
       title: (data.title as string) || 'New event',
-      event_date: data.date as string,
-      event_time: data.time as string | undefined,
+      event_date: this.parseDate(data.date) as string,
+      event_time: this.parseTime(data.time),
       location: data.location as string | undefined,
       description: data.description as string | undefined,
     });
@@ -106,8 +146,11 @@ export class ActionExecutorService {
       };
     }
     const updateData: Record<string, unknown> = {};
-    if (data.date) updateData.event_date = data.date;
-    if (data.time) updateData.event_time = data.time;
+    if (data.date) updateData.event_date = this.parseDate(data.date);
+    if (data.time) {
+      const t = this.parseTime(data.time);
+      if (t) updateData.event_time = t;
+    }
     if (data.location) updateData.location = data.location;
     if (data.title) updateData.title = data.title;
 
