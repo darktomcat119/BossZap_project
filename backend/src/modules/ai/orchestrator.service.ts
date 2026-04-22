@@ -157,9 +157,28 @@ export class OrchestratorService {
             const field = (
               parsed.extracted_data as Record<string, unknown> | undefined
             )?.field as string | undefined;
-            if (field === 'logo' && subscriber.logo_url) {
-              (parsed as GptActionResponse & { media_url?: string }).media_url =
-                subscriber.logo_url;
+            if (field === 'logo') {
+              if (subscriber.logo_url) {
+                (
+                  parsed as GptActionResponse & { media_url?: string }
+                ).media_url = subscriber.logo_url;
+                // Short caption — the image itself is the answer. We
+                // do NOT want the summarizer to echo the signed S3 URL.
+                const captions: Record<string, string> = {
+                  en: 'Here is your logo 👇',
+                  es: 'Aquí está tu logo 👇',
+                  'pt-BR': 'Aqui está seu logo 👇',
+                };
+                parsed.response_text = captions[language] || captions['pt-BR'];
+              } else {
+                const noLogo: Record<string, string> = {
+                  en: "You haven't uploaded a logo yet. You can upload one from the app at app.bosszap.com.br.",
+                  es: 'Todavía no has subido un logo. Puedes subirlo en app.bosszap.com.br.',
+                  'pt-BR':
+                    'Você ainda não enviou um logo. Envie um em app.bosszap.com.br.',
+                };
+                parsed.response_text = noLogo[language] || noLogo['pt-BR'];
+              }
             }
           }
         } else if (parsed.intent === 'LANGUAGE_CHANGE') {
