@@ -87,13 +87,14 @@ export class OnboardingService {
 
   private async completeOnboarding(
     subscriberId: string,
-    data: Record<string, string>,
+    data: Record<string, string> | undefined,
   ): Promise<void> {
+    const d = data ?? {};
     await this.subscribers.update(subscriberId, {
-      business_name: data.business_name || null,
-      owner_name: data.owner_name || null,
-      email: data.email || null,
-      address: data.address || null,
+      business_name: d.business_name || null,
+      owner_name: d.owner_name || null,
+      email: d.email || null,
+      address: d.address || null,
       status: 'active',
       onboarding_completed_at: new Date(),
     });
@@ -103,8 +104,9 @@ export class OnboardingService {
 
   private async updatePartialData(
     subscriberId: string,
-    data: Record<string, string>,
+    data: Record<string, string> | undefined,
   ): Promise<void> {
+    if (!data) return;
     const update: Record<string, string | null> = {};
 
     if (data.business_name) {
@@ -129,24 +131,28 @@ export class OnboardingService {
   }
 
   private parseOnboardingResponse(raw: string): OnboardingGptResponse {
+    const fallback: OnboardingGptResponse = {
+      step: 'unknown',
+      collected_data: {},
+      response_text: raw,
+      is_complete: false,
+    };
+
     try {
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        return {
-          step: 'unknown',
-          collected_data: {},
-          response_text: raw,
-          is_complete: false,
-        };
-      }
-      return JSON.parse(jsonMatch[0]) as OnboardingGptResponse;
-    } catch {
+      if (!jsonMatch) return fallback;
+
+      const parsed = JSON.parse(jsonMatch[0]) as Partial<OnboardingGptResponse>;
       return {
-        step: 'unknown',
-        collected_data: {},
-        response_text: raw,
-        is_complete: false,
+        step: parsed.step ?? 'unknown',
+        // GPT sometimes omits collected_data entirely — default to {}
+        // so downstream updatePartialData doesn't blow up on undefined.
+        collected_data: parsed.collected_data ?? {},
+        response_text: parsed.response_text ?? raw,
+        is_complete: parsed.is_complete ?? false,
       };
+    } catch {
+      return fallback;
     }
   }
 }
