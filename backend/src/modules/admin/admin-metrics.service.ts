@@ -37,6 +37,12 @@ export interface UsageStatsResult {
   topSubscribers: TopSubscriberUsage[];
 }
 
+export interface CostBreakdownResult {
+  openai: number;
+  storage: number;
+  whatsapp: number;
+}
+
 @Injectable()
 export class AdminMetricsService {
   constructor(
@@ -123,6 +129,49 @@ export class AdminMetricsService {
       month: r.month,
       revenue: parseFloat(r.revenue),
     }));
+  }
+
+  async getTopSubscribers(): Promise<TopSubscriberUsage[]> {
+    return this.usageRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.subscriber', 's')
+      .select('u.subscriber_id', 'subscriber_id')
+      .addSelect('s.business_name', 'business_name')
+      .addSelect('SUM(u.messages_count)::int', 'total_messages')
+      .addSelect('SUM(u.ai_calls_count)::int', 'total_ai_calls')
+      .addSelect('SUM(u.budgets_count)::int', 'total_budgets')
+      .groupBy('u.subscriber_id')
+      .addGroupBy('s.business_name')
+      .orderBy('total_messages', 'DESC')
+      .limit(10)
+      .getRawMany<TopSubscriberUsage>();
+  }
+
+  async getCostBreakdown(): Promise<CostBreakdownResult> {
+    const totals = await this.usageRepo
+      .createQueryBuilder('u')
+      .select('COALESCE(SUM(u.ai_calls_count), 0)::int', 'totalAiCalls')
+      .addSelect('COALESCE(SUM(u.messages_count), 0)::int', 'totalMessages')
+      .addSelect('COALESCE(SUM(u.budgets_count), 0)::int', 'totalBudgets')
+      .getRawOne<{ totalAiCalls: number; totalMessages: number; totalBudgets: number }>();
+
+    const aiCalls = Number(totals?.totalAiCalls ?? 0);
+    const messages = Number(totals?.totalMessages ?? 0);
+    const budgets = Number(totals?.totalBudgets ?? 0);
+
+    // OpenAI / Meta / AWS all bill in USD. We convert to BRL for the BR
+    // dashboard. Rate is overridable via USD_TO_BRL env var (default ~5.0).
+    const usdToBrl = parseFloat(process.env.USD_TO_BRL ?? '5.0') || 5.0;
+
+    // Estimates based on published pricing (all-time cumulative), converted to BRL:
+    //   OpenAI GPT-4o-mini: ~$0.001 per AI call (avg ~3K tokens in+out)
+    //   WhatsApp Meta: ~$0.012 per business-initiated message (Brazil tier)
+    //   S3 storage + transfer: ~$0.001 per generated PDF
+    const openai = parseFloat((aiCalls * 0.001 * usdToBrl).toFixed(2));
+    const whatsapp = parseFloat((messages * 0.012 * usdToBrl).toFixed(2));
+    const storage = parseFloat((budgets * 0.001 * usdToBrl).toFixed(2));
+
+    return { openai, storage, whatsapp };
   }
 
   async getUsageStats(): Promise<UsageStatsResult> {

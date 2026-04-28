@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Search, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Search, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logsApi } from '@/lib/api';
+import { formatAuditAction } from '@/lib/format';
 import type { AuditLog, PaginatedResponse } from '@/lib/types';
 
 const extract = (res: any) => res?.data ?? res;
@@ -34,7 +36,12 @@ function TableSkeleton() {
 export default function LogsPage() {
   const t = useTranslations('logs');
   const tc = useTranslations('common');
+  const searchParams = useSearchParams();
 
+  // Pre-populate subscriber filter from ?subscriber= query param (set by Ver Logs button)
+  const [subscriberFilter, setSubscriberFilter] = useState<string>(
+    searchParams.get('subscriber') ?? '',
+  );
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -55,6 +62,7 @@ export default function LogsPage() {
         limit: String(PAGE_SIZE),
       };
       if (actionFilter !== 'all') params.action = actionFilter;
+      if (subscriberFilter) params.subscriberId = subscriberFilter;
 
       const raw = await logsApi.list(params);
       const result = extract(raw) as PaginatedResponse<AuditLog>;
@@ -70,9 +78,12 @@ export default function LogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, actionFilter]);
+  }, [page, actionFilter, subscriberFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [actionFilter, subscriberFilter]);
 
   const getSubscriberName = (log: AuditLog) => {
     if (log.subscriber?.business_name) return log.subscriber.business_name;
@@ -98,7 +109,7 @@ export default function LogsPage() {
           className="flex items-center gap-xs px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
-          Retry
+          {tc('retry') ?? 'Tentar novamente'}
         </button>
       </div>
     );
@@ -133,6 +144,22 @@ export default function LogsPage() {
           <option value="export">{t('export')}</option>
         </select>
       </div>
+
+      {/* Active subscriber filter badge */}
+      {subscriberFilter && (
+        <div className="flex items-center gap-sm">
+          <span className="inline-flex items-center gap-xs px-3 py-1 rounded-full text-caption font-medium bg-primary/10 text-primary border border-primary/20">
+            {t('filteringBySubscriber')}: <span className="font-mono">{subscriberFilter.slice(0, 8)}…</span>
+            <button
+              onClick={() => setSubscriberFilter('')}
+              className="ml-1 hover:text-primary/70 transition-colors"
+              title={t('removeFilter')}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <div className="bg-surface rounded-card border border-border overflow-hidden">
@@ -173,7 +200,7 @@ export default function LogsPage() {
                       <td className="px-md py-sm text-text-primary">{getSubscriberName(log)}</td>
                       <td className="px-md py-sm">
                         <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', actionColors[log.action] ?? 'bg-gray-100 text-gray-600')}>
-                          {log.action}
+                          {formatAuditAction(log.action)}
                         </span>
                       </td>
                       <td className="px-md py-sm text-text-secondary">{log.entity_type}</td>
@@ -209,7 +236,7 @@ export default function LogsPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', actionColors[log.action] ?? 'bg-gray-100 text-gray-600')}>
-                      {log.action}
+                      {formatAuditAction(log.action)}
                     </span>
                     <span className="text-caption text-text-secondary">
                       {new Date(log.created_at).toLocaleString()}

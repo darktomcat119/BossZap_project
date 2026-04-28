@@ -141,11 +141,11 @@ export default function ProfilePage() {
 
       const allowed = ['image/png', 'image/jpeg', 'image/webp'];
       if (!allowed.includes(file.type)) {
-        toast.error('PNG, JPG ou WEBP');
+        toast.error(t('logoFormatError'));
         return;
       }
       if (file.size > 2 * 1024 * 1024) {
-        toast.error('Max 2MB');
+        toast.error(t('logoSizeError'));
         return;
       }
 
@@ -157,10 +157,10 @@ export default function ProfilePage() {
           setLocalLogoUrl(url);
           toast.success(t('saved'));
         } else {
-          toast.error('Upload failed');
+          toast.error(t('uploadError'));
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Upload failed');
+        toast.error(err instanceof Error ? err.message : t('uploadError'));
       } finally {
         setUploadingLogo(false);
       }
@@ -572,7 +572,13 @@ export default function ProfilePage() {
                               : 'bg-warning/10 text-warning',
                         )}
                       >
-                        {p.status}
+                        {p.status === 'succeeded'
+                          ? 'Pago'
+                          : p.status === 'failed'
+                            ? 'Falhou'
+                            : p.status === 'pending'
+                              ? 'Pendente'
+                              : p.status}
                       </span>
                     </li>
                   ))}

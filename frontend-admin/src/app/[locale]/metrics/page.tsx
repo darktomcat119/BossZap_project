@@ -13,6 +13,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { metricsApi } from '@/lib/api';
+import { formatBRL } from '@/lib/format';
 import type {
   MetricsOverview,
   UsageStatsResult,
@@ -105,7 +106,7 @@ export default function MetricsPage() {
           className="flex items-center gap-xs px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
-          Retry
+          Tentar novamente
         </button>
       </div>
     );
@@ -202,7 +203,7 @@ export default function MetricsPage() {
               </table>
             </div>
           ) : (
-            <p className="text-body text-text-secondary py-md text-center">No data available</p>
+            <p className="text-body text-text-secondary py-md text-center">Sem dados disponíveis</p>
           )}
         </div>
 
@@ -221,7 +222,7 @@ export default function MetricsPage() {
                 <div key={item.label}>
                   <div className="flex justify-between text-body mb-xs">
                     <span className="text-text-secondary">{item.label}</span>
-                    <span className="font-medium text-text-primary">${item.value.toLocaleString()}</span>
+                    <span className="font-medium text-text-primary">{formatBRL(item.value)}</span>
                   </div>
                   <div className="w-full h-2 bg-background rounded-full overflow-hidden">
                     <div
@@ -236,11 +237,11 @@ export default function MetricsPage() {
                   <DollarSign className="w-4 h-4" />
                   {t('totalCost')}
                 </span>
-                <span className="text-h4 font-bold text-text-primary">${totalCost.toLocaleString()}</span>
+                <span className="text-h4 font-bold text-text-primary">{formatBRL(totalCost)}</span>
               </div>
             </div>
           ) : (
-            <p className="text-body text-text-secondary py-md text-center">No cost data available</p>
+            <p className="text-body text-text-secondary py-md text-center">Sem dados de custo</p>
           )}
         </div>
       </div>

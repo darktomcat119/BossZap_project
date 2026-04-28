@@ -32,7 +32,15 @@ export class GptService {
     this.model = this.configService.get<string>('OPENAI_MODEL', 'gpt-4');
   }
 
-  async chat(messages: ChatMessage[]): Promise<GptResponse> {
+  async chat(
+    messages: ChatMessage[],
+    options: { json?: boolean } = {},
+  ): Promise<GptResponse> {
+    // Default ON: every orchestrator call expects a JSON object back.
+    // Without this, GPT loses output discipline once its own previous
+    // replies appear in the conversation context as plain prose.
+    const json = options.json !== false;
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -44,6 +52,7 @@ export class GptService {
         messages,
         temperature: 0.3,
         max_tokens: 1000,
+        ...(json ? { response_format: { type: 'json_object' } } : {}),
       }),
     });
 
@@ -62,13 +71,16 @@ export class GptService {
     };
   }
 
-  async chatWithRetry(messages: ChatMessage[]): Promise<GptResponse> {
+  async chatWithRetry(
+    messages: ChatMessage[],
+    options: { json?: boolean } = {},
+  ): Promise<GptResponse> {
     try {
-      return await this.chat(messages);
+      return await this.chat(messages, options);
     } catch (error) {
       this.logger.warn('GPT call failed, retrying once...');
       try {
-        return await this.chat(messages);
+        return await this.chat(messages, options);
       } catch (retryError) {
         this.logger.error('GPT retry failed');
         throw retryError;

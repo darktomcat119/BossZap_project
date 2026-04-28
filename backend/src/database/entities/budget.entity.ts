@@ -47,6 +47,12 @@ export class Budget {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   total_amount: number;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  discount_amount: number | null;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  subtotal_amount: number | null;
+
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status: string;
 

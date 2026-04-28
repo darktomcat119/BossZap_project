@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
+import { QUEUE_NAMES } from '../queue/constants';
+import { AdminHealthController } from './admin-health.controller';
+import { AdminHealthService } from './admin-health.service';
+import { AdminNotificationsController } from './admin-notifications.controller';
+import { AdminNotificationsService } from './admin-notifications.service';
+import { AdminProfileController } from './admin-profile.controller';
+import { AdminProfileService } from './admin-profile.service';
 import {
   Subscriber,
   Plan,
@@ -9,6 +17,7 @@ import {
   AuditLog,
   HsmTemplate,
   ConversationHistory,
+  AdminUser,
 } from '../../database/entities';
 import { AdminSubscribersController } from './admin-subscribers.controller';
 import { AdminSubscribersService } from './admin-subscribers.service';
@@ -34,9 +43,17 @@ import { AdminPaymentsService } from './admin-payments.service';
       AuditLog,
       HsmTemplate,
       ConversationHistory,
+      AdminUser,
     ]),
+    BullModule.registerQueue(
+      { name: QUEUE_NAMES.WHATSAPP_INBOUND },
+      { name: QUEUE_NAMES.WHATSAPP_OUTBOUND },
+    ),
   ],
   controllers: [
+    AdminHealthController,
+    AdminNotificationsController,
+    AdminProfileController,
     AdminSubscribersController,
     AdminPlansController,
     AdminMetricsController,
@@ -45,6 +62,9 @@ import { AdminPaymentsService } from './admin-payments.service';
     AdminPaymentsController,
   ],
   providers: [
+    AdminHealthService,
+    AdminNotificationsService,
+    AdminProfileService,
     AdminSubscribersService,
     AdminPlansService,
     AdminMetricsService,

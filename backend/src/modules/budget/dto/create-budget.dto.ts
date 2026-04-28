@@ -79,4 +79,22 @@ export class CreateBudgetDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    example: 100,
+    description:
+      'Fixed discount amount in BRL. If discount_percentage is also given, this value wins.',
+  })
+  @IsOptional()
+  @IsNumber()
+  discount_amount?: number;
+
+  @ApiPropertyOptional({
+    example: 10,
+    description:
+      'Percentage discount (0-100). Resolved server-side to a fixed amount if discount_amount is not provided.',
+  })
+  @IsOptional()
+  @IsNumber()
+  discount_percentage?: number;
 }

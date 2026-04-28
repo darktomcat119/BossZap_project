@@ -6,6 +6,7 @@ import { RevenueChart } from '@/components/charts/revenue-chart';
 import { DollarSign, TrendingUp, Calendar, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { paymentsApi, metricsApi } from '@/lib/api';
+import { formatBRL, formatPaymentStatus } from '@/lib/format';
 import type { Payment, PaymentSummary, RevenueDataPoint } from '@/lib/types';
 
 const extract = (res: any) => res?.data ?? res;
@@ -116,9 +117,9 @@ export default function PaymentsPage() {
 
   const summaryCards = summary
     ? [
-        { label: t('revenueToday'), value: `$${summary.revenueToday.toLocaleString()}`, icon: DollarSign, color: 'text-green-600 bg-green-50' },
-        { label: t('revenueWeek'), value: `$${summary.revenueWeek.toLocaleString()}`, icon: TrendingUp, color: 'text-blue-600 bg-blue-50' },
-        { label: t('revenueMonth'), value: `$${summary.revenueMonth.toLocaleString()}`, icon: Calendar, color: 'text-purple-600 bg-purple-50' },
+        { label: t('revenueToday'), value: formatBRL(summary.revenueToday), icon: DollarSign, color: 'text-green-600 bg-green-50' },
+        { label: t('revenueWeek'), value: formatBRL(summary.revenueWeek), icon: TrendingUp, color: 'text-blue-600 bg-blue-50' },
+        { label: t('revenueMonth'), value: formatBRL(summary.revenueMonth), icon: Calendar, color: 'text-purple-600 bg-purple-50' },
       ]
     : [];
 
@@ -179,13 +180,13 @@ export default function PaymentsPage() {
                 {failedPayments.map((p) => (
                   <tr key={p.id} className="border-b border-border last:border-0">
                     <td className="px-md py-sm text-text-primary">{p.subscriber_name ?? '-'}</td>
-                    <td className="px-md py-sm text-right text-text-primary">${p.amount}</td>
+                    <td className="px-md py-sm text-right text-text-primary">{formatBRL(p.amount)}</td>
                     <td className="px-md py-sm text-text-secondary">{methodLabel(p.method)}</td>
                     <td className="px-md py-sm text-text-secondary">{new Date(p.paid_at || p.created_at).toLocaleDateString()}</td>
                     <td className="px-md py-sm">
                       {p.recovery_status && (
                         <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', recoveryColors[p.recovery_status])}>
-                          {p.recovery_status}
+                          {p.recovery_status === 'pending' ? t('pendingRecovery') : t(p.recovery_status)}
                         </span>
                       )}
                     </td>
@@ -233,10 +234,10 @@ export default function PaymentsPage() {
                   {filteredPayments.map((p) => (
                     <tr key={p.id} className="border-b border-border last:border-0">
                       <td className="px-md py-sm text-text-primary">{p.subscriber_name ?? '-'}</td>
-                      <td className="px-md py-sm text-right text-text-primary">${p.amount}</td>
+                      <td className="px-md py-sm text-right text-text-primary">{formatBRL(p.amount)}</td>
                       <td className="px-md py-sm">
                         <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', paymentStatusColors[p.status] ?? 'bg-gray-100 text-gray-600')}>
-                          {p.status}
+                          {formatPaymentStatus(p.status)}
                         </span>
                       </td>
                       <td className="px-md py-sm text-text-secondary">{methodLabel(p.method)}</td>
@@ -254,11 +255,11 @@ export default function PaymentsPage() {
                   <div className="flex items-center justify-between mb-xs">
                     <p className="font-medium text-text-primary">{p.subscriber_name ?? '-'}</p>
                     <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', paymentStatusColors[p.status] ?? 'bg-gray-100 text-gray-600')}>
-                      {p.status}
+                      {formatPaymentStatus(p.status)}
                     </span>
                   </div>
                   <div className="flex justify-between text-caption text-text-secondary">
-                    <span>${p.amount}</span>
+                    <span>{formatBRL(p.amount)}</span>
                     <span>{methodLabel(p.method)}</span>
                     <span>{new Date(p.paid_at || p.created_at).toLocaleDateString()}</span>
                   </div>

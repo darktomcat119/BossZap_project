@@ -43,14 +43,36 @@ export class BudgetService {
       documentType,
     );
 
+    // Compute item totals server-side so we never trust the LLM's math.
     const items = data.items.map((item: BudgetItemDto) => ({
       description: item.description,
       quantity: item.quantity,
       unit_price: item.unit_price,
-      total: item.quantity * item.unit_price,
+      total: this.round2(item.quantity * item.unit_price),
     }));
 
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+    const subtotal = this.round2(
+      items.reduce((sum, item) => sum + item.total, 0),
+    );
+
+    // Discount: prefer the fixed amount; if only a percentage is given,
+    // resolve it from subtotal here (never trust the LLM to multiply).
+    let discount: number | null = null;
+    if (typeof data.discount_amount === 'number' && data.discount_amount > 0) {
+      discount = this.round2(data.discount_amount);
+    } else if (
+      typeof data.discount_percentage === 'number' &&
+      data.discount_percentage > 0 &&
+      data.discount_percentage <= 100
+    ) {
+      discount = this.round2((subtotal * data.discount_percentage) / 100);
+    }
+
+    // Cap discount to never produce a negative total (defensive — GPT
+    // could conceivably extract "desconto de R$ 1000" on a R$ 200 budget).
+    if (discount !== null && discount > subtotal) discount = subtotal;
+
+    const totalAmount = this.round2(subtotal - (discount ?? 0));
 
     const budget = this.budgetRepo.create({
       subscriber_id: subscriberId,
@@ -61,6 +83,8 @@ export class BudgetService {
       client_email: data.client_email ?? null,
       description: data.description ?? null,
       items,
+      subtotal_amount: subtotal,
+      discount_amount: discount,
       total_amount: totalAmount,
       status: 'draft',
       valid_until: data.valid_until ?? null,
@@ -69,9 +93,15 @@ export class BudgetService {
 
     const saved = await this.budgetRepo.save(budget);
     this.logger.log(
-      `Budget ${documentNumber} created for subscriber ${subscriberId}`,
+      `Budget ${documentNumber} created for subscriber ${subscriberId} ` +
+        `subtotal=${subtotal} discount=${discount ?? 0} total=${totalAmount}`,
     );
     return saved;
+  }
+
+  /** Round to 2 decimal places for currency math (BRL is 2-decimal). */
+  private round2(n: number): number {
+    return Math.round(n * 100) / 100;
   }
 
   async findAll(
@@ -150,6 +180,25 @@ export class BudgetService {
     return this.budgetRepo.save(budget);
   }
 
+  async getPendingSummary(
+    subscriberId: string,
+  ): Promise<{ count: number; total: number }> {
+    const result = await this.budgetRepo
+      .createQueryBuilder('budget')
+      .select('COUNT(*)', 'count')
+      .addSelect('COALESCE(SUM(budget.total_amount), 0)', 'total')
+      .where('budget.subscriber_id = :subscriberId', { subscriberId })
+      .andWhere('budget.status IN (:...statuses)', {
+        statuses: ['draft', 'sent'],
+      })
+      .getRawOne<{ count: string; total: string }>();
+
+    return {
+      count: parseInt(result?.count ?? '0', 10),
+      total: parseFloat(result?.total ?? '0'),
+    };
+  }
+
   async generatePdf(subscriberId: string, budgetId: string): Promise<string> {
     const budget = await this.findById(subscriberId, budgetId);
 
@@ -182,7 +231,7 @@ export class BudgetService {
     subscriberId: string,
     documentType: string,
   ): Promise<string> {
-    const prefix = documentType === 'service_order' ? 'OS' : 'BUD';
+    const prefix = documentType === 'service_order' ? 'OS' : 'ORC';
 
     const count = await this.budgetRepo.count({
       where: {

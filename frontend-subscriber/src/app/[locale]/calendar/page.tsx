@@ -2,10 +2,151 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight, X, MapPin, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, MapPin, Clock, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { eventsService } from "@/services/events.service";
 import type { CalendarEvent, EventStatus } from "@/lib/types";
+
+// ── Add Event Modal ──────────────────────────────────────────
+function AddEventModal({
+  initialDate,
+  onClose,
+  onCreated,
+}: {
+  initialDate: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const t = useTranslations("calendar");
+  const tCommon = useTranslations("common");
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState(initialDate);
+  const [time, setTime] = useState("");
+  const [location, setLocation] = useState("");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !date) return;
+    setSaving(true);
+    setError("");
+    try {
+      await eventsService.create({
+        title: title.trim(),
+        event_date: date,
+        event_time: time || undefined,
+        location: location.trim() || undefined,
+        description: description.trim() || undefined,
+      });
+      onCreated();
+      onClose();
+    } catch {
+      setError(t("createError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-surface shadow-xl">
+        <div className="flex items-center justify-between border-b border-border/50 px-6 py-4">
+          <h2 className="text-base font-semibold text-text-primary">
+            {t("addEvent")}
+          </h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-background"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+              {t("eventDetails")} *
+            </label>
+            <input
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t("titlePlaceholder")}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+                {t("selectDate")} *
+              </label>
+              <input
+                required
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+                {t("time")}
+              </label>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+              {t("location")}
+            </label>
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder={t("locationPlaceholder")}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+              {tCommon("description") ?? "Descrição"}
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
+            />
+          </div>
+          {error && (
+            <p className="text-xs text-danger">{error}</p>
+          )}
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-background"
+            >
+              {tCommon("cancel")}
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 rounded-lg bg-primary py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
+            >
+              {saving ? tCommon("saving") : tCommon("save")}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 // ── Status color maps ────────────────────────────────────────
 const STATUS_DOT: Record<EventStatus, string> = {
@@ -118,6 +259,7 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showPanel, setShowPanel] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Fetch events for the visible month
   const fetchEvents = useCallback(async (y: number, m: number) => {
@@ -135,10 +277,10 @@ export default function CalendarPage() {
         const list = Array.isArray(raw) ? raw : (raw?.data ?? raw?.events ?? []);
         setEvents(list);
       } else {
-        setError(res.error?.message ?? "Unknown error");
+        setError(res.error?.message ?? t("errorLoading"));
       }
     } catch {
-      setError("Network error");
+      setError(t("errorLoading"));
     } finally {
       setLoading(false);
     }
@@ -222,12 +364,30 @@ export default function CalendarPage() {
     </>
   );
 
+  const todayIso = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
   return (
     <>
+      {showAddModal && (
+        <AddEventModal
+          initialDate={selectedDate ?? todayIso}
+          onClose={() => setShowAddModal(false)}
+          onCreated={() => fetchEvents(year, month)}
+        />
+      )}
       <div className="p-4 md:p-6 lg:p-8">
-        <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
-          {t("title")}
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
+            {t("title")}
+          </h1>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary-dark"
+          >
+            <Plus className="h-4 w-4" />
+            {t("addEvent")}
+          </button>
+        </div>
 
         <p className="mt-2 text-xs text-text-muted md:hidden">
           {t("swipeHint")}

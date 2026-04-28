@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { usePathname } from '@/i18n/routing';
@@ -14,7 +13,7 @@ import {
   ScrollText,
   Activity,
   MessageSquare,
-  Menu,
+  Bell,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -27,6 +26,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { labelKey: 'overview', href: '/overview', icon: LayoutDashboard },
+  { labelKey: 'notifications', href: '/notifications', icon: Bell },
   { labelKey: 'subscribers', href: '/subscribers', icon: Users },
   { labelKey: 'payments', href: '/payments', icon: CreditCard },
   { labelKey: 'plans', href: '/plans', icon: Package },
@@ -36,11 +36,15 @@ const navItems: NavItem[] = [
   { labelKey: 'templates', href: '/templates', icon: MessageSquare },
 ];
 
-export function AdminSidebar() {
+type AdminSidebarProps = {
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+};
+
+export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
   const t = useTranslations('nav');
   const tCommon = useTranslations('common');
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (href: string) => pathname.startsWith(href);
 
@@ -70,7 +74,7 @@ export function AdminSidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={() => onMobileClose()}
                   className={cn(
                     'flex items-center gap-sm px-md py-[10px] rounded-button text-body transition-colors duration-150',
                     active
@@ -91,21 +95,11 @@ export function AdminSidebar() {
 
   return (
     <>
-      {/* Mobile hamburger button */}
-      <button
-        type="button"
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-[10px] left-md z-50 w-9 h-9 flex items-center justify-center rounded-button bg-surface shadow-card"
-        aria-label="Open menu"
-      >
-        <Menu className="w-5 h-5 text-text-primary" />
-      </button>
-
       {/* Mobile drawer overlay */}
       {mobileOpen && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-black/40"
-          onClick={() => setMobileOpen(false)}
+          onClick={() => onMobileClose()}
         />
       )}
 
@@ -118,9 +112,9 @@ export function AdminSidebar() {
       >
         <button
           type="button"
-          onClick={() => setMobileOpen(false)}
+          onClick={() => onMobileClose()}
           className="absolute top-md right-md w-8 h-8 flex items-center justify-center rounded-button hover:bg-background"
-          aria-label="Close menu"
+          aria-label={tCommon('closeMenu')}
         >
           <X className="w-5 h-5 text-text-secondary" />
         </button>

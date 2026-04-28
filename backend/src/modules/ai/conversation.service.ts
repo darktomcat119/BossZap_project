@@ -51,4 +51,52 @@ export class ConversationService {
       metadata,
     });
   }
+
+  /**
+   * Returns the most recent assistant message for a subscriber, optionally
+   * constrained to a time window. Used by the inbound processor to detect
+   * follow-up image uploads (e.g. user sent the logo right after the AI
+   * asked for it).
+   */
+  async getLastAssistantMessage(
+    subscriberId: string,
+    sinceMinutes = 10,
+  ): Promise<ConversationHistory | null> {
+    const cutoff = new Date(Date.now() - sinceMinutes * 60 * 1000);
+    const message = await this.historyRepo.findOne({
+      where: {
+        subscriber_id: subscriberId,
+        role: 'assistant',
+        created_at: MoreThan(cutoff),
+      },
+      order: { created_at: 'DESC' },
+    });
+    return message ?? null;
+  }
+
+  /**
+   * Returns the extracted_data of the most recent BUDGET_PREVIEW message
+   * within the given time window. Used by the orchestrator to retrieve
+   * pending budget details when the user confirms PDF generation.
+   */
+  async getLastPendingBudget(
+    subscriberId: string,
+    withinMinutes = 30,
+  ): Promise<Record<string, unknown> | null> {
+    const cutoff = new Date(Date.now() - withinMinutes * 60 * 1000);
+    const message = await this.historyRepo.findOne({
+      where: {
+        subscriber_id: subscriberId,
+        role: 'assistant',
+        intent: 'BUDGET_PREVIEW',
+        created_at: MoreThan(cutoff),
+      },
+      order: { created_at: 'DESC' },
+    });
+    if (!message?.metadata) return null;
+    return (
+      (message.metadata as { pending_budget?: Record<string, unknown> })
+        .pending_budget ?? null
+    );
+  }
 }

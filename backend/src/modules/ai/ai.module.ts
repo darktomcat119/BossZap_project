@@ -32,6 +32,6 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     ActionExecutorService,
     GptService,
   ],
-  exports: [OrchestratorService],
+  exports: [OrchestratorService, ConversationService],
 })
 export class AiModule {}

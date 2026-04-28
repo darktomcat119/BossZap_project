@@ -43,6 +43,13 @@ export class BudgetController {
     return this.budgetService.create(user.id, data);
   }
 
+  @Get('summary/pending')
+  @ApiOperation({ summary: 'Count and total value of open (draft/sent) budgets' })
+  async getPendingSummary(@Req() req: Request) {
+    const user = req.user as AuthenticatedUser;
+    return this.budgetService.getPendingSummary(user.id);
+  }
+
   @Get()
   @ApiOperation({
     summary: 'List budgets with filters and pagination',

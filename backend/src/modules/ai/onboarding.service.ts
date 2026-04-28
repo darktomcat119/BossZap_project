@@ -91,10 +91,10 @@ export class OnboardingService {
   ): Promise<void> {
     const d = data ?? {};
     await this.subscribers.update(subscriberId, {
-      business_name: d.business_name || null,
-      owner_name: d.owner_name || null,
-      email: d.email || null,
-      address: d.address || null,
+      business_name: this.cleanOptional(d.business_name),
+      owner_name: this.cleanOptional(d.owner_name),
+      email: this.cleanOptional(d.email),
+      address: this.cleanOptional(d.address),
       status: 'active',
       onboarding_completed_at: new Date(),
     });
@@ -109,17 +109,12 @@ export class OnboardingService {
     if (!data) return;
     const update: Record<string, string | null> = {};
 
-    if (data.business_name) {
-      update.business_name = data.business_name;
-    }
-    if (data.owner_name) {
-      update.owner_name = data.owner_name;
-    }
-    if (data.email) {
-      update.email = data.email;
-    }
-    if (data.address) {
-      update.address = data.address;
+    const optional = ['business_name', 'owner_name', 'email', 'address'];
+    for (const key of optional) {
+      if (data[key] !== undefined) {
+        const cleaned = this.cleanOptional(data[key]);
+        if (cleaned !== null) update[key] = cleaned;
+      }
     }
     if (data.preferred_language) {
       update.preferred_language = data.preferred_language;
@@ -128,6 +123,46 @@ export class OnboardingService {
     if (Object.keys(update).length > 0) {
       await this.subscribers.update(subscriberId, update);
     }
+  }
+
+  /**
+   * GPT sometimes writes the literal word "Skipped" (or "skip", "—",
+   * "pular", "saltar") as the value for optional onboarding fields when
+   * the user opted out. We must not persist that text as if it were the
+   * real email/address — the PDF and admin UI will render "Email:
+   * Skipped" which looks broken. Treat any skip-like marker as null.
+   */
+  private cleanOptional(raw: string | null | undefined): string | null {
+    if (raw === null || raw === undefined) return null;
+    const trimmed = String(raw).trim();
+    if (trimmed === '') return null;
+    const normalized = trimmed
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '');
+    const skipMarkers = new Set([
+      'skip',
+      'skipped',
+      'pular',
+      'pulado',
+      'saltar',
+      'salto',
+      'salto.',
+      'saltado',
+      'omitir',
+      'omitido',
+      'none',
+      'n/a',
+      'na',
+      'nao',
+      'no',
+      '-',
+      '—',
+      '--',
+      '...',
+    ]);
+    if (skipMarkers.has(normalized)) return null;
+    return trimmed;
   }
 
   private parseOnboardingResponse(raw: string): OnboardingGptResponse {

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Search, X, ChevronLeft, ChevronRight, RefreshCw, AlertTriangle } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { Search, X, ChevronLeft, ChevronRight, RefreshCw, AlertTriangle, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { subscribersApi } from '@/lib/api';
@@ -33,6 +34,7 @@ function TableSkeleton({ rows = 5 }: { rows?: number }) {
 function ConfirmDialog({ title, message, onConfirm, onCancel, loading }: {
   title: string; message: string; onConfirm: () => void; onCancel: () => void; loading: boolean;
 }) {
+  const tc = useTranslations('common');
   return (<>
     <div className="fixed inset-0 z-[60] bg-black/50" onClick={onCancel} />
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-md">
@@ -44,18 +46,53 @@ function ConfirmDialog({ title, message, onConfirm, onCancel, loading }: {
         <p className="text-body text-text-secondary">{message}</p>
         <div className="flex justify-end gap-sm">
           <button onClick={onCancel} disabled={loading}
-            className="px-4 py-2 rounded-button border border-border bg-surface text-body font-medium hover:bg-background transition-colors disabled:opacity-50">Cancel</button>
+            className="px-4 py-2 rounded-button border border-border bg-surface text-body font-medium hover:bg-background transition-colors disabled:opacity-50">{tc('cancel')}</button>
           <button onClick={onConfirm} disabled={loading}
-            className="px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">{loading ? 'Processing...' : 'Confirm'}</button>
+            className="px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">{loading ? tc('processing') : tc('confirm')}</button>
         </div>
       </div>
     </div>
   </>);
 }
 
+function TempPasswordModal({ password, onClose }: { password: string; onClose: () => void }) {
+  const t = useTranslations('subscribers');
+  const tc = useTranslations('common');
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(password);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <>
+      <div className="fixed inset-0 z-[60] bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 z-[70] flex items-center justify-center p-md">
+        <div className="bg-surface rounded-card border border-border shadow-xl p-lg max-w-sm w-full space-y-md">
+          <h3 className="text-h4 font-semibold text-text-primary">{t('tempPasswordTitle')}</h3>
+          <p className="text-body text-text-secondary text-sm">{t('tempPasswordHint')}</p>
+          <div className="flex items-center gap-sm bg-background border border-border rounded-button px-md py-sm">
+            <code className="flex-1 font-mono text-body text-text-primary tracking-wider">{password}</code>
+            <button onClick={copy} className="shrink-0 p-1 rounded hover:bg-border transition-colors" title={t('copyTooltip')}>
+              {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-text-secondary" />}
+            </button>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={onClose}
+              className="px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors">
+              {tc('close')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function SubscribersPage() {
   const t = useTranslations('subscribers');
   const tc = useTranslations('common');
+  const { locale } = useParams<{ locale: string }>();
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -70,6 +107,7 @@ export default function SubscribersPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirm, setConfirm] = useState<{ id: string; action: 'activate' | 'suspend' | 'deactivate' } | null>(null);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -121,10 +159,26 @@ export default function SubscribersPage() {
       setSelectedId(null);
       toast.success(tc(confirm.action));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Action failed');
+      toast.error(err instanceof Error ? err.message : t('actionFailed'));
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleResetPassword = async (id: string) => {
+    setActionLoading(true);
+    try {
+      const res = await subscribersApi.resetPassword(id) as { temporary_password: string };
+      setTempPassword(res.temporary_password);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('resetFailed'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleViewLogs = (id: string) => {
+    window.open(`/${locale}/logs?subscriber=${id}`, '_blank');
   };
 
   const selected = subscribers.find((s) => s.id === selectedId);
@@ -183,7 +237,7 @@ export default function SubscribersPage() {
           /* ── Empty state ── */
           <div className="bg-surface rounded-card border border-border p-lg flex flex-col items-center justify-center gap-sm min-h-[30vh]">
             <Search className="w-10 h-10 text-text-secondary/40" />
-            <p className="text-body text-text-secondary">{tc('noResults') ?? 'No subscribers found'}</p>
+            <p className="text-body text-text-secondary">{t('noResults')}</p>
           </div>
         ) : (
           <>
@@ -312,19 +366,31 @@ export default function SubscribersPage() {
                 </span>
               </div>
             </div>
-            <div className="p-md border-t border-border flex gap-sm">
-              {selected.status !== 'active' && (
-                <button disabled={actionLoading} onClick={() => requestAction(selected.id, 'activate')}
-                  className="flex-1 py-2 rounded-button bg-green-600 text-white text-body font-medium hover:bg-green-700 transition-colors disabled:opacity-50">{tc('activate')}</button>
-              )}
-              {selected.status === 'active' && (
-                <button disabled={actionLoading} onClick={() => requestAction(selected.id, 'suspend')}
-                  className="flex-1 py-2 rounded-button bg-amber-500 text-white text-body font-medium hover:bg-amber-600 transition-colors disabled:opacity-50">{tc('suspend')}</button>
-              )}
-              {selected.status !== 'cancelled' && selected.status !== 'inactive' && (
-                <button disabled={actionLoading} onClick={() => requestAction(selected.id, 'deactivate')}
-                  className="flex-1 py-2 rounded-button bg-red-600 text-white text-body font-medium hover:bg-red-700 transition-colors disabled:opacity-50">{tc('deactivate')}</button>
-              )}
+            <div className="p-md border-t border-border space-y-sm">
+              <div className="flex gap-sm">
+                {selected.status !== 'active' && (
+                  <button disabled={actionLoading} onClick={() => requestAction(selected.id, 'activate')}
+                    className="flex-1 py-2 rounded-button bg-green-600 text-white text-body font-medium hover:bg-green-700 transition-colors disabled:opacity-50">{tc('activate')}</button>
+                )}
+                {selected.status === 'active' && (
+                  <button disabled={actionLoading} onClick={() => requestAction(selected.id, 'suspend')}
+                    className="flex-1 py-2 rounded-button bg-amber-500 text-white text-body font-medium hover:bg-amber-600 transition-colors disabled:opacity-50">{t('suspend')}</button>
+                )}
+                {selected.status !== 'cancelled' && selected.status !== 'inactive' && (
+                  <button disabled={actionLoading} onClick={() => requestAction(selected.id, 'deactivate')}
+                    className="flex-1 py-2 rounded-button bg-red-600 text-white text-body font-medium hover:bg-red-700 transition-colors disabled:opacity-50">{t('cancel')}</button>
+                )}
+              </div>
+              <div className="flex gap-sm">
+                <button disabled={actionLoading} onClick={() => handleResetPassword(selected.id)}
+                  className="flex-1 py-2 rounded-button bg-surface border border-border text-body font-medium text-text-primary hover:bg-background transition-colors disabled:opacity-50">
+                  {t('resetPassword')}
+                </button>
+                <button onClick={() => handleViewLogs(selected.id)}
+                  className="flex-1 py-2 rounded-button bg-surface border border-border text-body font-medium text-text-primary hover:bg-background transition-colors">
+                  {t('viewLogs')}
+                </button>
+              </div>
             </div>
           </div>
         </>
@@ -339,6 +405,11 @@ export default function SubscribersPage() {
           onCancel={() => setConfirm(null)}
           loading={actionLoading}
         />
+      )}
+
+      {/* Temp password modal */}
+      {tempPassword && (
+        <TempPasswordModal password={tempPassword} onClose={() => setTempPassword(null)} />
       )}
     </>
   );

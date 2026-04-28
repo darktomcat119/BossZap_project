@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { QUEUE_NAMES } from '../constants';
 import { OrchestratorService } from '../../ai/orchestrator.service';
+import { ConversationService } from '../../ai/conversation.service';
 import { WhatsappService } from '../../whatsapp/whatsapp.service';
 import { MediaService } from '../../whatsapp/media.service';
 import { WindowTrackerService } from '../../whatsapp/window-tracker.service';
@@ -17,6 +18,7 @@ export class InboundProcessor extends WorkerHost {
 
   constructor(
     private readonly orchestrator: OrchestratorService,
+    private readonly conversation: ConversationService,
     private readonly whatsapp: WhatsappService,
     private readonly media: MediaService,
     private readonly windowTracker: WindowTrackerService,
@@ -42,7 +44,11 @@ export class InboundProcessor extends WorkerHost {
 
       if (message.type === 'image' && message.mediaId) {
         const subscriber = await this.subscribers.findById(subscriberId);
-        if (subscriber.status === 'onboarding') {
+        const expectingLogo =
+          subscriber.status === 'onboarding' ||
+          (await this.recentlyInvitedLogoUpload(subscriberId));
+
+        if (expectingLogo) {
           try {
             const logoUrl = await this.media.processAndStoreImage(
               message.mediaId,
@@ -84,7 +90,15 @@ export class InboundProcessor extends WorkerHost {
         contactName: message.contactName,
       });
 
-      if (response.mediaUrl) {
+      if (response.documentUrl) {
+        await this.whatsapp.sendDocument({
+          to: message.from,
+          documentUrl: response.documentUrl,
+          filename: response.documentFilename || 'document.pdf',
+          caption: response.responseText,
+          subscriberId,
+        });
+      } else if (response.mediaUrl) {
         await this.whatsapp.sendImage({
           to: message.from,
           imageUrl: response.mediaUrl,
@@ -130,6 +144,21 @@ export class InboundProcessor extends WorkerHost {
       );
       throw error;
     }
+  }
+
+  /**
+   * True if the AI assistant invited a logo upload in the last 10 minutes.
+   * That signal lets us auto-treat the next inbound image as a logo,
+   * without needing a new DB column or pending-state table.
+   */
+  private async recentlyInvitedLogoUpload(
+    subscriberId: string,
+  ): Promise<boolean> {
+    const last = await this.conversation.getLastAssistantMessage(
+      subscriberId,
+      10,
+    );
+    return last?.intent === 'LOGO_UPLOAD_REQUEST';
   }
 
   private async resolveSubscriberId(phone: string): Promise<string> {

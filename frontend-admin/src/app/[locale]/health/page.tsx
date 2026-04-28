@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Database, Server, MessageSquare, Brain, RefreshCw } from 'lucide-react';
+import { Database, Server, MessageSquare, Brain, RefreshCw, Trash2, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { healthApi } from '@/lib/api';
-import type { ServiceHealth, ServiceStatus, QueueMetrics, WorkerInfo, WorkerState } from '@/lib/types';
+import { formatServiceStatus, formatWorkerState } from '@/lib/format';
+import type { ServiceHealth, ServiceStatus, QueueMetrics, WorkerInfo, WorkerState, FailedJob } from '@/lib/types';
 
 const extract = (res: any) => res?.data ?? res;
 
@@ -56,21 +58,25 @@ export default function HealthPage() {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [queue, setQueue] = useState<QueueMetrics | null>(null);
   const [workers, setWorkers] = useState<WorkerInfo[]>([]);
+  const [failedJobs, setFailedJobs] = useState<FailedJob[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cleaning, setCleaning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [statusRaw, queueRaw, workerRaw] = await Promise.all([
+      const [statusRaw, queueRaw, workerRaw, failedRaw] = await Promise.all([
         healthApi.status(),
         healthApi.queues().catch(() => null),
         healthApi.workers().catch(() => []),
+        healthApi.failedJobs().catch(() => []),
       ]);
       const statusData = extract(statusRaw) as ServiceHealth[] | Record<string, unknown>;
       const queueData = extract(queueRaw) as QueueMetrics | null;
       const workerData = extract(workerRaw) as WorkerInfo[];
+      const failedData = extract(failedRaw) as FailedJob[];
       // The health status endpoint may return an array or object with services
       if (Array.isArray(statusData)) {
         setServices(statusData);
@@ -86,6 +92,7 @@ export default function HealthPage() {
       }
       setQueue(queueData);
       setWorkers(Array.isArray(workerData) ? workerData : []);
+      setFailedJobs(Array.isArray(failedData) ? failedData : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load health data');
     } finally {
@@ -94,6 +101,24 @@ export default function HealthPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleCleanFailed = useCallback(async () => {
+    if (!confirm(t('confirmCleanFailed'))) return;
+    setCleaning(true);
+    try {
+      const res = (await healthApi.cleanFailedJobs()) as { removed?: number } | { data?: { removed?: number } };
+      const removed =
+        (res as { removed?: number }).removed ??
+        (res as { data?: { removed?: number } }).data?.removed ??
+        0;
+      toast.success(t('cleanedJobs', { count: removed }));
+      await fetchData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('cleanFailedError'));
+    } finally {
+      setCleaning(false);
+    }
+  }, [fetchData, t]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -112,7 +137,7 @@ export default function HealthPage() {
           className="flex items-center gap-xs px-4 py-2 rounded-button bg-primary text-white text-body font-medium hover:bg-primary/90 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
-          Retry
+          {tc('retry') ?? 'Tentar novamente'}
         </button>
       </div>
     );
@@ -149,7 +174,7 @@ export default function HealthPage() {
                     <div className="flex items-center gap-xs">
                       <div className={cn('w-2.5 h-2.5 rounded-full', colors.dot)} />
                       <span className={cn('text-caption font-medium', colors.text)}>
-                        {service.status}
+                        {formatServiceStatus(service.status)}
                       </span>
                     </div>
                   </div>
@@ -166,7 +191,7 @@ export default function HealthPage() {
             })}
         {!loading && services.length === 0 && (
           <div className="col-span-full p-lg text-center text-text-secondary">
-            No service data available
+            {t('noServiceData')}
           </div>
         )}
       </div>
@@ -224,7 +249,7 @@ export default function HealthPage() {
                         <td className="px-md py-sm font-medium text-text-primary font-mono text-caption">{worker.name}</td>
                         <td className="px-md py-sm">
                           <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', workerStateColors[worker.state] ?? 'bg-gray-100 text-gray-600')}>
-                            {worker.state}
+                            {formatWorkerState(worker.state)}
                           </span>
                         </td>
                         <td className="px-md py-sm text-text-secondary">{worker.uptime}</td>
@@ -244,7 +269,7 @@ export default function HealthPage() {
                     <div className="flex items-center justify-between mb-xs">
                       <p className="font-mono text-caption font-medium text-text-primary">{worker.name}</p>
                       <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', workerStateColors[worker.state] ?? 'bg-gray-100 text-gray-600')}>
-                        {worker.state}
+                        {formatWorkerState(worker.state)}
                       </span>
                     </div>
                     <div className="flex justify-between text-caption text-text-secondary">
@@ -258,6 +283,57 @@ export default function HealthPage() {
           )}
         </div>
       )}
+
+      {/* Failed jobs */}
+      <div className="bg-surface rounded-card border border-border p-md">
+        <div className="flex items-center justify-between mb-md gap-sm flex-wrap">
+          <div className="flex items-center gap-sm">
+            <AlertCircle className="w-5 h-5 text-red-500" />
+            <h2 className="text-h4 font-semibold text-text-primary">{t('failedJobsTitle')}</h2>
+            {failedJobs.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-caption font-medium">
+                {failedJobs.length}
+              </span>
+            )}
+          </div>
+          {failedJobs.length > 0 && (
+            <button
+              onClick={handleCleanFailed}
+              disabled={cleaning || loading}
+              className="flex items-center gap-xs px-3 py-1.5 rounded-button bg-red-600 text-white text-caption font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className={cn('w-3.5 h-3.5', cleaning && 'animate-pulse')} />
+              {cleaning ? t('cleaning') : t('cleanAll')}
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <TableSkeleton />
+        ) : failedJobs.length === 0 ? (
+          <p className="text-body text-text-secondary py-md text-center">{t('noFailedJobs')}</p>
+        ) : (
+          <div className="space-y-xs">
+            {failedJobs.map((job) => (
+              <div key={`${job.queue}-${job.id}`} className="p-sm rounded-button border border-red-100 bg-red-50/30">
+                <div className="flex items-center justify-between gap-sm flex-wrap mb-xs">
+                  <div className="flex items-center gap-xs">
+                    <span className="font-mono text-caption font-medium text-text-primary">{job.queue}</span>
+                    <span className="text-caption text-text-secondary">•</span>
+                    <span className="text-caption text-text-secondary">{job.name}</span>
+                    <span className="text-caption text-text-secondary">•</span>
+                    <span className="text-caption text-text-secondary">{job.attemptsMade} {t('attemptsLabel')}</span>
+                  </div>
+                  <span className="text-caption text-text-secondary">
+                    {new Date(job.failed_at).toLocaleString('pt-BR')}
+                  </span>
+                </div>
+                <p className="text-caption text-red-700 font-mono break-all">{job.failedReason}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "@/i18n/routing";
 
@@ -9,6 +10,7 @@ type AuthGuardProps = {
 };
 
 export function AuthGuard({ children }: AuthGuardProps) {
+  const tCommon = useTranslations("common");
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [checked, setChecked] = useState(false);
@@ -33,7 +35,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm text-text-muted">Loading...</p>
+          <p className="text-sm text-text-muted">{tCommon("loading")}</p>
         </div>
       </div>
     );

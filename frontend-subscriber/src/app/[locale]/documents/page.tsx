@@ -92,6 +92,7 @@ function handleDownload(pdfUrl: string | null): void {
 
 export default function DocumentsPage() {
   const t = useTranslations("documents");
+  const tCommon = useTranslations("common");
 
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,7 +186,7 @@ export default function DocumentsPage() {
               onClick={fetchDocuments}
               className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
             >
-              {t("loadError")}
+              {tCommon("retry")}
             </button>
           </div>
         )}

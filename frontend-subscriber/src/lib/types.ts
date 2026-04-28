@@ -212,6 +212,31 @@ export interface BudgetsParams {
   limit?: number;
 }
 
+// ─── Subscriber Categories ───────────────────────────────────────────────────
+
+export type CategoryType = 'income' | 'expense' | 'both';
+
+export interface SubscriberCategory {
+  id: string;
+  subscriber_id: string;
+  name: string;
+  type: CategoryType;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCategoryPayload {
+  name: string;
+  type?: CategoryType;
+}
+
+export interface UpdateCategoryPayload {
+  name?: string;
+  type?: CategoryType;
+  is_active?: boolean;
+}
+
 // ─── Profile Update ──────────────────────────────────────────────────────────
 
 export interface ProfileUpdate {

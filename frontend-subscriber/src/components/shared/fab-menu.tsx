@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ type FabMenuProps = {
 };
 
 export function FabMenu({ actions }: FabMenuProps) {
+  const t = useTranslations("dashboard");
   const [open, setOpen] = useState(false);
 
   return (
@@ -53,7 +55,7 @@ export function FabMenu({ actions }: FabMenuProps) {
           "flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-all duration-200 hover:bg-primary-dark",
           open && "rotate-45"
         )}
-        aria-label="Quick actions"
+        aria-label={t("quickActions")}
       >
         {open ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
       </button>

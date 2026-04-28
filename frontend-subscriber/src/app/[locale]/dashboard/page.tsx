@@ -6,8 +6,11 @@ import { useTranslations } from "next-intl";
 import { SummaryCard } from "@/components/shared/summary-card";
 import { FabMenu } from "@/components/shared/fab-menu";
 import { RevenueExpensesChart } from "@/components/charts/revenue-expenses-chart";
+import { FinancialRecordModal } from "@/components/forms/financial-record-modal";
+import { CreateBudgetModal } from "@/components/forms/create-budget-modal";
 import { financialService } from "@/services/financial.service";
 import { eventsService } from "@/services/events.service";
+import { budgetsService } from "@/services/budgets.service";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
   FinancialSummary,
@@ -26,6 +29,7 @@ import {
   Sparkles,
   ChevronRight,
   AlertCircle,
+  ClipboardList,
 } from "lucide-react";
 
 // ─── Date helpers ───────────────────────────────────────────────────────────
@@ -54,12 +58,10 @@ function n(v: unknown): number {
 }
 
 function formatCurrency(value: unknown): string {
-  return (
-    "$" +
-    n(value)
-      .toFixed(2)
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-  );
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(n(value));
 }
 
 function pctChange(current: unknown, previous: unknown): number {
@@ -125,6 +127,7 @@ function ListSkeleton({ rows }: { rows: number }) {
 // ─── Error banner ───────────────────────────────────────────────────────────
 
 function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const tCommon = useTranslations("common");
   return (
     <div className="mt-6 flex items-center gap-3 rounded-2xl border border-danger/30 bg-danger/5 px-5 py-4">
       <AlertCircle className="h-5 w-5 shrink-0 text-danger" />
@@ -133,7 +136,7 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
         onClick={onRetry}
         className="rounded-lg bg-danger/10 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger/20"
       >
-        Retry
+        {tCommon("retry")}
       </button>
     </div>
   );
@@ -147,6 +150,7 @@ interface DashboardState {
   trend: MonthlyTrend[];
   events: CalendarEvent[];
   transactions: FinancialRecord[];
+  pendingBudgets: { count: number; total: number } | null;
   loading: boolean;
   error: string | null;
 }
@@ -157,15 +161,19 @@ const INITIAL_STATE: DashboardState = {
   trend: [],
   events: [],
   transactions: [],
+  pendingBudgets: null,
   loading: true,
   error: null,
 };
 
 // ─── Page component ─────────────────────────────────────────────────────────
 
+type ActiveModal = "income" | "expense" | "budget" | null;
+
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const [state, setState] = useState<DashboardState>(INITIAL_STATE);
+  const [activeModal, setActiveModal] = useState<ActiveModal>(null);
 
   const fetchData = () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
@@ -176,8 +184,9 @@ export default function DashboardPage() {
       financialService.getMonthlyTrend(6),
       eventsService.getUpcoming(5),
       financialService.getRecords({ limit: 8 }),
+      budgetsService.getPendingSummary(),
     ])
-      .then(([sumRes, prevRes, trendRes, eventsRes, txRes]) => {
+      .then(([sumRes, prevRes, trendRes, eventsRes, txRes, pendingRes]) => {
         const txRaw = txRes.data as any;
         const trendRaw = trendRes.data as any;
         setState({
@@ -186,6 +195,7 @@ export default function DashboardPage() {
           trend: Array.isArray(trendRaw) ? trendRaw : [],
           events: Array.isArray(eventsRes.data) ? eventsRes.data : [],
           transactions: Array.isArray(txRaw) ? txRaw : (txRaw?.records ?? []),
+          pendingBudgets: pendingRes.data ?? null,
           loading: false,
           error: null,
         });
@@ -194,7 +204,7 @@ export default function DashboardPage() {
         setState((prev) => ({
           ...prev,
           loading: false,
-          error: err.message || "Failed to load dashboard data.",
+          error: err.message || t("loadError"),
         }));
       });
   };
@@ -235,7 +245,7 @@ export default function DashboardPage() {
     }));
   });
 
-  const { summary, prevSummary, trend, events, transactions, loading, error } =
+  const { summary, prevSummary, trend, events, transactions, pendingBudgets, loading, error } =
     state;
 
   // Compute % changes
@@ -253,9 +263,9 @@ export default function DashboardPage() {
   );
 
   const fabActions = [
-    { icon: FileText, label: t("createBudget"), onClick: () => {} },
-    { icon: ArrowDownCircle, label: t("registerExpense"), onClick: () => {} },
-    { icon: ArrowUpCircle, label: t("registerIncome"), onClick: () => {} },
+    { icon: FileText, label: t("createBudget"), onClick: () => setActiveModal("budget") },
+    { icon: ArrowDownCircle, label: t("registerExpense"), onClick: () => setActiveModal("expense") },
+    { icon: ArrowUpCircle, label: t("registerIncome"), onClick: () => setActiveModal("income") },
   ];
 
   return (
@@ -274,7 +284,7 @@ export default function DashboardPage() {
           <div className="hidden items-center gap-2 md:flex">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium text-primary">
-              AI Active
+              {t("aiActive")}
             </span>
           </div>
         </div>
@@ -314,26 +324,38 @@ export default function DashboardPage() {
               changeLabel={t("vsLastMonth")}
             />
             <SummaryCard
-              icon={Calendar}
-              label={t("upcomingEvents")}
-              value={String(events.length)}
+              icon={ClipboardList}
+              label={t("pendingBudgets")}
+              value={formatCurrency(pendingBudgets?.total ?? 0)}
               change={0}
-              changeLabel={t("thisWeek")}
+              changeLabel={`${pendingBudgets?.count ?? 0} ${t("openDocuments")}`}
             />
           </div>
         ) : null}
 
         {/* Quick actions (desktop) */}
         <div className="mt-8 hidden flex-wrap gap-3 md:flex">
-          <button className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30">
+          <button
+            type="button"
+            onClick={() => setActiveModal("budget")}
+            className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30"
+          >
             <FileText className="h-4 w-4" />
             {t("createBudget")}
           </button>
-          <button className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface px-5 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-all hover:border-primary/20 hover:shadow-md">
+          <button
+            type="button"
+            onClick={() => setActiveModal("expense")}
+            className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface px-5 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-all hover:border-primary/20 hover:shadow-md"
+          >
             <ArrowDownCircle className="h-4 w-4 text-danger" />
             {t("registerExpense")}
           </button>
-          <button className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface px-5 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-all hover:border-primary/20 hover:shadow-md">
+          <button
+            type="button"
+            onClick={() => setActiveModal("income")}
+            className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface px-5 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-all hover:border-primary/20 hover:shadow-md"
+          >
             <ArrowUpCircle className="h-4 w-4 text-success" />
             {t("registerIncome")}
           </button>
@@ -346,7 +368,7 @@ export default function DashboardPage() {
               {t("revenueVsExpenses")}
             </h2>
             <span className="text-xs font-medium text-text-muted">
-              Last 6 months
+              {t("last6Months")}
             </span>
           </div>
           <div className="overflow-x-auto p-5">
@@ -468,6 +490,20 @@ export default function DashboardPage() {
       </div>
 
       <FabMenu actions={fabActions} />
+
+      {(activeModal === "income" || activeModal === "expense") && (
+        <FinancialRecordModal
+          type={activeModal}
+          onClose={() => setActiveModal(null)}
+          onSuccess={fetchData}
+        />
+      )}
+      {activeModal === "budget" && (
+        <CreateBudgetModal
+          onClose={() => setActiveModal(null)}
+          onSuccess={fetchData}
+        />
+      )}
     </>
   );
 }

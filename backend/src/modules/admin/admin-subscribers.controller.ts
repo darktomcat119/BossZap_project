@@ -1,11 +1,14 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   Query,
   UseGuards,
   ParseUUIDPipe,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -62,5 +65,23 @@ export class AdminSubscribersController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   deactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.deactivate(id);
+  }
+
+  @Post(':id/reset-password')
+  @ApiOperation({ summary: 'Generate a temporary password for a subscriber' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  resetPassword(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.resetPassword(id);
+  }
+
+  @Get(':id/logs')
+  @ApiOperation({ summary: 'Get audit logs for a subscriber' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  getLogs(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+  ) {
+    return this.service.getLogs(id, page, limit);
   }
 }

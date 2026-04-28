@@ -10,7 +10,7 @@ import { ParticleCanvas } from '@/components/shared/particle-canvas';
 import { cn } from '@/lib/utils';
 
 const localeLabels: Record<string, string> = { es: 'ES', en: 'EN', 'pt-BR': 'PT' };
-const locales = ['es', 'en', 'pt-BR'] as const;
+const locales = ['pt-BR', 'es', 'en'] as const;
 
 export default function LoginPage() {
   const t = useTranslations('auth');
@@ -163,7 +163,7 @@ export default function LoginPage() {
 
             <div className="mt-6 flex items-center gap-3">
               <div className="h-px flex-1 bg-white/10" />
-              <span className="text-xs text-white/25">or</span>
+              <span className="text-xs text-white/25">{tCommon('or')}</span>
               <div className="h-px flex-1 bg-white/10" />
             </div>
 

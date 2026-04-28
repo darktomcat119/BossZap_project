@@ -19,7 +19,7 @@ export class AdminUser {
   @Column({ type: 'varchar', length: 20, default: 'master' })
   role: string;
 
-  @Column({ type: 'varchar', length: 5, default: 'es' })
+  @Column({ type: 'varchar', length: 10, default: 'pt-BR' })
   preferred_language: string;
 
   @CreateDateColumn({ type: 'timestamptz' })

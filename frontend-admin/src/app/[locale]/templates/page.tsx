@@ -6,6 +6,7 @@ import { Plus, Pencil, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { templatesApi } from '@/lib/api';
+import { formatTemplateStatus, formatTemplateCategory } from '@/lib/format';
 import type { HsmTemplate, TemplateFormData, TemplateStatus } from '@/lib/types';
 
 const extract = (res: any) => res?.data ?? res;
@@ -18,7 +19,7 @@ const statusColors: Record<TemplateStatus, string> = {
 
 const emptyForm: TemplateFormData = {
   name: '',
-  language: 'es',
+  language: 'pt-BR',
   category: 'utility',
   body: '',
 };
@@ -104,9 +105,9 @@ export default function TemplatesPage() {
       }
       setModalOpen(false);
       await fetchData();
-      toast.success(tc('saved') ?? 'Saved');
+      toast.success(tc('saved'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed');
+      toast.error(err instanceof Error ? err.message : tc('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -196,12 +197,12 @@ export default function TemplatesPage() {
                         <td className="px-md py-sm text-text-secondary">{tmpl.language}</td>
                         <td className="px-md py-sm">
                           <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-gray-100 text-gray-700">
-                            {t(tmpl.category)}
+                            {formatTemplateCategory(tmpl.category)}
                           </span>
                         </td>
                         <td className="px-md py-sm">
                           <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', statusColors[tmpl.meta_status] ?? 'bg-gray-100 text-gray-600')}>
-                            {tmpl.meta_status}
+                            {formatTemplateStatus(tmpl.meta_status)}
                           </span>
                         </td>
                         <td className="px-md py-sm text-text-secondary text-caption max-w-xs truncate">{tmpl.body}</td>
@@ -231,7 +232,7 @@ export default function TemplatesPage() {
                     <p className="font-mono text-caption font-medium text-text-primary">{tmpl.name}</p>
                     <div className="flex items-center gap-xs">
                       <span className={cn('px-2 py-0.5 rounded-full text-caption font-medium', statusColors[tmpl.meta_status] ?? 'bg-gray-100 text-gray-600')}>
-                        {tmpl.meta_status}
+                        {formatTemplateStatus(tmpl.meta_status)}
                       </span>
                       <button
                         onClick={() => openEdit(tmpl)}
@@ -244,7 +245,7 @@ export default function TemplatesPage() {
                   <div className="flex gap-sm text-caption text-text-secondary">
                     <span>{tmpl.language}</span>
                     <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium">
-                      {t(tmpl.category)}
+                      {formatTemplateCategory(tmpl.category)}
                     </span>
                   </div>
                   <p className="text-caption text-text-secondary line-clamp-2">{tmpl.body}</p>
@@ -294,9 +295,9 @@ export default function TemplatesPage() {
                       onChange={(e) => updateField('language', e.target.value)}
                       className="w-full px-4 py-2 rounded-button border border-border bg-surface text-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     >
+                      <option value="pt-BR">pt-BR</option>
                       <option value="es">es</option>
                       <option value="en">en</option>
-                      <option value="pt-BR">pt-BR</option>
                     </select>
                   </div>
                   <div>

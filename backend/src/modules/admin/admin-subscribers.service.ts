@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import {
   Subscriber,
   Subscription,
@@ -190,6 +192,29 @@ export class AdminSubscribersService {
     const saved = await this.subscriberRepo.save(subscriber);
     await this.createAuditEntry(id, 'subscriber_deactivated');
     return saved;
+  }
+
+  async resetPassword(id: string): Promise<{ temporary_password: string }> {
+    const subscriber = await this.findSubscriberOrFail(id);
+    const temporary = crypto.randomBytes(6).toString('hex');
+    subscriber.password_hash = await bcrypt.hash(temporary, 10);
+    await this.subscriberRepo.save(subscriber);
+    await this.createAuditEntry(id, 'subscriber_password_reset');
+    return { temporary_password: temporary };
+  }
+
+  async getLogs(
+    id: string,
+    page = 1,
+    limit = 50,
+  ): Promise<{ data: AuditLog[]; total: number }> {
+    const [data, total] = await this.auditLogRepo.findAndCount({
+      where: { subscriber_id: id },
+      order: { created_at: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { data, total };
   }
 
   private async findSubscriberOrFail(id: string): Promise<Subscriber> {

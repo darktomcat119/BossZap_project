@@ -37,6 +37,15 @@ export class Subscriber {
   @Column({ type: 'varchar', length: 5, default: 'pt-BR' })
   preferred_language: string;
 
+  @Column({ type: 'varchar', length: 64, default: 'America/Sao_Paulo' })
+  timezone: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  payment_methods: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  signature_role: string | null;
+
   @Column({ type: 'varchar', length: 20, default: 'onboarding' })
   status: string;
 

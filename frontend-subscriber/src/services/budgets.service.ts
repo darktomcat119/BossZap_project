@@ -44,4 +44,9 @@ export const budgetsService = {
   async generatePdf(id: string): Promise<ApiResponse<Budget>> {
     return api.post<Budget>(`/budgets/${id}/pdf`, {});
   },
+
+  /** Count and total of open (draft/sent) budgets. */
+  async getPendingSummary(): Promise<ApiResponse<{ count: number; total: number }>> {
+    return api.get<{ count: number; total: number }>('/budgets/summary/pending');
+  },
 };

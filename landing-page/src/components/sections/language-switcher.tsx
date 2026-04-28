@@ -49,13 +49,13 @@ export function LanguageSwitcher({ dark = true }: { dark?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const params = useParams();
-  const currentLocale = (params?.locale as string) || "es";
+  const currentLocale = (params?.locale as string) || "pt-BR";
   const [open, setOpen] = useState(false);
 
   const locales = [
+    { code: "pt-BR" as const, label: "Português", flag: <FlagBR /> },
     { code: "es" as const, label: "Español", flag: <FlagES /> },
     { code: "en" as const, label: "English", flag: <FlagUS /> },
-    { code: "pt-BR" as const, label: "Português", flag: <FlagBR /> },
   ];
 
   const current = locales.find((l) => l.code === currentLocale) || locales[0];

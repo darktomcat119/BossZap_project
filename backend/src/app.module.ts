@@ -19,6 +19,7 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SubscriberCategoriesModule } from './modules/subscriber-categories/subscriber-categories.module';
 import { LoggerService } from './config/logger.service';
 
 @Module({
@@ -65,6 +66,7 @@ import { LoggerService } from './config/logger.service';
     AdminModule,
     PaymentsModule,
     NotificationsModule,
+    SubscriberCategoriesModule,
   ],
   providers: [LoggerService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
   exports: [LoggerService],

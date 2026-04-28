@@ -163,6 +163,15 @@ export interface WorkerInfo {
   lastHeartbeat: string;
 }
 
+export interface FailedJob {
+  id: string;
+  queue: string;
+  name: string;
+  failedReason: string;
+  attemptsMade: number;
+  failed_at: string;
+}
+
 // ── Templates ──
 export type TemplateStatus = 'approved' | 'rejected' | 'pending';
 export type TemplateCategory = 'marketing' | 'utility' | 'authentication';
@@ -203,4 +212,29 @@ export interface Alert {
   name: string;
   percent?: number;
   timestamp: string;
+}
+
+// ── Notifications ──
+export type NotificationSeverity = 'info' | 'warning' | 'critical';
+export type NotificationType =
+  | 'payment_failed'
+  | 'subscriber_suspended'
+  | 'subscriber_cancelled'
+  | 'queue_backlog'
+  | 'audit_critical';
+
+export interface AdminNotification {
+  id: string;
+  type: NotificationType;
+  severity: NotificationSeverity;
+  title: string;
+  message: string;
+  link?: string;
+  created_at: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface NotificationsSummary {
+  total: number;
+  by_severity: { info: number; warning: number; critical: number };
 }

@@ -12,10 +12,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "BossZap - Tu negocio, bajo control total",
+  title: "BossZap - Seu negócio, sob controle total",
   description:
-    "El asistente virtual con IA que administra tu agenda, " +
-    "finanzas y presupuestos por WhatsApp",
+    "O assistente virtual com IA que gerencia sua agenda, " +
+    "finanças e orçamentos pelo WhatsApp",
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png" }],
     apple: [{ url: "/favicon.png" }],

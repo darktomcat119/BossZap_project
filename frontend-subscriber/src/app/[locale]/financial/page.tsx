@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Search, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Download, ChevronLeft, ChevronRight, Tags, Plus, Pencil, Trash2, X } from "lucide-react";
 
 import { financialService } from "@/services/financial.service";
+import { categoriesService } from "@/services/categories.service";
 import type { PaginationMeta } from "@/lib/api";
 import type {
   FinancialRecord,
@@ -13,6 +14,8 @@ import type {
   DailyTotal,
   MonthlyTrend,
   FinancialRecordType,
+  SubscriberCategory,
+  CategoryType,
 } from "@/lib/types";
 import { RevenueExpensesChart } from "@/components/charts/revenue-expenses-chart";
 import { CategoryDonutChart } from "@/components/charts/category-donut-chart";
@@ -55,12 +58,220 @@ function TableRowSkeleton() {
   );
 }
 
+// ── Categories panel ─────────────────────────────────────────────────────────
+
+function CategoriesPanel({ onClose }: { onClose: () => void }) {
+  const tc = useTranslations("categoryManager");
+  const [items, setItems] = useState<SubscriberCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState<CategoryType>("both");
+  const [addMode, setAddMode] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState<CategoryType>("both");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await categoriesService.list();
+      if (res.success) setItems(res.data as SubscriberCategory[]);
+    } catch {
+      setError(tc("loadError"));
+    } finally {
+      setLoading(false);
+    }
+  }, [tc]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const startEdit = (cat: SubscriberCategory) => {
+    setEditId(cat.id);
+    setEditName(cat.name);
+    setEditType(cat.type as CategoryType);
+    setAddMode(false);
+  };
+
+  const cancelEdit = () => { setEditId(null); setEditName(""); };
+
+  const saveEdit = async () => {
+    if (!editId || !editName.trim()) return;
+    setSaving(true);
+    try {
+      await categoriesService.update(editId, { name: editName.trim(), type: editType });
+      setEditId(null);
+      await load();
+    } catch {
+      setError(tc("saveError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveNew = async () => {
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      await categoriesService.create({ name: newName.trim(), type: newType });
+      setNewName("");
+      setNewType("both");
+      setAddMode(false);
+      await load();
+    } catch {
+      setError(tc("saveError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (id: string) => {
+    setSaving(true);
+    try {
+      await categoriesService.remove(id);
+      await load();
+    } catch {
+      setError(tc("deleteError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const typeLabels: Record<CategoryType, string> = {
+    income: tc("income"),
+    expense: tc("expense"),
+    both: tc("both"),
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-surface border-l border-border shadow-xl">
+        <div className="flex items-center justify-between border-b border-border p-4">
+          <h2 className="text-lg font-semibold text-text-primary">{tc("title")}</h2>
+          <button onClick={onClose} className="rounded-lg p-1 hover:bg-background">
+            <X className="h-5 w-5 text-text-secondary" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full rounded-lg" />
+            ))
+          ) : items.length === 0 && !addMode ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-text-secondary">{tc("noCategories")}</p>
+              <p className="mt-1 text-xs text-text-secondary">{tc("noCategoriesHint")}</p>
+            </div>
+          ) : (
+            items.map((cat) =>
+              editId === cat.id ? (
+                <div key={cat.id} className="rounded-lg border border-primary/40 bg-background p-3 space-y-2">
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+                    placeholder={tc("namePlaceholder")}
+                  />
+                  <select
+                    value={editType}
+                    onChange={(e) => setEditType(e.target.value as CategoryType)}
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+                  >
+                    {(["income", "expense", "both"] as CategoryType[]).map((t) => (
+                      <option key={t} value={t}>{typeLabels[t]}</option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2">
+                    <button onClick={saveEdit} disabled={saving || !editName.trim()}
+                      className="flex-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50">
+                      {tc("save")}
+                    </button>
+                    <button onClick={cancelEdit} disabled={saving}
+                      className="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-primary">
+                      {tc("cancel")}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div key={cat.id} className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">{cat.name}</p>
+                    <p className="text-xs text-text-secondary">{typeLabels[cat.type as CategoryType]}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => startEdit(cat)} className="rounded p-1 hover:bg-border">
+                      <Pencil className="h-3.5 w-3.5 text-text-secondary" />
+                    </button>
+                    <button onClick={() => remove(cat.id)} disabled={saving} className="rounded p-1 hover:bg-red-50">
+                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                    </button>
+                  </div>
+                </div>
+              )
+            )
+          )}
+
+          {addMode && (
+            <div className="rounded-lg border border-primary/40 bg-background p-3 space-y-2">
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") saveNew(); if (e.key === "Escape") setAddMode(false); }}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+                placeholder={tc("namePlaceholder")}
+              />
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value as CategoryType)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+              >
+                {(["income", "expense", "both"] as CategoryType[]).map((t) => (
+                  <option key={t} value={t}>{typeLabels[t]}</option>
+                ))}
+              </select>
+              <div className="flex gap-2">
+                <button onClick={saveNew} disabled={saving || !newName.trim()}
+                  className="flex-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50">
+                  {tc("save")}
+                </button>
+                <button onClick={() => setAddMode(false)} disabled={saving}
+                  className="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text-primary">
+                  {tc("cancel")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-border p-4">
+          <button
+            onClick={() => { setAddMode(true); setEditId(null); }}
+            disabled={addMode}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            {tc("addCategory")}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const ITEMS_PER_PAGE = 10;
 
 export default function FinancialPage() {
   const t = useTranslations("financial");
+  const tc = useTranslations("categoryManager");
 
   // Filters
   const [period, setPeriod] = useState<Period>("thisMonth");
@@ -79,6 +290,7 @@ export default function FinancialPage() {
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [showCategories, setShowCategories] = useState(false);
 
   // Loading flags
   const [loadingCharts, setLoadingCharts] = useState(true);
@@ -207,13 +419,22 @@ export default function FinancialPage() {
           <h1 className="text-2xl font-bold text-text-primary md:text-3xl">
             {t("title")}
           </h1>
-          <button
-            onClick={handleExport}
-            className="inline-flex items-center gap-2 self-start rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-background"
-          >
-            <Download className="h-4 w-4" />
-            {t("export")}
-          </button>
+          <div className="flex items-center gap-2 self-start">
+            <button
+              onClick={() => setShowCategories(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-background"
+            >
+              <Tags className="h-4 w-4" />
+              {tc("manage")}
+            </button>
+            <button
+              onClick={handleExport}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-background"
+            >
+              <Download className="h-4 w-4" />
+              {t("export")}
+            </button>
+          </div>
         </div>
 
         {/* Period selector */}
@@ -482,6 +703,10 @@ export default function FinancialPage() {
           )}
         </div>
       </div>
+
+      {showCategories && (
+        <CategoriesPanel onClose={() => setShowCategories(false)} />
+      )}
     </>
   );
 }

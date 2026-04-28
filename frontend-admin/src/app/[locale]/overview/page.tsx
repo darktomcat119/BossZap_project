@@ -115,7 +115,7 @@ export default function OverviewPage() {
         },
         {
           label: t('monthlyRevenue'),
-          value: `$${overview.revenueThisMonth.toLocaleString()}`,
+          value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(overview.revenueThisMonth),
           icon: DollarSign,
           color: 'text-secondary',
           bg: 'bg-secondary/10',

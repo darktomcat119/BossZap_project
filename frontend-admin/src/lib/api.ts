@@ -71,6 +71,8 @@ export const subscribersApi = {
   activate: (id: string) => request(`/subscribers/${id}/activate`, { method: 'PATCH' }),
   suspend: (id: string) => request(`/subscribers/${id}/suspend`, { method: 'PATCH' }),
   deactivate: (id: string) => request(`/subscribers/${id}/deactivate`, { method: 'PATCH' }),
+  resetPassword: (id: string) => request(`/subscribers/${id}/reset-password`, { method: 'POST' }),
+  getLogs: (id: string, page = 1) => request(`/subscribers/${id}/logs?page=${page}&limit=50`),
 };
 
 // ── Plans ──
@@ -113,6 +115,26 @@ export const healthApi = {
   status: () => request('/health'),
   queues: () => request('/health/queues'),
   workers: () => request('/health/workers'),
+  failedJobs: () => request('/health/failed-jobs'),
+  cleanFailedJobs: () => request('/health/failed-jobs/clean', { method: 'POST' }),
+};
+
+// ── Notifications ──
+export const notificationsApi = {
+  list: () => request('/notifications'),
+  summary: () => request('/notifications/summary'),
+};
+
+// ── Profile ──
+export const profileApi = {
+  get: () => request('/profile'),
+  update: (data: { email?: string; preferred_language?: string }) =>
+    request('/profile', { method: 'PATCH', body: data }),
+  changePassword: (current_password: string, new_password: string) =>
+    request('/profile/change-password', {
+      method: 'POST',
+      body: { current_password, new_password },
+    }),
 };
 
 // ── Templates ──

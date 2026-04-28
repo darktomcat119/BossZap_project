@@ -49,4 +49,19 @@ export class AdminMetricsController {
   getUsage() {
     return this.service.getUsageStats();
   }
+
+  @Get('top-subscribers')
+  @ApiOperation({ summary: 'Top 10 subscribers by message volume' })
+  getTopSubscribers() {
+    return this.service.getTopSubscribers();
+  }
+
+  @Get('costs')
+  @ApiOperation({
+    summary:
+      'Estimated cost breakdown: OpenAI tokens, WhatsApp messages, PDF storage',
+  })
+  getCosts() {
+    return this.service.getCostBreakdown();
+  }
 }

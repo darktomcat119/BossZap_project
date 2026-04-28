@@ -13,7 +13,7 @@ const localeLabels: Record<string, string> = {
   "pt-BR": "PT",
 };
 
-const locales = ["es", "en", "pt-BR"] as const;
+const locales = ["pt-BR", "es", "en"] as const;
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -60,10 +60,10 @@ export function AppShell({ children }: AppShellProps) {
             <button
               onClick={() => setLangMenuOpen(!langMenuOpen)}
               className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-background"
-              aria-label="Switch language"
+              aria-label={tCommon("switchLanguage")}
             >
               <Globe className="h-4 w-4" />
-              <span className="hidden sm:inline">Language</span>
+              <span className="hidden sm:inline">{tCommon("language")}</span>
             </button>
 
             {langMenuOpen && (
