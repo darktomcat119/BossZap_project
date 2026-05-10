@@ -16,3 +16,4 @@ next-env.d.ts
 /package.json
 /package-lock.json
 .env.production
+.claude/
