@@ -212,6 +212,52 @@ export interface BudgetsParams {
   limit?: number;
 }
 
+// ─── Products / Catálogo ─────────────────────────────────────────────────────
+
+export type ProductType = 'product' | 'service';
+
+export interface Product {
+  id: string;
+  subscriber_id: string;
+  name: string;
+  description: string | null;
+  sku: string | null;
+  price: number;
+  type: ProductType;
+  unit: string;
+  stock: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateProductPayload {
+  name: string;
+  description?: string;
+  sku?: string;
+  price: number;
+  type?: ProductType;
+  unit?: string;
+  stock?: number;
+}
+
+export interface UpdateProductPayload {
+  name?: string;
+  description?: string;
+  sku?: string;
+  price?: number;
+  type?: ProductType;
+  unit?: string;
+  stock?: number;
+  is_active?: boolean;
+}
+
+export interface ProductsParams {
+  type?: ProductType;
+  search?: string;
+  includeInactive?: boolean;
+}
+
 // ─── Subscriber Categories ───────────────────────────────────────────────────
 
 export type CategoryType = 'income' | 'expense' | 'both';

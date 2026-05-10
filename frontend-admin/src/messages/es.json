@@ -193,7 +193,15 @@
     "removeFilter": "Quitar filtro",
     "subscriber_activated": "Suscriptor activado",
     "subscriber_suspended": "Suscriptor suspendido",
-    "subscriber_deactivated": "Suscriptor desactivado"
+    "subscriber_deactivated": "Suscriptor desactivado",
+    "entityTypes": {
+      "subscriber": "Suscriptor",
+      "plan": "Plan",
+      "payment": "Pago",
+      "budget": "Presupuesto",
+      "event": "Evento",
+      "category": "Categoría"
+    }
   },
   "health": {
     "title": "Estado del Sistema",

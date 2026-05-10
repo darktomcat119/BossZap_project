@@ -55,7 +55,7 @@ export class PaymentService {
     });
 
     if (!subscriber) {
-      throw new NotFoundException(`Subscriber ${subscriberId} not found`);
+      throw new NotFoundException('Conta não encontrada.');
     }
 
     const plan = await this.subscriptionRepo.manager
@@ -63,7 +63,7 @@ export class PaymentService {
       .findOne({ where: { id: planId, is_active: true } });
 
     if (!plan) {
-      throw new NotFoundException(`Plan ${planId} not found or not active`);
+      throw new NotFoundException('Plano não encontrado ou inativo.');
     }
 
     const existingActive = await this.subscriptionRepo.findOne({
@@ -75,7 +75,7 @@ export class PaymentService {
 
     if (existingActive) {
       throw new BadRequestException(
-        'Subscriber already has an active subscription',
+        'Esta conta já possui uma assinatura ativa.',
       );
     }
 

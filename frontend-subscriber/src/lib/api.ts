@@ -190,4 +190,73 @@ export const api = {
       body: formData,
     });
   },
+
+  /**
+   * Upload a file with progress callbacks. Uses XMLHttpRequest because
+   * the fetch API doesn't expose upload progress events. The onProgress
+   * callback receives a 0–100 integer percent.
+   */
+  uploadWithProgress<T>(
+    path: string,
+    formData: FormData,
+    onProgress: (percent: number) => void,
+  ): Promise<ApiResponse<T>> {
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_URL}/api/v1${path}`);
+
+      const token = getAccessToken();
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+
+      xhr.onload = () => {
+        const status = xhr.status;
+        let body: unknown = null;
+        try {
+          body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+        } catch {
+          body = null;
+        }
+        if (status >= 200 && status < 300) {
+          // Backend returns either { success, data } or the raw payload
+          const env = body as { success?: boolean; data?: unknown } | null;
+          if (env && typeof env.success === 'boolean') {
+            resolve(env as ApiResponse<T>);
+          } else {
+            resolve({ success: true, data: body as T });
+          }
+        } else {
+          const errorBody = body as { error?: ApiError; message?: string } | null;
+          resolve({
+            success: false,
+            data: null as unknown as T,
+            error: errorBody?.error ?? {
+              code: String(status),
+              message: errorBody?.message ?? `Upload failed (${status})`,
+              details: [],
+            },
+          });
+        }
+      };
+
+      xhr.onerror = () => {
+        resolve({
+          success: false,
+          data: null as unknown as T,
+          error: {
+            code: 'NETWORK',
+            message: 'Network error during upload',
+            details: [],
+          },
+        });
+      };
+
+      xhr.send(formData);
+    });
+  },
 };

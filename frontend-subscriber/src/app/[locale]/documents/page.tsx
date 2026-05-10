@@ -2,12 +2,25 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Download, FileText, AlertCircle } from "lucide-react";
+import {
+  Download,
+  FileText,
+  AlertCircle,
+  Trash2,
+  X,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { budgetsService } from "@/services/budgets.service";
+import { CreateBudgetModal } from "@/components/forms/create-budget-modal";
 import type { Budget, BudgetStatus } from "@/lib/types";
 
 // ── Constants ───────────────────────────────────────────────
+
+const PAGE_SIZE = 20;
 
 type DocTypeFilter = "all" | "budget" | "service_order";
 type StatusFilter = "all" | BudgetStatus;
@@ -80,7 +93,13 @@ function formatCurrency(amount: number | string): string {
 }
 
 function formatDate(iso: string): string {
-  return iso.slice(0, 10);
+  if (!iso) return "-";
+  const ts = iso.length > 10 ? iso : `${iso}T00:00:00`;
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return iso.slice(0, 10);
+  return `${String(d.getDate()).padStart(2, "0")}/${String(
+    d.getMonth() + 1,
+  ).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
 function handleDownload(pdfUrl: string | null): void {
@@ -100,16 +119,28 @@ export default function DocumentsPage() {
 
   const [typeFilter, setTypeFilter] = useState<DocTypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [docToDelete, setDocToDelete] = useState<Budget | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await budgetsService.getAll({ page: 1, limit: 20 });
+      const res = await budgetsService.getAll({ page, limit: PAGE_SIZE });
       if (res.success) {
         const raw = res.data as any;
         const list = Array.isArray(raw) ? raw : (raw?.budgets ?? []);
         setBudgets(list);
+        // Backend returns { budgets, total, page, limit, totalPages }
+        const t = Number(raw?.total ?? list.length);
+        setTotal(t);
+        setTotalPages(
+          Number(raw?.totalPages ?? Math.max(1, Math.ceil(t / PAGE_SIZE))),
+        );
       } else {
         setError(res.error?.message ?? t("loadError"));
       }
@@ -118,11 +149,35 @@ export default function DocumentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, page]);
 
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
+
+  // Reset to page 1 when filters change so we never land on a phantom page
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter, statusFilter]);
+
+  const confirmDelete = useCallback(async () => {
+    if (!docToDelete) return;
+    setDeleting(true);
+    try {
+      const res = await budgetsService.delete(docToDelete.id);
+      if (res.success) {
+        setBudgets((prev) => prev.filter((b) => b.id !== docToDelete.id));
+        toast.success(t("deleteSuccess"));
+        setDocToDelete(null);
+      } else {
+        toast.error(res.error?.message ?? t("deleteError"));
+      }
+    } catch {
+      toast.error(t("deleteError"));
+    } finally {
+      setDeleting(false);
+    }
+  }, [docToDelete, t]);
 
   const filtered = useMemo(() => {
     return budgets.filter((doc) => {
@@ -203,6 +258,13 @@ export default function DocumentsPage() {
             <p className="mt-1 text-sm text-text-muted">
               {t("noDocumentsHint")}
             </p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-primary/20 transition-all hover:bg-primary-dark hover:shadow-lg"
+            >
+              <Plus className="h-4 w-4" />
+              {t("createFirstBudget")}
+            </button>
           </div>
         )}
 
@@ -264,19 +326,28 @@ export default function DocumentsPage() {
                       {formatDate(doc.created_at)}
                     </td>
                     <td className="px-3 py-3">
-                      <button
-                        onClick={() => handleDownload(doc.pdf_url)}
-                        disabled={!doc.pdf_url}
-                        className={cn(
-                          "rounded-lg p-1.5 transition-colors",
-                          doc.pdf_url
-                            ? "text-text-secondary hover:bg-background hover:text-primary"
-                            : "cursor-not-allowed text-text-muted/40"
-                        )}
-                        title={t("downloadPdf")}
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDownload(doc.pdf_url)}
+                          disabled={!doc.pdf_url}
+                          className={cn(
+                            "rounded-lg p-1.5 transition-colors",
+                            doc.pdf_url
+                              ? "text-text-secondary hover:bg-background hover:text-primary"
+                              : "cursor-not-allowed text-text-muted/40"
+                          )}
+                          title={t("downloadPdf")}
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDocToDelete(doc)}
+                          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500"
+                          title={t("delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -329,12 +400,12 @@ export default function DocumentsPage() {
                     {formatDate(doc.created_at)}
                   </span>
                 </div>
-                <div className="mt-3 border-t border-border pt-3">
+                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
                   <button
                     onClick={() => handleDownload(doc.pdf_url)}
                     disabled={!doc.pdf_url}
                     className={cn(
-                      "flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium transition-colors",
+                      "flex items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium transition-colors",
                       doc.pdf_url
                         ? "text-text-secondary hover:bg-background"
                         : "cursor-not-allowed text-text-muted/40"
@@ -343,12 +414,116 @@ export default function DocumentsPage() {
                     <Download className="h-3.5 w-3.5" />
                     {t("downloadPdf")}
                   </button>
+                  <button
+                    onClick={() => setDocToDelete(doc)}
+                    className="flex items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium text-red-500 transition-colors hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {t("delete")}
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Pagination */}
+        {!loading && !error && totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between">
+            <p className="text-sm text-text-muted">
+              {(page - 1) * PAGE_SIZE + 1}–
+              {Math.min(page * PAGE_SIZE, total)} / {total}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                aria-label={tCommon("previous")}
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-medium text-text-primary tabular-nums">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                aria-label={tCommon("next")}
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Create-budget modal (used by empty-state CTA) */}
+      {showCreateModal && (
+        <CreateBudgetModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchDocuments();
+          }}
+        />
+      )}
+
+      {/* Delete confirmation modal */}
+      {docToDelete && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => !deleting && setDocToDelete(null)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-text-primary">
+                      {t("deleteTitle")}
+                    </h3>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      {t("deleteMessage", {
+                        doc:
+                          docToDelete.document_number ??
+                          (docToDelete.client_name ?? ""),
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => !deleting && setDocToDelete(null)}
+                  className="rounded-lg p-1 text-text-muted hover:bg-background"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  onClick={() => setDocToDelete(null)}
+                  disabled={deleting}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-background disabled:opacity-50"
+                >
+                  {tCommon("cancel")}
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                >
+                  {deleting ? tCommon("loading") : t("delete")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

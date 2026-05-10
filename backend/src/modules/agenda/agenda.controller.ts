@@ -3,6 +3,8 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
+  HttpCode,
   Param,
   Body,
   Query,
@@ -164,5 +166,16 @@ export class AgendaController {
     @Param('id') id: string,
   ): Promise<Event> {
     return this.agendaService.completeEvent(req.user.id, id);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete an event' })
+  @ApiParam({ name: 'id', type: String })
+  async remove(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ): Promise<void> {
+    await this.agendaService.deleteEvent(req.user.id, id);
   }
 }

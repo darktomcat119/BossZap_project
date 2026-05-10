@@ -242,20 +242,18 @@ export function CreateBudgetModal({ onClose, onSuccess }: Props) {
                   return (
                     <div
                       key={idx}
-                      className="grid grid-cols-12 gap-2 rounded-lg border border-border bg-background p-2"
+                      className="space-y-2 rounded-lg border border-border bg-background p-2"
                     >
-                      <div className="col-span-12 sm:col-span-6">
-                        <input
-                          type="text"
-                          value={it.description}
-                          onChange={(e) =>
-                            updateItem(idx, { description: e.target.value })
-                          }
-                          placeholder={t("itemDescription")}
-                          className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                        />
-                      </div>
-                      <div className="col-span-3 sm:col-span-2">
+                      <input
+                        type="text"
+                        value={it.description}
+                        onChange={(e) =>
+                          updateItem(idx, { description: e.target.value })
+                        }
+                        placeholder={t("itemDescription")}
+                        className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
                           inputMode="decimal"
@@ -266,10 +264,8 @@ export function CreateBudgetModal({ onClose, onSuccess }: Props) {
                             })
                           }
                           placeholder={t("qty")}
-                          className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-center text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-16 shrink-0 rounded-lg border border-border bg-surface px-2 py-1.5 text-center text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                         />
-                      </div>
-                      <div className="col-span-5 sm:col-span-2">
                         <input
                           type="text"
                           inputMode="decimal"
@@ -280,18 +276,16 @@ export function CreateBudgetModal({ onClose, onSuccess }: Props) {
                             })
                           }
                           placeholder="0,00"
-                          className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-right text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-right text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                         />
-                      </div>
-                      <div className="col-span-3 sm:col-span-1 flex items-center justify-end pr-1 text-xs font-medium text-text-secondary">
-                        {formatBRL(lineTotal)}
-                      </div>
-                      <div className="col-span-1 flex items-center justify-end">
+                        <span className="shrink-0 whitespace-nowrap text-right text-xs font-semibold text-text-secondary tabular-nums min-w-[88px]">
+                          {formatBRL(lineTotal)}
+                        </span>
                         <button
                           type="button"
                           onClick={() => removeItem(idx)}
                           disabled={items.length === 1}
-                          className="rounded-lg p-1 text-text-secondary hover:bg-danger/10 hover:text-danger disabled:opacity-30"
+                          className="shrink-0 rounded-lg p-1 text-text-secondary hover:bg-danger/10 hover:text-danger disabled:opacity-30"
                           aria-label={tCommon("delete")}
                         >
                           <Trash2 className="h-4 w-4" />

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Search, Download, ChevronLeft, ChevronRight, Tags, Plus, Pencil, Trash2, X } from "lucide-react";
+import { Search, Download, ChevronLeft, ChevronRight, Tags, Plus, Pencil, Trash2, X, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 import { financialService } from "@/services/financial.service";
 import { categoriesService } from "@/services/categories.service";
@@ -40,6 +41,42 @@ function getDateRange(period: Period): { startDate: string; endDate: string } {
   if (period === "thisYear") return { startDate: fmt(new Date(today.getFullYear(), 0, 1)), endDate: end };
   // thisMonth + custom fallback
   return { startDate: fmt(new Date(today.getFullYear(), today.getMonth(), 1)), endDate: end };
+}
+
+// System category keys that have localized labels under
+// `financial.categories.*`. Anything not in this set is a user-defined
+// custom category and is shown as-is.
+const KNOWN_CATEGORY_KEYS = new Set([
+  "materials",
+  "labor",
+  "transport",
+  "food",
+  "tools",
+  "service",
+  "product",
+  "tip",
+  "other",
+]);
+
+function localizeCategory(
+  t: (key: string) => string,
+  raw: string | null | undefined,
+): string {
+  if (!raw) return t("categories.other");
+  const key = raw.toLowerCase();
+  return KNOWN_CATEGORY_KEYS.has(key) ? t(`categories.${key}`) : raw;
+}
+
+// Brazilian date format (DD/MM/YYYY). Accepts ISO date strings ("2026-04-28")
+// or full ISO datetimes; falls back to the raw value if unparseable.
+function formatDateBR(value: string | null | undefined): string {
+  if (!value) return "-";
+  const iso = value.length > 10 ? value : `${value}T00:00:00`;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return value;
+  return `${String(d.getDate()).padStart(2, "0")}/${String(
+    d.getMonth() + 1,
+  ).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
 function Skeleton({ className }: { className?: string }) {
@@ -139,6 +176,23 @@ function CategoriesPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const addDefaults = async () => {
+    setSaving(true);
+    try {
+      const res = await categoriesService.seedDefaults();
+      if (res.success) {
+        setItems(res.data as SubscriberCategory[]);
+        toast.success(tc("defaultsAddedSuccess"));
+      } else {
+        setError(tc("saveError"));
+      }
+    } catch {
+      setError(tc("saveError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const typeLabels: Record<CategoryType, string> = {
     income: tc("income"),
     expense: tc("expense"),
@@ -167,6 +221,13 @@ function CategoriesPanel({ onClose }: { onClose: () => void }) {
             <div className="py-8 text-center">
               <p className="text-sm text-text-secondary">{tc("noCategories")}</p>
               <p className="mt-1 text-xs text-text-secondary">{tc("noCategoriesHint")}</p>
+              <button
+                onClick={addDefaults}
+                disabled={saving}
+                className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
+              >
+                {tc("addDefaultsBR")}
+              </button>
             </div>
           ) : (
             items.map((cat) =>
@@ -250,7 +311,7 @@ function CategoriesPanel({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        <div className="border-t border-border p-4">
+        <div className="space-y-2 border-t border-border p-4">
           <button
             onClick={() => { setAddMode(true); setEditId(null); }}
             disabled={addMode}
@@ -259,6 +320,15 @@ function CategoriesPanel({ onClose }: { onClose: () => void }) {
             <Plus className="h-4 w-4" />
             {tc("addCategory")}
           </button>
+          {items.length > 0 && (
+            <button
+              onClick={addDefaults}
+              disabled={saving || addMode}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-text-secondary hover:bg-background disabled:opacity-50"
+            >
+              {tc("addDefaultsBR")}
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -291,6 +361,13 @@ export default function FinancialPage() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [showCategories, setShowCategories] = useState(false);
+
+  // Delete confirmation
+  const [recordToDelete, setRecordToDelete] = useState<FinancialRecord | null>(null);
+  const [deletingRecord, setDeletingRecord] = useState(false);
+
+  // Transaction detail view
+  const [recordToView, setRecordToView] = useState<FinancialRecord | null>(null);
 
   // Loading flags
   const [loadingCharts, setLoadingCharts] = useState(true);
@@ -372,6 +449,27 @@ export default function FinancialPage() {
     setPage(1);
   }, [typeFilter, categoryFilter, search, period, customStart, customEnd]);
 
+  const confirmDeleteRecord = useCallback(async () => {
+    if (!recordToDelete) return;
+    setDeletingRecord(true);
+    try {
+      const res = await financialService.deleteRecord(recordToDelete.id);
+      if (res.success) {
+        toast.success(t("recordDeleteSuccess"));
+        setRecordToDelete(null);
+        // Refresh records and charts so totals + breakdown update
+        fetchRecords();
+        fetchCharts();
+      } else {
+        toast.error(res.error?.message ?? t("recordDeleteError"));
+      }
+    } catch {
+      toast.error(t("recordDeleteError"));
+    } finally {
+      setDeletingRecord(false);
+    }
+  }, [recordToDelete, fetchRecords, fetchCharts, t]);
+
   const handleExport = async () => {
     try {
       const blob = await financialService.exportCsv(
@@ -399,7 +497,7 @@ export default function FinancialPage() {
   }));
 
   const donutChartData = categoryData.map((c) => ({
-    name: c.category || "Other",
+    name: localizeCategory(t, c.category),
     value: c.total,
   }));
 
@@ -546,7 +644,7 @@ export default function FinancialPage() {
               <option value="all">{t("allCategories")}</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
-                  {cat}
+                  {localizeCategory(t, cat)}
                 </option>
               ))}
             </select>
@@ -562,6 +660,7 @@ export default function FinancialPage() {
                   <th className="px-3 py-3 font-medium">{t("description")}</th>
                   <th className="px-3 py-3 font-medium">{t("category")}</th>
                   <th className="px-3 py-3 text-right font-medium">{t("amount")}</th>
+                  <th className="px-3 py-3 font-medium" />
                 </tr>
               </thead>
               <tbody>
@@ -572,10 +671,11 @@ export default function FinancialPage() {
                   : records.map((rec) => (
                       <tr
                         key={rec.id}
-                        className="border-b border-border transition-colors hover:bg-background"
+                        onClick={() => setRecordToView(rec)}
+                        className="cursor-pointer border-b border-border transition-colors hover:bg-background"
                       >
                         <td className="px-3 py-3 text-text-primary">
-                          {rec.record_date}
+                          {formatDateBR(rec.record_date)}
                         </td>
                         <td className="px-3 py-3">
                           <span
@@ -593,7 +693,7 @@ export default function FinancialPage() {
                           {rec.description ?? "-"}
                         </td>
                         <td className="px-3 py-3 text-text-secondary">
-                          {rec.category ?? "-"}
+                          {rec.category ? localizeCategory(t, rec.category) : "-"}
                         </td>
                         <td
                           className={cn(
@@ -604,12 +704,24 @@ export default function FinancialPage() {
                           {rec.type === "income" ? "+" : "-"}R${" "}
                           {(parseFloat(String(rec.amount)) || 0).toFixed(2).replace(".", ",")}
                         </td>
+                        <td className="px-3 py-3 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRecordToDelete(rec);
+                            }}
+                            className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500"
+                            title={t("recordDelete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                 {!loadingTable && records.length === 0 && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-3 py-8 text-center text-text-muted"
                     >
                       {t("noTransactions")}
@@ -629,7 +741,8 @@ export default function FinancialPage() {
               : records.map((rec) => (
                   <div
                     key={rec.id}
-                    className="rounded-lg border border-border bg-background p-4"
+                    onClick={() => setRecordToView(rec)}
+                    className="cursor-pointer rounded-lg border border-border bg-background p-4 transition-colors hover:bg-surface"
                   >
                     <div className="flex items-center justify-between">
                       <span
@@ -642,16 +755,28 @@ export default function FinancialPage() {
                       >
                         {t(rec.type)}
                       </span>
-                      <span className="text-xs text-text-muted">
-                        {rec.record_date}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-text-muted">
+                          {formatDateBR(rec.record_date)}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRecordToDelete(rec);
+                          }}
+                          className="rounded-lg p-1 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500"
+                          title={t("recordDelete")}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="mt-2 text-sm font-medium text-text-primary">
                       {rec.description ?? "-"}
                     </p>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="text-xs text-text-secondary">
-                        {rec.category ?? "-"}
+                        {rec.category ? localizeCategory(t, rec.category) : "-"}
                       </span>
                       <span
                         className={cn(
@@ -706,6 +831,155 @@ export default function FinancialPage() {
 
       {showCategories && (
         <CategoriesPanel onClose={() => setShowCategories(false)} />
+      )}
+
+      {recordToDelete && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => !deletingRecord && setRecordToDelete(null)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-text-primary">
+                      {t("recordDeleteTitle")}
+                    </h3>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      {t("recordDeleteMessage", {
+                        desc:
+                          recordToDelete.description ??
+                          recordToDelete.category ??
+                          "",
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => !deletingRecord && setRecordToDelete(null)}
+                  className="rounded-lg p-1 text-text-muted hover:bg-background"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  onClick={() => setRecordToDelete(null)}
+                  disabled={deletingRecord}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-background disabled:opacity-50"
+                >
+                  {t("cancel")}
+                </button>
+                <button
+                  onClick={confirmDeleteRecord}
+                  disabled={deletingRecord}
+                  className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                >
+                  {deletingRecord ? "..." : t("recordDelete")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {recordToView && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setRecordToView(null)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span
+                    className={cn(
+                      "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
+                      recordToView.type === "income"
+                        ? "bg-success/10 text-success"
+                        : "bg-danger/10 text-danger",
+                    )}
+                  >
+                    {t(recordToView.type)}
+                  </span>
+                  <h3 className="mt-2 text-lg font-semibold text-text-primary">
+                    {recordToView.description ?? t("noTransactions")}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setRecordToView(null)}
+                  className="rounded-lg p-1 text-text-muted hover:bg-background"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <dl className="mt-5 space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <dt className="text-text-secondary">{t("amount")}</dt>
+                  <dd
+                    className={cn(
+                      "font-semibold",
+                      recordToView.type === "income"
+                        ? "text-success"
+                        : "text-danger",
+                    )}
+                  >
+                    {recordToView.type === "income" ? "+" : "-"}R${" "}
+                    {(parseFloat(String(recordToView.amount)) || 0)
+                      .toFixed(2)
+                      .replace(".", ",")}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-text-secondary">{t("date")}</dt>
+                  <dd className="font-medium text-text-primary">
+                    {formatDateBR(recordToView.record_date)}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-text-secondary">{t("category")}</dt>
+                  <dd className="font-medium text-text-primary">
+                    {recordToView.category
+                      ? localizeCategory(t, recordToView.category)
+                      : "-"}
+                  </dd>
+                </div>
+                {recordToView.reference_person && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-text-secondary">
+                      {t("referencePerson")}
+                    </dt>
+                    <dd className="font-medium text-text-primary">
+                      {recordToView.reference_person}
+                    </dd>
+                  </div>
+                )}
+                <div className="border-t border-border pt-3">
+                  <dt className="text-text-secondary">{t("registeredAt")}</dt>
+                  <dd className="mt-1 text-xs text-text-muted">
+                    {formatDateBR(recordToView.created_at)}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setRecordToView(null)}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-background"
+                >
+                  {t("cancel")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </>
   );

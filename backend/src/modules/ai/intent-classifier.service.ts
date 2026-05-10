@@ -11,6 +11,7 @@ export type Intent =
   | 'FINANCE_QUERY'
   | 'BUDGET_CREATE'
   | 'BUDGET_QUERY'
+  | 'PRODUCT_QUERY'
   | 'SERVICE_ORDER_CREATE'
   | 'PROFILE_UPDATE'
   | 'PROFILE_QUERY'
@@ -39,6 +40,7 @@ Classify the user's message into ONE of these intents:
 - FINANCE_QUERY: Asking about financial data
 - BUDGET_CREATE: Creating a new quote/budget
 - BUDGET_QUERY: Asking about existing quotes
+- PRODUCT_QUERY: Asking about a product/service price in the catalog ("quanto custa X?")
 - SERVICE_ORDER_CREATE: Creating a service order
 - PROFILE_UPDATE: Updating business profile info
 - LANGUAGE_CHANGE: Changing preferred language

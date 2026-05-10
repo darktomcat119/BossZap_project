@@ -2,16 +2,18 @@
 
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { usePathname, Link } from "@/i18n/routing";
+import { useRouter, usePathname, Link } from "@/i18n/routing";
 import {
   LayoutDashboard,
   DollarSign,
   Calendar,
   FileText,
+  Package,
   User,
   X,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -25,6 +27,7 @@ const navItems: NavItem[] = [
   { href: "/financial", labelKey: "financial", icon: DollarSign },
   { href: "/calendar", labelKey: "calendar", icon: Calendar },
   { href: "/documents", labelKey: "documents", icon: FileText },
+  { href: "/catalog", labelKey: "catalog", icon: Package },
   { href: "/profile", labelKey: "profile", icon: User },
 ];
 
@@ -37,8 +40,20 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
 
   const isActive = (href: string) => pathname.startsWith(href);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      // Always navigate even if the server call fails — tokens are
+      // already cleared locally by authService.logout's finally block.
+      router.replace("/login");
+    }
+  };
 
   return (
     <>
@@ -125,7 +140,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div className="border-t border-border/50 p-3">
-          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-danger/5 hover:text-danger">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-danger/5 hover:text-danger"
+          >
             <LogOut className="h-[18px] w-[18px]" />
             <span>{t("logout")}</span>
           </button>

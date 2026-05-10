@@ -399,9 +399,14 @@ export default function DashboardPage() {
             {loading ? (
               <ListSkeleton rows={5} />
             ) : events.length === 0 ? (
-              <p className="px-5 py-8 text-center text-sm text-text-muted">
-                {t("noUpcomingEvents")}
-              </p>
+              <div className="flex flex-col items-center px-5 py-10 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background">
+                  <Calendar className="h-6 w-6 text-text-muted" />
+                </div>
+                <p className="mt-3 text-sm font-medium text-text-secondary">
+                  {t("noUpcomingEvents")}
+                </p>
+              </div>
             ) : (
               <ul className="divide-y divide-border/30">
                 {events.map((event, idx) => (
@@ -440,9 +445,20 @@ export default function DashboardPage() {
             {loading ? (
               <ListSkeleton rows={8} />
             ) : transactions.length === 0 ? (
-              <p className="px-5 py-8 text-center text-sm text-text-muted">
-                {t("noRecentTransactions")}
-              </p>
+              <div className="flex flex-col items-center px-5 py-10 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background">
+                  <DollarSign className="h-6 w-6 text-text-muted" />
+                </div>
+                <p className="mt-3 text-sm font-medium text-text-secondary">
+                  {t("noRecentTransactions")}
+                </p>
+                <button
+                  onClick={() => setActiveModal("expense")}
+                  className="mt-3 text-xs font-medium text-primary hover:text-primary-dark"
+                >
+                  {t("registerExpense")}
+                </button>
+              </div>
             ) : (
               <ul className="divide-y divide-border/30">
                 {transactions.map((tx) => (

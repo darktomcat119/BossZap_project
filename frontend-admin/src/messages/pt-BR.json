@@ -193,7 +193,15 @@
     "removeFilter": "Remover filtro",
     "subscriber_activated": "Assinante ativado",
     "subscriber_suspended": "Assinante suspenso",
-    "subscriber_deactivated": "Assinante desativado"
+    "subscriber_deactivated": "Assinante desativado",
+    "entityTypes": {
+      "subscriber": "Assinante",
+      "plan": "Plano",
+      "payment": "Pagamento",
+      "budget": "Orçamento",
+      "event": "Evento",
+      "category": "Categoria"
+    }
   },
   "health": {
     "title": "Saude do Sistema",

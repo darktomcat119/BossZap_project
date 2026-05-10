@@ -22,4 +22,12 @@ export const categoriesService = {
   async remove(id: string): Promise<void> {
     await api.delete(`/subscriber-categories/${id}`);
   },
+
+  /** Seed the standard Brazilian MEI category set (idempotent). */
+  async seedDefaults(): Promise<ApiResponse<SubscriberCategory[]>> {
+    return api.post<SubscriberCategory[]>(
+      '/subscriber-categories/seed-defaults',
+      {},
+    );
+  },
 };

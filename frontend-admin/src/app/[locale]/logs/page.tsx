@@ -91,6 +91,23 @@ export default function LogsPage() {
     return log.subscriber_id ?? '-';
   };
 
+  // Translate known entity-type labels (the value the backend writes into
+  // audit_logs.entity_type — e.g. "subscriber"). Unknown types fall back
+  // to the raw value so we don't hide future entities.
+  const KNOWN_ENTITY_TYPES = new Set([
+    'subscriber',
+    'plan',
+    'payment',
+    'budget',
+    'event',
+    'category',
+  ]);
+  const localizeEntity = (raw: string | null | undefined) => {
+    if (!raw) return '-';
+    const key = raw.toLowerCase();
+    return KNOWN_ENTITY_TYPES.has(key) ? t(`entityTypes.${key}`) : raw;
+  };
+
   // Client-side search filtering (the API filters by action/date, text search is local)
   const filtered = search
     ? logs.filter((log) => {
@@ -203,7 +220,7 @@ export default function LogsPage() {
                           {formatAuditAction(log.action)}
                         </span>
                       </td>
-                      <td className="px-md py-sm text-text-secondary">{log.entity_type}</td>
+                      <td className="px-md py-sm text-text-secondary">{localizeEntity(log.entity_type)}</td>
                     </tr>
                     {expandedId === log.id && (
                       <tr key={`${log.id}-details`} className="border-b border-border bg-background">

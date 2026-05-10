@@ -43,7 +43,7 @@ export class AgendaService {
       where: { id: eventId, subscriber_id: subscriberId },
     });
     if (!event) {
-      throw new NotFoundException('Event not found');
+      throw new NotFoundException('Evento não encontrado.');
     }
     return event;
   }
@@ -143,7 +143,7 @@ export class AgendaService {
     const event = await this.findById(subscriberId, eventId);
 
     if (event.subscriber_id !== subscriberId) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException('Acesso negado.');
     }
 
     Object.assign(event, data);
@@ -160,6 +160,14 @@ export class AgendaService {
     const event = await this.findById(subscriberId, eventId);
     event.status = 'completed';
     return this.eventRepo.save(event);
+  }
+
+  async deleteEvent(subscriberId: string, eventId: string): Promise<void> {
+    const event = await this.findById(subscriberId, eventId);
+    if (event.subscriber_id !== subscriberId) {
+      throw new ForbiddenException('Acesso negado.');
+    }
+    await this.eventRepo.remove(event);
   }
 
   async getMonthlyCalendar(

@@ -46,6 +46,16 @@ export class SubscriberCategoriesController {
     return this.categoriesService.create(user.id, data);
   }
 
+  @Post('seed-defaults')
+  @ApiOperation({
+    summary:
+      'Seed the standard Brazilian MEI category set (idempotent — skips existing names)',
+  })
+  async seedDefaults(@Req() req: Request) {
+    const user = req.user as AuthenticatedUser;
+    return this.categoriesService.seedDefaults(user.id);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update a custom category' })
   async update(

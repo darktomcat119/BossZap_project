@@ -20,6 +20,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SubscriberCategoriesModule } from './modules/subscriber-categories/subscriber-categories.module';
+import { ProductsModule } from './modules/products/products.module';
 import { LoggerService } from './config/logger.service';
 
 @Module({
@@ -67,6 +68,7 @@ import { LoggerService } from './config/logger.service';
     PaymentsModule,
     NotificationsModule,
     SubscriberCategoriesModule,
+    ProductsModule,
   ],
   providers: [LoggerService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
   exports: [LoggerService],

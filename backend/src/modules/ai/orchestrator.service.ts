@@ -313,6 +313,26 @@ export class OrchestratorService {
               language,
             );
           }
+        } else if (
+          parsed.intent === 'PRODUCT_QUERY' &&
+          actionResult.data
+        ) {
+          // Deterministic catalog reply — never hand a single product to
+          // the LLM summarizer, because the cost of a hallucinated price
+          // is much higher than for a list of records.
+          parsed.response_text = this.formatProductQueryReply(
+            actionResult.data as Record<string, unknown>,
+            language,
+          );
+        } else if (
+          parsed.intent === 'PRODUCT_QUERY' &&
+          !actionResult.data
+        ) {
+          // Catalog miss (executor returned `null`).
+          parsed.response_text = this.formatEmptyQueryReply(
+            parsed.intent,
+            language,
+          );
         } else if (this.isQueryIntent(parsed.intent) && actionResult.data) {
           // Empty-result short-circuit: never let the LLM "summarize" an
           // empty row set, because it tends to invent rows to fill the
@@ -408,6 +428,7 @@ export class OrchestratorService {
       intent === 'SCHEDULE_QUERY' ||
       intent === 'FINANCE_QUERY' ||
       intent === 'BUDGET_QUERY' ||
+      intent === 'PRODUCT_QUERY' ||
       intent === 'PROFILE_QUERY'
     );
   }
@@ -526,9 +547,71 @@ export class OrchestratorService {
         es: '📋 Aún no tienes presupuestos registrados.\n\nSolo dime y te armo uno. 😊',
         en: "📋 You don't have any budgets yet.\n\nJust ask and I'll create one for you! 😊",
       },
+      PRODUCT_QUERY: {
+        'pt-BR':
+          '🔎 Não encontrei esse item no seu catálogo.\n\nVocê pode cadastrar pelo painel em app.bosszap.com.br ou me dizer o preço que quer praticar. 😊',
+        es: '🔎 No encontré ese ítem en tu catálogo.\n\nPuedes agregarlo desde app.bosszap.com.br o dime el precio que quieres usar. 😊',
+        en: "🔎 I couldn't find that item in your catalog.\n\nYou can add it at app.bosszap.com.br or tell me the price you want to use. 😊",
+      },
     };
     const byIntent = messages[intent] || messages.SCHEDULE_QUERY;
     return byIntent[language] || byIntent['pt-BR'];
+  }
+
+  /**
+   * Server-rendered reply for a single catalog hit. We never pass the
+   * product to the LLM summarizer because a hallucinated price is far
+   * worse than for, say, a list of past records.
+   */
+  private formatProductQueryReply(
+    product: Record<string, unknown>,
+    language: string,
+  ): string {
+    const name = (product.name as string | undefined) ?? '—';
+    const rawPrice = Number(product.price ?? 0);
+    const price = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(isFinite(rawPrice) ? rawPrice : 0);
+    const unit = (product.unit as string | undefined) ?? 'un';
+    const stock = product.stock as number | null | undefined;
+    const type = (product.type as string | undefined) ?? 'product';
+
+    if (language === 'es') {
+      const stockLine =
+        type === 'product' && stock != null
+          ? `\n📦 Stock: ${stock} ${unit}`
+          : '';
+      return (
+        `🔎 ${name}\n\n` +
+        `💰 Precio: ${price} / ${unit}` +
+        stockLine +
+        `\n\n¿Quieres agregarlo a un presupuesto? 😊`
+      );
+    }
+    if (language === 'en') {
+      const stockLine =
+        type === 'product' && stock != null
+          ? `\n📦 Stock: ${stock} ${unit}`
+          : '';
+      return (
+        `🔎 ${name}\n\n` +
+        `💰 Price: ${price} / ${unit}` +
+        stockLine +
+        `\n\nWant me to add it to a quote? 😊`
+      );
+    }
+
+    const stockLine =
+      type === 'product' && stock != null
+        ? `\n📦 Estoque: ${stock} ${unit}`
+        : '';
+    return (
+      `🔎 ${name}\n\n` +
+      `💰 Preço: ${price} / ${unit}` +
+      stockLine +
+      `\n\nQuer que eu inclua em um orçamento? 😊`
+    );
   }
 
   private formatFinanceReply(

@@ -45,6 +45,11 @@ export const budgetsService = {
     return api.post<Budget>(`/budgets/${id}/pdf`, {});
   },
 
+  /** Delete a budget / service order permanently. */
+  async delete(id: string): Promise<ApiResponse<void>> {
+    return api.delete<void>(`/budgets/${id}`);
+  },
+
   /** Count and total of open (draft/sent) budgets. */
   async getPendingSummary(): Promise<ApiResponse<{ count: number; total: number }>> {
     return api.get<{ count: number; total: number }>('/budgets/summary/pending');

@@ -263,7 +263,7 @@ export class FinancialService {
     });
 
     if (!record) {
-      throw new NotFoundException('Financial record not found');
+      throw new NotFoundException('Transação não encontrada.');
     }
 
     if (data.type !== undefined) record.type = data.type;
@@ -284,10 +284,14 @@ export class FinancialService {
     });
 
     if (!record) {
-      throw new NotFoundException('Financial record not found');
+      throw new NotFoundException('Transação não encontrada.');
     }
 
-    await this.financialRepo.remove(record);
+    // Soft delete: sets deleted_at = NOW. TypeORM's @DeleteDateColumn
+    // automatically excludes soft-deleted rows from default find()s,
+    // so the user-facing API behaviour is identical to a hard delete
+    // — but we keep the row for audit / accidental-recovery purposes.
+    await this.financialRepo.softRemove(record);
   }
 
   async getRecordsForExport(

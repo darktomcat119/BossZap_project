@@ -155,6 +155,7 @@ INTENTS:
 - BUDGET_PREVIEW (first budget step — collect & confirm)
 - BUDGET_CREATE  (second budget step — user confirmed, generate PDF)
 - BUDGET_QUERY
+- PRODUCT_QUERY (look up a product/service price in the user's catalog)
 - PROFILE_QUERY | PROFILE_UPDATE
 - LOGO_UPLOAD_REQUEST (user wants to upload/replace their logo)
 - LANGUAGE_CHANGE
@@ -249,12 +250,40 @@ INTENT-SPECIFIC NOTES
 - For very short greetings ("oi", "hello") use GENERAL_QUERY with a
   warm 1-line reply in ${langName}.
 - FINANCE_INCOME / FINANCE_EXPENSE: ALWAYS try to extract a category
-  from the user's words. Examples: "gasolina"/"diesel" → "fuel",
-  "almoço"/"marmita"/"jantar" → "food", "parafusos"/"ferramentas" →
-  "supplies", "uber"/"taxi" → "transport", "aluguel" → "rent",
-  "salário"/"folha" → "salary", "luz"/"água"/"internet" → "utilities",
-  "imposto" → "taxes", "venda"/"serviço prestado" → "sale".
-  If you genuinely can't tell, use "other" — but try the keywords first.
+  from the user's words. Use the subscriber's own category names when
+  the system supplies them (the orchestrator passes the active list as
+  CATEGORIES below). When the active list is unavailable, fall back to
+  these standard Brazilian MEI labels:
+    INCOME:   "Serviço prestado", "Venda de produto"
+    EXPENSE:  "Aluguel", "Alimentação", "Materiais", "Mão de obra",
+              "Transporte", "Combustível", "Ferramentas", "Marketing",
+              "Telefonia / Internet", "Contas de consumo"
+    GENERAL:  "Outros"
+  Keyword hints:
+    "gasolina"/"diesel"/"etanol" → "Combustível"
+    "almoço"/"marmita"/"jantar"/"café" → "Alimentação"
+    "parafusos"/"tinta"/"cimento" → "Materiais"
+    "uber"/"taxi"/"ônibus" → "Transporte"
+    "aluguel" → "Aluguel"
+    "salário"/"folha"/"pagamento de funcionário" → "Mão de obra"
+    "luz"/"água"/"internet"/"telefone" → "Contas de consumo"
+    "anúncio"/"impulsionamento"/"facebook ads" → "Marketing"
+    "venda"/"vendi" → "Venda de produto"
+    "atendimento"/"serviço prestado"/"consulta" → "Serviço prestado"
+  If the user's words don't match any category with reasonable
+  confidence, use "Outros" — never invent a new category name.
+- PRODUCT_QUERY: when the user asks about the price or details of a
+  product/service from THEIR catálogo ("quanto custa cimento?", "qual
+  o preço da consulta?", "tem tinta?"), set action_required=true,
+  action_type="query_data", extracted_data={"product_name":"<short
+  noun phrase exactly as the user said it, lowercase, no quantity>"}.
+  Do NOT invent a price — the system will look up the catalog and
+  reply. Keep response_text very short ("Vou verificar.") since the
+  system will replace it with the resolved price.
+  When the user is asking about an item with a quantity ("100kg de
+  cimento", "200 metros de fio"), this is still PRODUCT_QUERY if the
+  intent is just "how much does it cost" — the system handles the
+  quantity math after looking up the unit price.
 - Pure calculation questions ("quanto fica 200 metros a 24 reais?",
   "200 × 24", "how much is X * Y") are GENERAL_QUERY with
   action_required=false. Do the math yourself in response_text and

@@ -14,15 +14,19 @@ import { AgendaModule } from '../agenda/agenda.module';
 import { FinancialModule } from '../financial/financial.module';
 import { BudgetModule } from '../budget/budget.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { SubscriberCategoriesModule } from '../subscriber-categories/subscriber-categories.module';
+import { ProductsModule } from '../products/products.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ConversationHistory, Subscriber, UsageTracking]),
     SubscribersModule,
+    SubscriberCategoriesModule,
     forwardRef(() => AgendaModule),
     forwardRef(() => FinancialModule),
     forwardRef(() => BudgetModule),
     forwardRef(() => AnalyticsModule),
+    forwardRef(() => ProductsModule),
   ],
   providers: [
     OrchestratorService,

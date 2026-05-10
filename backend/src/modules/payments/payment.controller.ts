@@ -60,7 +60,7 @@ export class PaymentController {
     const result = await this.paymentService.getSubscription(user.sub);
 
     if (!result) {
-      throw new NotFoundException('No subscription found');
+      throw new NotFoundException('Nenhuma assinatura encontrada.');
     }
 
     return result;
@@ -103,7 +103,7 @@ export class PaymentController {
     const customer = await this.stripeService.getCustomerByEmail(email);
 
     if (!customer) {
-      throw new NotFoundException('No Stripe customer found for this account');
+      throw new NotFoundException('Nenhum cliente Stripe vinculado a esta conta.');
     }
 
     const session = await this.stripeService.createPortalSession(customer.id);

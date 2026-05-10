@@ -61,7 +61,7 @@ export class SubscribersService {
       where: { id },
     });
     if (!subscriber) {
-      throw new NotFoundException('Subscriber not found');
+      throw new NotFoundException('Conta não encontrada.');
     }
     return subscriber;
   }

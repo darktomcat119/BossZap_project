@@ -59,7 +59,7 @@ export class AuthService {
       where: [{ email }, { phone }],
     });
     if (existing) {
-      throw new ConflictException('Email or phone already registered');
+      throw new ConflictException('E-mail ou telefone já cadastrado.');
     }
 
     // Look up selected plan (default to Pro)
@@ -116,12 +116,12 @@ export class AuthService {
       where: { email },
     });
     if (!subscriber || !subscriber.password_hash) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('E-mail ou senha incorretos.');
     }
 
     const isValid = await bcrypt.compare(password, subscriber.password_hash);
     if (!isValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('E-mail ou senha incorretos.');
     }
 
     return this.generateTokens({
@@ -137,12 +137,12 @@ export class AuthService {
       where: { email },
     });
     if (!admin) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('E-mail ou senha incorretos.');
     }
 
     const isValid = await bcrypt.compare(password, admin.password_hash);
     if (!isValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('E-mail ou senha incorretos.');
     }
 
     return this.generateTokens({
@@ -164,7 +164,7 @@ export class AuthService {
         phone: payload.phone,
       });
     } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Sessão expirada. Faça login novamente.');
     }
   }
 
@@ -174,7 +174,7 @@ export class AuthService {
       relations: ['plan'],
     });
     if (!subscriber) {
-      throw new UnauthorizedException('Subscriber not found');
+      throw new UnauthorizedException('Conta não encontrada.');
     }
     const { password_hash, ...profile } = subscriber;
     return profile;
@@ -194,17 +194,17 @@ export class AuthService {
     file: { buffer: Buffer; mimetype: string; originalname: string; size: number },
   ): Promise<{ logo_url: string }> {
     if (!file || !file.buffer) {
-      throw new UnauthorizedException('Missing file');
+      throw new UnauthorizedException('Nenhum arquivo enviado.');
     }
     const allowed = ['image/png', 'image/jpeg', 'image/webp'];
     if (!allowed.includes(file.mimetype)) {
       throw new UnauthorizedException(
-        'Unsupported file type. Use PNG, JPG or WEBP',
+        'Formato não suportado. Use PNG, JPG ou WEBP.',
       );
     }
     const maxBytes = 2 * 1024 * 1024; // 2 MB
     if (file.size > maxBytes) {
-      throw new UnauthorizedException('File too large (max 2 MB)');
+      throw new UnauthorizedException('Arquivo muito grande (máx. 2 MB).');
     }
 
     const { S3Client, PutObjectCommand, GetObjectCommand } = await import(

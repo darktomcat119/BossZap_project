@@ -164,7 +164,7 @@ export class BudgetService {
     });
 
     if (!budget) {
-      throw new NotFoundException('Budget not found');
+      throw new NotFoundException('Orçamento não encontrado.');
     }
 
     return budget;
@@ -178,6 +178,14 @@ export class BudgetService {
     const budget = await this.findById(subscriberId, budgetId);
     budget.status = status;
     return this.budgetRepo.save(budget);
+  }
+
+  async delete(subscriberId: string, budgetId: string): Promise<void> {
+    const budget = await this.findById(subscriberId, budgetId);
+    // Soft delete: keeps the row for audit + accidental-recovery, while
+    // TypeORM's @DeleteDateColumn excludes it from default find()s so
+    // the user-facing experience is identical to a hard delete.
+    await this.budgetRepo.softRemove(budget);
   }
 
   async getPendingSummary(
@@ -207,7 +215,7 @@ export class BudgetService {
     });
 
     if (!subscriber) {
-      throw new NotFoundException('Subscriber not found');
+      throw new NotFoundException('Conta não encontrada.');
     }
 
     const pdfBuffer = await this.pdfGeneratorService.generateBudgetPdf(

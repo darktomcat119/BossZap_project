@@ -23,4 +23,21 @@ export const profileService = {
     formData.append('logo', file);
     return api.upload<{ logo_url: string }>('/auth/profile/logo', formData);
   },
+
+  /**
+   * Upload a business logo with real upload progress (0–100 callback).
+   * Falls back to the no-progress upload on browsers without XHR support.
+   */
+  async uploadLogoWithProgress(
+    file: File,
+    onProgress: (percent: number) => void,
+  ): Promise<ApiResponse<{ logo_url: string }>> {
+    const formData = new FormData();
+    formData.append('logo', file);
+    return api.uploadWithProgress<{ logo_url: string }>(
+      '/auth/profile/logo',
+      formData,
+      onProgress,
+    );
+  },
 };

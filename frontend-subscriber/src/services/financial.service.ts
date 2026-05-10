@@ -79,6 +79,11 @@ export const financialService = {
     return api.post<FinancialRecord>('/financial', data);
   },
 
+  /** Delete a financial record permanently. */
+  async deleteRecord(id: string): Promise<ApiResponse<void>> {
+    return api.delete<void>(`/financial/${id}`);
+  },
+
   /** Export records to CSV. Returns a Blob download URL. */
   async exportCsv(
     startDate: string,

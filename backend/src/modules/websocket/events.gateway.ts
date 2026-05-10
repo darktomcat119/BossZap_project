@@ -14,8 +14,29 @@ interface TokenPayload {
   type: string;
 }
 
+/**
+ * Allowed Origins for the Socket.IO handshake. Modern browsers reject
+ * `Access-Control-Allow-Origin: *` whenever the server also sends
+ * `Access-Control-Allow-Credentials: true` — that combination is a
+ * CORS spec violation and blocks the WebSocket upgrade in Chrome/Edge,
+ * forcing every client onto the slow long-polling fallback. We use a
+ * concrete origin list (subscriber + admin + landing apps) and drop
+ * credentials, because auth flows through the `auth: { token }`
+ * handshake, not cookies.
+ */
+const WS_ALLOWED_ORIGINS = [
+  process.env.APP_URL ?? 'http://localhost:3001',
+  process.env.ADMIN_URL ?? 'http://localhost:3002',
+  process.env.LANDING_URL ?? 'http://localhost:3003',
+  // localhost dev variants — Next.js dev sometimes serves on alt ports.
+  'http://localhost:3000',
+];
+
 @WebSocketGateway({
-  cors: { origin: '*', credentials: true },
+  cors: {
+    origin: WS_ALLOWED_ORIGINS,
+    credentials: false,
+  },
   namespace: '/',
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {

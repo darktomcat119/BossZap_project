@@ -3,6 +3,7 @@ import { AgendaService } from '../agenda/agenda.service';
 import { FinancialService } from '../financial/financial.service';
 import { BudgetService } from '../budget/budget.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { ProductsService } from '../products/products.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
 import {
   resolveDate,
@@ -38,6 +39,7 @@ export class ActionExecutorService {
     private readonly financial: FinancialService,
     private readonly budget: BudgetService,
     private readonly analytics: AnalyticsService,
+    private readonly products: ProductsService,
     private readonly subscribers: SubscribersService,
   ) {}
 
@@ -72,6 +74,8 @@ export class ActionExecutorService {
           return await this.createBudget(subscriberId, data, ctx);
         case 'BUDGET_QUERY':
           return await this.queryBudgets(subscriberId, data, ctx);
+        case 'PRODUCT_QUERY':
+          return await this.queryProduct(subscriberId, data);
         case 'PROFILE_QUERY':
           return await this.queryProfile(subscriberId, data);
         case 'PROFILE_UPDATE':
@@ -467,6 +471,28 @@ export class ActionExecutorService {
       ctx.language,
     );
     return { success: true, data: result };
+  }
+
+  /**
+   * Catalog lookup: GPT extracts the user's noun phrase as
+   * `product_name`; we resolve it against the subscriber's catalog
+   * (case-insensitive). When nothing matches we still return success
+   * with `data: null` so the orchestrator can short-circuit with a
+   * "not in your catalog" reply instead of letting the LLM invent a
+   * price.
+   */
+  private async queryProduct(
+    subscriberId: string,
+    data: Record<string, unknown>,
+  ): Promise<ActionResult> {
+    const rawName = (data.product_name ?? data.name ?? data.query) as
+      | string
+      | undefined;
+    if (!rawName || !rawName.trim()) {
+      return { success: true, data: null };
+    }
+    const product = await this.products.findByName(subscriberId, rawName);
+    return { success: true, data: product };
   }
 
   private async queryProfile(

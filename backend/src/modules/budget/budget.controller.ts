@@ -3,6 +3,8 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
+  HttpCode,
   Param,
   Body,
   Query,
@@ -117,5 +119,16 @@ export class BudgetController {
     const user = req.user as AuthenticatedUser;
     const url = await this.budgetService.generatePdf(user.id, id);
     return { pdf_url: url };
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete a budget or service order' })
+  async delete(
+    @Req() req: Request,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    const user = req.user as AuthenticatedUser;
+    await this.budgetService.delete(user.id, id);
   }
 }

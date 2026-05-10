@@ -5,6 +5,30 @@ import { SubscriberCategory } from '../../database/entities/subscriber-category.
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
+// Standard Brazilian MEI categories. Names are deliberately in PT-BR
+// since the MEI program is a Brazilian regulatory framework — these
+// labels are the ones users see on government tax forms.
+const DEFAULT_BRAZILIAN_MEI_CATEGORIES: Array<{ name: string; type: string }> =
+  [
+    // Income
+    { name: 'Serviço prestado', type: 'income' },
+    { name: 'Venda de produto', type: 'income' },
+    { name: 'Gorjeta', type: 'income' },
+    // Expenses (the most common MEI deductible categories)
+    { name: 'Aluguel', type: 'expense' },
+    { name: 'Alimentação', type: 'expense' },
+    { name: 'Materiais', type: 'expense' },
+    { name: 'Mão de obra', type: 'expense' },
+    { name: 'Transporte', type: 'expense' },
+    { name: 'Combustível', type: 'expense' },
+    { name: 'Ferramentas', type: 'expense' },
+    { name: 'Marketing', type: 'expense' },
+    { name: 'Telefonia / Internet', type: 'expense' },
+    { name: 'Contas de consumo', type: 'expense' },
+    // General
+    { name: 'Outros', type: 'both' },
+  ];
+
 @Injectable()
 export class SubscriberCategoriesService {
   constructor(
@@ -27,7 +51,7 @@ export class SubscriberCategoriesService {
       where: { subscriber_id: subscriberId, name: data.name },
     });
     if (existing) {
-      throw new ConflictException('A category with this name already exists');
+      throw new ConflictException('Já existe uma categoria com esse nome.');
     }
 
     const category = this.categoryRepo.create({
@@ -49,7 +73,7 @@ export class SubscriberCategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw new NotFoundException('Categoria não encontrada.');
     }
 
     if (data.name !== undefined) category.name = data.name;
@@ -65,9 +89,37 @@ export class SubscriberCategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw new NotFoundException('Categoria não encontrada.');
     }
 
     await this.categoryRepo.remove(category);
+  }
+
+  /**
+   * Bulk-create the standard Brazilian MEI category set for a subscriber.
+   * Skips any names that already exist (idempotent — safe to call again).
+   * Returns the full active list after seeding.
+   */
+  async seedDefaults(subscriberId: string): Promise<SubscriberCategory[]> {
+    const existing = await this.categoryRepo.find({
+      where: { subscriber_id: subscriberId },
+    });
+    const existingNames = new Set(existing.map((c) => c.name.toLowerCase()));
+
+    const toCreate = DEFAULT_BRAZILIAN_MEI_CATEGORIES.filter(
+      (def) => !existingNames.has(def.name.toLowerCase()),
+    ).map((def) =>
+      this.categoryRepo.create({
+        subscriber_id: subscriberId,
+        name: def.name,
+        type: def.type,
+      }),
+    );
+
+    if (toCreate.length > 0) {
+      await this.categoryRepo.save(toCreate);
+    }
+
+    return this.findAll(subscriberId);
   }
 }

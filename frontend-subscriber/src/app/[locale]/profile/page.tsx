@@ -126,7 +126,11 @@ export default function ProfilePage() {
   // Logo upload
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [localLogoUrl, setLocalLogoUrl] = useState<string | null>(null);
+  // Falls back to the placeholder when the logo URL resolves but the
+  // image fails to load (expired pre-signed S3 URL, deleted asset).
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const onUploadClick = useCallback(() => {
     fileInputRef.current?.click();
@@ -150,19 +154,24 @@ export default function ProfilePage() {
       }
 
       setUploadingLogo(true);
+      setUploadProgress(0);
       try {
-        const res = await profileService.uploadLogo(file);
+        const res = await profileService.uploadLogoWithProgress(
+          file,
+          (percent) => setUploadProgress(percent),
+        );
         const url = res?.data?.logo_url;
-        if (url) {
+        if (res.success && url) {
           setLocalLogoUrl(url);
           toast.success(t('saved'));
         } else {
-          toast.error(t('uploadError'));
+          toast.error(res.error?.message ?? t('uploadError'));
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : t('uploadError'));
       } finally {
         setUploadingLogo(false);
+        setUploadProgress(0);
       }
     },
     [t],
@@ -391,14 +400,17 @@ export default function ProfilePage() {
                 onChange={onFilePicked}
               />
               <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
-                {(localLogoUrl ?? user?.logo_url) ? (
+                {(localLogoUrl ?? user?.logo_url) && !logoFailed ? (
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border-2 border-border">
                     <Image
+                      key={(localLogoUrl ?? user?.logo_url) as string}
                       src={(localLogoUrl ?? user?.logo_url) as string}
                       alt={businessName}
                       fill
                       unoptimized
                       className="object-cover"
+                      onError={() => setLogoFailed(true)}
+                      onLoad={() => setLogoFailed(false)}
                     />
                   </div>
                 ) : (
@@ -421,10 +433,25 @@ export default function ProfilePage() {
                     ) : (
                       <Upload className="h-4 w-4" />
                     )}
-                    {(localLogoUrl ?? user?.logo_url)
-                      ? t('changeLogo')
-                      : t('uploadLogo')}
+                    {uploadingLogo
+                      ? t('uploadingLogo')
+                      : (localLogoUrl ?? user?.logo_url)
+                        ? t('changeLogo')
+                        : t('uploadLogo')}
                   </button>
+                  {uploadingLogo && (
+                    <div className="mt-3 w-56 max-w-full">
+                      <div className="h-2 overflow-hidden rounded-full bg-border/60">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-150"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-text-secondary">
+                        {uploadProgress}%
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

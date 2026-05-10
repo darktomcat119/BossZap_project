@@ -74,4 +74,9 @@ export const eventsService = {
   async complete(id: string): Promise<ApiResponse<CalendarEvent>> {
     return api.patch<CalendarEvent>(`/events/${id}/complete`, {});
   },
+
+  /** Permanently delete an event. */
+  async remove(id: string): Promise<ApiResponse<void>> {
+    return api.delete<void>(`/events/${id}`);
+  },
 };

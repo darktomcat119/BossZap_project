@@ -36,6 +36,35 @@ const statusColorMap: Record<string, BadgeColor> = {
   refunded: "gray",
 };
 
+// Default pt-BR labels per status. Without these, callers that don't
+// pass a `label` prop end up showing the raw English status (e.g.
+// "succeeded", "scheduled") to Brazilian users — flagged as an audit
+// item. Callers can still override by passing `label` explicitly.
+const statusLabelPtBR: Record<string, string> = {
+  // Events
+  scheduled: "Agendado",
+  completed: "Concluído",
+  cancelled: "Cancelado",
+  // Financial
+  income: "Receita",
+  expense: "Despesa",
+  // Budgets
+  draft: "Rascunho",
+  sent: "Enviado",
+  accepted: "Aceito",
+  rejected: "Recusado",
+  // Subscription
+  trialing: "Em teste",
+  active: "Ativo",
+  past_due: "Em atraso",
+  suspended: "Suspenso",
+  // Payments
+  succeeded: "Pago",
+  failed: "Falhou",
+  pending: "Pendente",
+  refunded: "Reembolsado",
+};
+
 interface StatusBadgeProps {
   status: string;
   label?: string;
@@ -48,6 +77,7 @@ export function StatusBadge({
   className,
 }: StatusBadgeProps) {
   const color = statusColorMap[status] || "gray";
+  const displayLabel = label ?? statusLabelPtBR[status] ?? status;
 
   return (
     <span
@@ -57,7 +87,7 @@ export function StatusBadge({
         className,
       )}
     >
-      {label || status}
+      {displayLabel}
     </span>
   );
 }

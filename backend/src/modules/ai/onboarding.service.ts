@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { GptService } from './gpt.service';
 import { ConversationService } from './conversation.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
+import { SubscriberCategoriesService } from '../subscriber-categories/subscriber-categories.service';
 import { getOnboardingPrompt } from './prompts/system-prompt';
 
 interface OnboardingResult {
@@ -24,6 +25,7 @@ export class OnboardingService {
     private readonly gpt: GptService,
     private readonly conversation: ConversationService,
     private readonly subscribers: SubscribersService,
+    private readonly categories: SubscriberCategoriesService,
   ) {}
 
   async processOnboarding(
@@ -98,6 +100,19 @@ export class OnboardingService {
       status: 'active',
       onboarding_completed_at: new Date(),
     });
+
+    // Seed default Brazilian MEI categories so the subscriber's
+    // Finance UI doesn't open empty. Best-effort: a failure here must
+    // not block onboarding completion (the user can always seed later
+    // from the dashboard).
+    try {
+      await this.categories.seedDefaults(subscriberId);
+    } catch (err) {
+      this.logger.warn(
+        `Default category seed failed for ${subscriberId}: ` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
 
     this.logger.log(`Onboarding completed for ${subscriberId}`);
   }
